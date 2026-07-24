@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termos de Uso | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark">
+
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="/#eventos">Eventos</a>
+                </nav>
+                <div class="header-cta">
+                    <a href="{{ url_for('login') }}" class="btn-cliente">Área do Cliente</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="bloco-venda" style="max-width: 900px; margin: 40px auto; text-align: left;">
+            <h1 style="color: #ffffff; margin-bottom: 20px;">Termos de Uso</h1>
+            <p class="data-evento">Última atualização: Julho de 2026</p>
+
+            <div style="color: #cbd5e1; line-height: 1.8; display: flex; flex-direction: column; gap: 20px;">
+                <section>
+                    <h2 style="color: #ffffff; font-size: 1.3rem; margin-bottom: 10px;">1. Aceitação dos Termos</h2>
+                    <p>Ao acessar e utilizar a plataforma da Dissonante Experiências para navegação, cadastro ou aquisição de ingressos, você concorda expressamente com os presentes Termos de Uso. Caso não concorde com qualquer disposição aqui descrita, orientamos que interrompa a utilização dos nossos serviços.</p>
+                </section>
+
+                <section>
+                    <h2 style="color: #ffffff; font-size: 1.3rem; margin-bottom: 10px;">2. Compra e Emissão de Ingressos</h2>
+                    <p>A compra de ingressos para eventos organizados ou intermediados pela Dissonante Experiências é efetuada mediante confirmação de pagamento. Cada ingresso gera um código QR único vinculado à conta do comprador, garantindo o direito de acesso individual ao evento.</p>
+                </section>
+
+                <section>
+                    <h2 style="color: #ffffff; font-size: 1.3rem; margin-bottom: 10px;">3. Política de Cancelamento e Reembolso</h2>
+                    <p>Em conformidade com o Artigo 49 do Código de Defesa do Consumidor (CDC), o comprador poderá solicitar o cancelamento da compra e o reembolso integral no prazo de até 7 (sete) dias corridos a contar da data da aprovação do pagamento, desde que a solicitação seja feita em até 48 horas antes da realização do evento.</p>
+                </section>
+
+                <section>
+                    <h2 style="color: #ffffff; font-size: 1.3rem; margin-bottom: 10px;">4. Entrada e Acesso aos Eventos</h2>
+                    <p>É obrigatória a apresentação do código QR (digital ou impresso) acompanhado de documento oficial com foto na portaria do evento. A Dissonante Experiências não se responsabiliza pela duplicidade de leituras decorrente do compartilhamento indevido do código QR por parte do titular.</p>
+                </section>
+
+                <section>
+                    <h2 style="color: #ffffff; font-size: 1.3rem; margin-bottom: 10px;">5. Alterações nos Termos</h2>
+                    <p>A Dissonante Experiências reserva-se o direito de atualizar este documento a qualquer momento para adequação legislativa ou melhoria operacional. As alterações passam a vigorar a partir de sua publicação no site oficial.</p>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Dissonante Experiências</h3>
+                <p>Transformando eventos em memórias vivas.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
+                    <li><a href="/#eventos">Eventos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Contato</h4>
+                <ul>
+                    <a href="{{ url_for('contato') }}">Contato</a>
+                    <li>Fortaleza - CE</li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área do Cliente | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark">
+
+    <!-- Header Simples -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="/#eventos">Eventos</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Seção Principal de Autenticação -->
+    <main class="auth-wrapper">
+        <div class="auth-container">
+            
+            <!-- Coluna Esquerda: Vantagens -->
+            <div class="auth-benefits">
+                <h2>Vantagens de ter sua conta</h2>
+                <p>Gerencie seus acessos com segurança e viva experiências inesquecíveis.</p>
+                
+                <ul class="benefits-list">
+                    <li>🎟️ <strong>Ingressos na palma da mão:</strong> Seus QR Codes salvos em um só lugar.</li>
+                    <li>⚡ <strong>Acesso Rápido na Portaria:</strong> Sem filas e sem papel.</li>
+                    <li>🔒 <strong>Segurança Avançada:</strong> Proteção total para o seu histórico de compras.</li>
+                    <li>🎁 <strong>Benefícios Exclusivos:</strong> Acesso antecipado a lotes promocionais.</li>
+                </ul>
+            </div>
+
+            <!-- Coluna Direita: Formulário de Login/Senha -->
+            <div class="auth-form-side">
+                <h3>Acesse sua Conta</h3>
+                <p class="form-sub">Entre com seu e-mail e senha cadastrados.</p>
+
+                <!-- Mensagens de Flash (Erros/Sucessos) -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('login') }}" method="POST">
+                    <div class="auth-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" placeholder="seu-melhor-email@exemplo.com" required>
+                    </div>
+
+                    <div class="auth-group">
+                        <label for="senha">Senha</label>
+                        <input type="password" id="senha" name="senha" placeholder="Sua senha secreta" required>
+                    </div>
+
+                    <button type="submit" class="btn-auth-submit">Entrar</button>
+                </form>
+
+                <p style="margin-top: 20text-align: center; font-size: 0.85rem; color: #94a3b8; text-align: center;">
+                    Ainda não tem uma conta? <a href="{{ url_for('cadastro') }}" style="color: var(--primary); font-weight: 600;">Cadastre-se aqui</a>
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+        <div class="container footer-bottom" style="border-top: none; padding: 20px 0;">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

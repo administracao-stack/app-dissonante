@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Cabeçalho Administrativo -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="{{ url_for('admin_dashboard') }}" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">GESTÃO DE EVENTOS</span>
+                    </div>
+                </a>
+                <nav class="nav-menu">
+                    <a href="{{ url_for('painel_validacao') }}">Portaria</a>
+                    <a href="{{ url_for('logout') }}" class="nav-link-logout">Sair</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal do Dashboard -->
+    <main class="admin-main">
+        <div class="container">
+            <h1 class="admin-titulo-pagina">Visão Geral do Evento</h1>
+
+            <!-- Grid de Métricas em Tempo Real (Puxadas do MySQL via Flask) -->
+            <div class="grid-stats">
+                <div class="card-stat">
+                    <h3>Ingressos Vendidos</h3>
+                    <div class="valor">{{ stats.ingressos_vendidos }}</div>
+                </div>
+
+                <div class="card-stat">
+                    <h3>Disponíveis no Lote</h3>
+                    <div class="valor">{{ stats.total_disponiveis }}</div>
+                </div>
+
+                <div class="card-stat">
+                    <h3>Check-ins na Portaria</h3>
+                    <div class="valor valor-sucesso">{{ stats.ingressos_utilizados }}</div>
+                </div>
+
+                <div class="card-stat">
+                    <h3>Receita Estimada</h3>
+                    <div class="valor valor-receita">R$ {{ "%.2f"|format(stats.receita_total) }}</div>
+                </div>
+            </div>
+
+            <!-- Atalho de Acesso Rápido para a Portaria -->
+            <div class="portaria-wrapper">
+                <a href="{{ url_for('painel_validacao') }}" class="btn-portaria">
+                    Acessar Validador de Portaria &rarr;
+                </a>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

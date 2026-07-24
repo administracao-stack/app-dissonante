@@ -1,0 +1,1104 @@
+/* ==========================================================================
+   Reset & Variáveis Globais
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+:root {
+    /* Paleta Céu Noturno / Night Sky */
+    --bg-night-dark: #070a13;   /* Azul Noite Profundo Escuro */
+    --bg-night-light: #172036;  /* Azul Noite Suave (Centro da Hero) */
+    --bg-card: #0f172a;         /* Card em tom azul-escuro slate */
+    --bg-light: #f8f9fa;
+    --text-dark: #212529;
+    --text-muted: #94a3b8;
+    --gold: #c5a059;            /* Tom dourado idêntico ao logo */
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --success-color: #16a34a;
+    --danger-color: #dc2626;
+    --border-dark: rgba(255, 255, 255, 0.1);
+    --font-main: 'Inter', sans-serif;
+}
+
+body {
+    font-family: var(--font-main);
+    color: var(--text-dark);
+    line-height: 1.6;
+    background-color: #ffffff;
+}
+
+body.bg-dark {
+    background-color: var(--bg-night-dark);
+    color: #ffffff;
+    min-height: 100vh;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 60px 0;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+/* ==========================================================================
+   Header / Navegação (Céu Noturno)
+   ========================================================================== */
+.site-header {
+    background-color: var(--bg-night-dark);
+    color: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.site-header .container {
+    padding: 16px 0;
+}
+
+.navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-decoration: none;
+}
+
+.navbar-logo-icon {
+    height: 42px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(197, 160, 89, 0.25));
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.15;
+}
+
+.brand-name {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 2px;
+    font-family: var(--font-main);
+}
+
+.brand-sub {
+    color: var(--gold);
+    font-weight: 400;
+    font-size: 0.62rem;
+    letter-spacing: 3.8px;
+    text-transform: uppercase;
+    font-family: var(--font-main);
+}
+
+.nav-menu {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+}
+
+.nav-menu a {
+    color: #b3b3b3;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-menu a:hover {
+    color: #ffffff;
+}
+
+.nav-link-logout {
+    color: #f87171 !important;
+}
+
+.btn-cliente {
+    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    color: #ffffff !important;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.btn-cliente:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.6);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Hero Section
+   ========================================================================== */
+.hero {
+    position: relative;
+    background: radial-gradient(circle at 50% 40%, var(--bg-night-light) 0%, var(--bg-night-dark) 75%);
+    color: #ffffff;
+    text-align: center;
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 35px;
+    letter-spacing: -1px;
+    line-height: 1.3;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    max-width: 650px;
+    margin: 0 auto 45px auto;
+    color: #cbd5e1;
+    line-height: 1.8;
+}
+
+.hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('logo-icon.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: auto 85%;
+    opacity: 0.12;
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 6px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+/* ==========================================================================
+   Página Institucional (Quem Somos)
+   ========================================================================== */
+.about-card {
+    max-width: 800px;
+    margin: 40px auto;
+    text-align: center;
+}
+
+.about-title {
+    color: #ffffff;
+    font-size: 2.5rem;
+    margin-bottom: 25px;
+    font-weight: 700;
+}
+
+.about-text-highlight {
+    color: #cbd5e1;
+    font-size: 1.15rem;
+    line-height: 1.8;
+    margin-bottom: 20px;
+}
+
+.about-text {
+    color: #94a3b8;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    margin-bottom: 30px;
+}
+
+/* ==========================================================================
+   Seção Serviços / Eventos
+   ========================================================================== */
+.services {
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+.services h2 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 40px;
+    color: var(--text-dark);
+}
+
+.event-grid {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 30px;
+    width: 100%;
+}
+
+.event-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 25px rgba(99, 102, 241, 0.2);
+    max-width: 650px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.event-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 35px rgba(99, 102, 241, 0.45);
+}
+
+.badge {
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-open {
+    background-color: #ef4444;
+}
+
+.event-title {
+    font-size: 1.9rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #ffffff;
+}
+
+.event-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 22px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+.event-description {
+    font-size: 1rem;
+    color: #94a3b8;
+    margin-bottom: 35px;
+    line-height: 1.6;
+}
+
+.ticket-btn {
+    display: block;
+    width: 100%;
+    background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+    color: #ffffff !important;
+    padding: 15px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+    transition: all 0.3s ease;
+}
+
+.ticket-btn:hover {
+    filter: brightness(1.15);
+    transform: scale(1.01);
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+}
+
+/* ==========================================================================
+   Página de Contato
+   ========================================================================== */
+.hero-contato {
+    padding: 60px 0;
+    background: radial-gradient(circle at 50% 40%, var(--bg-night-light) 0%, var(--bg-night-dark) 85%);
+    color: #ffffff;
+    text-align: center;
+    border-bottom: 1px solid var(--border-dark);
+}
+
+.hero-contato-titulo {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.hero-contato-subtitulo {
+    color: #cbd5e1;
+    font-size: 1.1rem;
+}
+
+.contato-main {
+    padding: 60px 0;
+    background-color: var(--bg-night-dark);
+}
+
+.contato-grid {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.contato-col-form {
+    flex: 1;
+    min-width: 300px;
+    max-width: 650px;
+}
+
+.contato-col-info {
+    flex: 1;
+    min-width: 280px;
+    max-width: 380px;
+}
+
+.card-contato {
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    background-color: var(--bg-card);
+    padding: 40px;
+}
+
+.card-contato-titulo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #ffffff;
+}
+
+.info-box-titulo {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #ffffff;
+}
+
+.info-box {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-left: 4px solid var(--gold);
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.info-box-label {
+    color: #94a3b8;
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.info-box-email {
+    font-weight: 700;
+    color: var(--gold);
+    font-size: 0.95rem;
+    word-break: break-all;
+}
+
+.info-box-texto {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.btn-whatsapp-corpo {
+    display: inline-block;
+    background-color: #25d366;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    text-align: center;
+    width: 100%;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    box-shadow: 0 0 10px rgba(37, 211, 102, 0.3);
+}
+
+.btn-whatsapp-corpo:hover {
+    background-color: #20ba5a;
+    box-shadow: 0 0 18px rgba(37, 211, 102, 0.6);
+}
+
+/* ==========================================================================
+   Painel Administrativo & Validação de Portaria
+   ========================================================================== */
+.admin-main {
+    padding: 60px 0;
+    min-height: 80vh;
+}
+
+.admin-titulo-pagina {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 30px;
+    color: #ffffff;
+}
+
+.grid-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.card-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    text-align: center;
+}
+
+.card-stat h3 {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+.card-stat .valor {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.card-stat .valor-sucesso {
+    color: #4ade80;
+}
+
+.card-stat .valor-receita {
+    font-size: 1.6rem;
+    color: var(--gold);
+}
+
+.portaria-wrapper {
+    text-align: center;
+    margin-top: 50px;
+}
+
+.btn-portaria {
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 18px;
+    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    color: #ffffff;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+}
+
+.btn-portaria:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+}
+
+.card-admin {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.card-admin-titulo {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 25px;
+    text-align: center;
+    color: #ffffff;
+}
+
+.card-admin .form-control {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    font-size: 1.1rem;
+    padding: 14px;
+}
+
+.card-admin .form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
+
+.btn-acao {
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-buscar {
+    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    color: #ffffff;
+}
+
+.btn-buscar:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.btn-baixa {
+    background-color: var(--success-color);
+    color: #ffffff;
+    margin-top: 20px;
+}
+
+.btn-baixa:hover {
+    background-color: #15803d;
+}
+
+.resultado-container {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.resultado-titulo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #ffffff;
+}
+
+.resultado-item {
+    margin-bottom: 10px;
+    color: #cbd5e1;
+}
+
+.resultado-item code {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--gold);
+}
+
+.resultado-status {
+    margin-bottom: 20px;
+    color: #cbd5e1;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   Formulários & Alertas Compartilhados
+   ========================================================================== */
+.form-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+    color: #cbd5e1;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-family: var(--font-main);
+    box-sizing: border-box;
+    color: #ffffff;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
+.alert {
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    text-align: center;
+    font-size: 0.95rem;
+}
+
+.alert-success {
+    background-color: rgba(22, 163, 74, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(22, 163, 74, 0.4);
+}
+
+.alert-warning {
+    background-color: rgba(202, 138, 4, 0.2);
+    color: #fde047;
+    border: 1px solid rgba(202, 138, 4, 0.4);
+}
+
+.alert-danger, .alert-error {
+    background-color: rgba(220, 38, 38, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(220, 38, 38, 0.4);
+}
+
+/* ==========================================================================
+   Rodapé (Alinhado ao Céu Noturno)
+   ========================================================================== */
+.footer {
+    background-color: var(--bg-night-dark);
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+.footer .container {
+    padding: 60px 0 40px 0;
+}
+
+.footer h3, .footer h4 {
+    color: #ffffff;
+    margin-bottom: 20px;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+}
+
+.footer-links ul {
+    list-style: none;
+}
+
+.footer-links li {
+    margin-bottom: 12px;
+}
+
+.footer-links a:hover {
+    color: #ffffff;
+}
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+    padding: 20px 0;
+    color: #64748b;
+    font-size: 0.8rem;
+    margin-top: 40px;
+}
+
+/* ==========================================================================
+   Área de Ingressos e Portaria (Interno)
+   ========================================================================== */
+.bloco-venda {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 28px;
+    margin-top: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.data-evento {
+    color: #94a3b8;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+.grid-ingressos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 15px;
+}
+
+.card-ingresso {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    width: 220px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.card-ingresso h4 {
+    color: #f1f5f9;
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.qr-code-box {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 8px;
+    display: inline-block;
+    margin: 10px 0;
+}
+
+.status-tag {
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 4px 12px;
+    border-radius: 20px;
+    display: inline-block;
+    letter-spacing: 0.5px;
+}
+
+.status-valido { background-color: var(--success-color); color: #ffffff; }
+.status-utilizado { background-color: var(--danger-color); color: #ffffff; }
+
+.codigo-texto {
+    display: block;
+    margin-top: 10px;
+    color: #64748b;
+    font-family: monospace;
+    font-size: 0.75rem;
+    word-break: break-all;
+}
+
+.user-info {
+    color: #cbd5e1;
+    font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   Botão WhatsApp no Menu Superior
+   ========================================================================== */
+.nav-menu .btn-whatsapp {
+    background-color: #25D366 !important;
+    color: #ffffff !important;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(37, 211, 102, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    text-decoration: none;
+}
+
+.nav-menu .btn-whatsapp:hover {
+    background-color: #20ba5a !important;
+    box-shadow: 0 0 18px rgba(37, 211, 102, 0.65);
+    transform: translateY(-1px);
+}
+
+.nav-menu .btn-whatsapp svg {
+    width: 16px !important;
+    height: 16px !important;
+    min-width: 16px;
+    max-width: 16px;
+    fill: #ffffff !important;
+    display: block;
+}
+
+/* ==========================================================================
+   Banner de Cookies (LGPD)
+   ========================================================================== */
+.cookie-banner {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    max-width: 500px;
+    background-color: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    backdrop-filter: blur(8px);
+}
+
+.cookie-text {
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.cookie-text a {
+    color: var(--gold);
+    text-decoration: underline;
+}
+
+.cookie-text a:hover {
+    color: #ffffff;
+}
+
+.btn-cookie {
+    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    color: #ffffff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+}
+
+.btn-cookie:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Área de Login / Cadastro Dupla Coluna
+   ========================================================================== */
+.auth-wrapper {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.auth-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 900px;
+    width: 100%;
+    background-color: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+}
+
+.auth-benefits {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.auth-benefits h2 {
+    color: #ffffff;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.auth-benefits p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.benefits-list li {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.auth-form-side {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.auth-form-side h3 {
+    color: #ffffff;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+}
+
+.auth-form-side p.form-sub {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-bottom: 25px;
+}
+
+.auth-group {
+    margin-bottom: 20px;
+}
+
+.auth-group label {
+    display: block;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.auth-group input {
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 12px 15px;
+    color: #ffffff;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.auth-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+}
+
+.btn-auth-submit {
+    width: 100%;
+    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    color: #ffffff;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-auth-submit:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.btn-enviar {
+    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    color: #ffffff;
+    font-weight: 700;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn-enviar:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Responsividade Geral
+   ========================================================================== */
+@media (max-width: 768px) {
+    .navbar-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .nav-menu {
+        gap: 15px;
+    }
+    .hero h1 {
+        font-size: 2.2rem;
+    }
+    .auth-container {
+        grid-template-columns: 1fr;
+    }
+    .auth-benefits {
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 30px 20px;
+    }
+    .auth-form-side {
+        padding: 30px 20px;
+    }
+    .contato-grid {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 576px) {
+    .cookie-banner {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+    }
+}

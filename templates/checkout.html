@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprar Ingresso | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- SDK v2 do Mercado Pago -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+</head>
+<body class="bg-dark">
+
+    {% set e_promocional = 'promocional' in lote.nome.lower() %}
+
+    <main class="login-wrapper">
+        <div class="login-card" style="max-width: 520px;">
+            
+            <div class="login-header">
+                <a href="/" class="brand-logo" style="margin-bottom: 20px; display: inline-flex;">
+                    <div class="logo-icon">D</div>
+                    <div class="logo-text">
+                        <strong>DISSONANTE</strong> <span>Experiências</span>
+                    </div>
+                </a>
+                <h2 style="color: #ffffff; font-size: 1.4rem;">MaréVibes Halloween 2026</h2>
+                <p>31 de Outubro, às 17h • Itaperi, Fortaleza</p>
+                
+                <div style="margin-top: 15px; padding: 8px 12px; background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; border-radius: 8px; color: #a5b4fc; font-weight: 600; font-size: 0.9rem;">
+                    Lote Atual: {{ lote.nome }} — R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}
+                </div>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }}" style="margin-bottom: 15px; padding: 10px; border-radius: 6px; color: #fff; font-size: 0.9rem; text-align: center;">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('checkout') }}" method="POST" id="form-checkout" class="login-form">
+                
+                <!-- Quantidade -->
+                <div class="form-group">
+                    <label for="quantidade">Quantidade de Ingressos</label>
+                    <select id="quantidade" name="quantidade" style="width: 100%; padding: 12px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 1rem;" onchange="atualizarValores()">
+                        <option value="1">1 Ingresso - R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}</option>
+                        <option value="2">2 Ingressos - R$ {{ "%.2f"|format(lote.preco * 2)|replace('.', ',') }}</option>
+                        <option value="3">3 Ingressos - R$ {{ "%.2f"|format(lote.preco * 3)|replace('.', ',') }}</option>
+                        <option value="4">4 Ingressos - R$ {{ "%.2f"|format(lote.preco * 4)|replace('.', ',') }}</option>
+                    </select>
+                </div>
+
+                <!-- Método de Pagamento -->
+                <div class="form-group" style="margin-top: 20px;">
+                    <label style="display: block; margin-bottom: 10px; color: #cbd5e1; font-weight: 600;">Forma de Pagamento</label>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <label style="flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; cursor: pointer; text-align: center; color: white;">
+                            <input type="radio" name="metodo_pagamento" value="pix" checked onclick="alternarPagamento('pix')">
+                            <span style="margin-left: 5px;">Pix</span>
+                        </label>
+
+                        <label style="flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; cursor: {% if e_promocional %}not-allowed{% else %}pointer{% endif %}; text-align: center; color: {% if e_promocional %}#64748b{% else %}white{% endif %}; opacity: {% if e_promocional %}0.5{% else %}1{% endif %};">
+                            <input type="radio" name="metodo_pagamento" value="credit_card" {% if e_promocional %}disabled{% else %}onclick="alternarPagamento('credit_card')"{% endif %}>
+                            <span style="margin-left: 5px;">Cartão (Até 2x) {% if e_promocional %}(Indisponível){% endif %}</span>
+                        </label>
+                    </div>
+
+                    {% if e_promocional %}
+                        <p style="color: #a5b4fc; font-size: 0.8rem; margin-top: 5px;">* O Lote Promocional aceita apenas pagamento via Pix.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Campos de Cartão de Crédito -->
+                <div id="secao-cartao" style="display: none; background: #0b1120; padding: 15px; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 20px;">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem;">Número do Cartão</label>
+                        <div id="form-checkout__cardNumber" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.85rem;">Validade (MM/AA)</label>
+                            <div id="form-checkout__expirationDate" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.85rem;">CVV</label>
+                            <div id="form-checkout__securityCode" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem;">Nome Impresso no Cartão</label>
+                        <input type="text" id="form-checkout__cardholderName" placeholder="Nome do titular" style="width: 100%; padding: 10px; border-radius: 6px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 0.9rem;">
+                    </div>
+
+                    <div class="form-group">
+                        <label style="font-size: 0.85rem;">Parcelamento</label>
+                        <select name="installments" id="form-checkout__installments" style="width: 100%; padding: 10px; border-radius: 6px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 0.9rem;">
+                            <!-- Preenchido via JavaScript -->
+                        </select>
+                    </div>
+                </div>
+
+                <input type="hidden" name="token" id="token">
+                <input type="hidden" name="payment_method_id" id="payment_method_id">
+
+                <button type="submit" id="btn-submit" class="btn-submit" style="background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); cursor: pointer;">
+                    Ir para o Pagamento PIX
+                </button>
+
+            </form>
+
+        </div>
+    </main>
+
+    <script>
+        const precoUnitario = parseFloat("{{ lote.preco }}");
+
+        function alternarPagamento(tipo) {
+            const secaoCartao = document.getElementById('secao-cartao');
+            const btnSubmit = document.getElementById('btn-submit');
+
+            if (tipo === 'credit_card') {
+                secaoCartao.style.display = 'block';
+                btnSubmit.innerText = 'Pagar com Cartão de Crédito';
+            } else {
+                secaoCartao.style.display = 'none';
+                btnSubmit.innerText = 'Ir para o Pagamento PIX';
+            }
+        }
+
+        function atualizarValores() {
+            const qtd = parseInt(document.getElementById('quantidade').value);
+            const total = qtd * precoUnitario;
+            const selectParcelas = document.getElementById('form-checkout__installments');
+
+            selectParcelas.innerHTML = `
+                <option value="1">1x de R$ ${(total).toFixed(2).replace('.', ',')} (À vista)</option>
+                <option value="2">2x de R$ ${(total / 2).toFixed(2).replace('.', ',')} (Sem juros)</option>
+            `;
+        }
+
+        atualizarValores();
+    </script>
+
+</body>
+</html>

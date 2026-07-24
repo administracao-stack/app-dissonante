@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contato - Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Cabeçalho (Apenas links de navegação essenciais) -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+
+                <!-- Logo Híbrido: Ícone + Texto -->
+                <a href="{{ url_for('index') }}" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+
+                <!-- Menu Central -->
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="{{ url_for('index') }}#eventos">Eventos</a>
+                </nav>
+
+                <!-- Botão de Destaque na Direita -->
+                <div class="header-cta">
+                    <a href="{{ url_for('login') }}" class="btn-cliente">Área do Cliente</a>
+                </div>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- Cabeçalho da Página de Contato -->
+    <header class="hero-contato">
+        <div class="container">
+            <h1 class="hero-contato-titulo">Central de Atendimento</h1>
+            <p class="hero-contato-subtitulo">Preencha o formulário abaixo para enviar sua mensagem diretamente à nossa equipe.</p>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal com o Formulário Web -->
+    <main class="contato-main">
+        <div class="container">
+            
+            <!-- Alertas de Feedback do Flask -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="contato-grid">
+                
+                <!-- Coluna do Formulário Web -->
+                <div class="contato-col-form">
+                    <div class="card-contato">
+                        <h2 class="card-contato-titulo">Envie sua mensagem</h2>
+                        <form method="POST" action="{{ url_for('contato') }}">
+                            <div class="form-group-item">
+                                <label for="nome" class="form-label">Seu Nome Completo</label>
+                                <input type="text" class="form-control" id="nome" name="nome" required placeholder="Digite seu nome">
+                            </div>
+                            <div class="form-group-item">
+                                <label for="email" class="form-label">Seu E-mail para Contato</label>
+                                <input type="email" class="form-control" id="email" name="email" required placeholder="seu@email.com">
+                            </div>
+                            <div class="form-group-item">
+                                <label for="assunto" class="form-label">Assunto</label>
+                                <input type="text" class="form-control" id="assunto" name="assunto" required placeholder="Ex: Dúvida sobre Ingressos / Parcerias">
+                            </div>
+                            <div class="form-group-item">
+                                <label for="mensagem" class="form-label">Mensagem</label>
+                                <textarea class="form-control" id="mensagem" name="mensagem" rows="5" required placeholder="Escreva sua mensagem detalhadamente..."></textarea>
+                            </div>
+                            <button type="submit" class="btn-enviar">Enviar Mensagem</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Coluna Lateral com Informações e Botão de WhatsApp -->
+                <div class="contato-col-info">
+                    <div class="card-contato card-contato-lateral">
+                        <h3 class="info-box-titulo">Informações Úteis</h3>
+                        <div class="info-box">
+                            <small class="info-box-label">E-MAIL ADMINISTRATIVO OFICIAL</small>
+                            <span class="info-box-email">administracao@dissonanteexperiencias.com</span>
+                        </div>
+                        <p class="info-box-texto">As mensagens enviadas através deste formulário web são direcionadas diretamente para nossa equipe de gestão e suporte.</p>
+                        
+                        <a href="https://wa.me/5585999263606?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp-corpo">
+                            Falar via WhatsApp
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Rodapé (Idêntico ao da Index) -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Dissonante Experiências</h3>
+                <p>Transformando eventos em memórias vivas.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
+                    <li><a href="{{ url_for('index') }}#eventos">Eventos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links" id="contato">
+                <h4>Contato</h4>
+                <ul>
+                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
+                    <li>Fortaleza - CE</li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Ingressos | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark">
+
+    <!-- Header do Cliente -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="/#eventos">Eventos</a>
+                    <span class="user-info" style="color: var(--gold); font-weight: 600;">Olá, {{ session.get('usuario_nome', 'Cliente') }}</span>
+                    <a href="{{ url_for('logout') }}" style="color: #ef4444; font-weight: 600;">Sair</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal da Área do Cliente -->
+    <main class="container" style="padding-top: 40px; padding-bottom: 60px;">
+        
+        <!-- Alertas de Feedback -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}" style="background: rgba(22, 163, 74, 0.2); border: 1px solid #16a34a; color: #86efac; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 25px;">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Cabeçalho do Painel -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
+            <div>
+                <h1 style="color: #ffffff; font-size: 2rem; margin-bottom: 5px;">Seus Ingressos e Acessos</h1>
+                <p style="color: #94a3b8; font-size: 0.95rem;">Apresente o QR Code diretamente na portaria do evento ou guarde-os no seu histórico.</p>
+            </div>
+            <a href="/#eventos" class="btn-primary" style="text-align: center; padding: 12px 24px; font-size: 0.9rem;">Explorar Novos Eventos</a>
+        </div>
+
+        <!-- Bloco de Ingressos Comprados -->
+        {% if vendas %}
+            {% for pedido in vendas %}
+            <div class="bloco-venda">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="color: #ffffff; font-size: 1.3rem; margin-bottom: 4px;">{{ pedido.evento }}</h3>
+                        <p class="data-evento" style="margin: 0;">📅 Data do Evento: <strong>{{ pedido.data }}</strong> | Pedido #{{ pedido.id }}</p>
+                    </div>
+                    <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
+                        Enviado para: {{ session.get('usuario_email', 'seu e-mail') }}
+                    </span>
+                </div>
+
+                <div class="grid-ingressos">
+                    {% for ingresso in pedido.ingressos %}
+                    <div class="card-ingresso">
+                        <h4>Ingresso #{{ ingresso.id }}</h4>
+                        
+                        <!-- Simulação visual de QR Code em SVG dinâmico -->
+                        <div class="qr-code-box">
+                            <svg width="110" height="110" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 2H10V10H2V2Z" stroke="#0f172a" stroke-width="2"/>
+                                <path d="M6 6H6.01" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M14 2H22V10H14V2Z" stroke="#0f172a" stroke-width="2"/>
+                                <path d="M18 6H18.01" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M2 14H10V22H2V14Z" stroke="#0f172a" stroke-width="2"/>
+                                <path d="M6 18H6.01" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M14 14H16V16H14V14Z" fill="#0f172a"/>
+                                <path d="M18 18H22V22H18V18Z" stroke="#0f172a" stroke-width="2"/>
+                                <path d="M14 18H16V22H14V18Z" fill="#0f172a"/>
+                            </svg>
+                        </div>
+
+                        <div>
+                            {% if ingresso.status == 'valido' %}
+                                <span class="status-tag status-valido">VÁLIDO</span>
+                            {% else %}
+                                <span class="status-tag status-utilizado">UTILIZADO</span>
+                            {% endif %}
+                        </div>
+
+                        <span class="codigo-texto" title="{{ ingresso.codigo_qr }}">{{ ingresso.codigo_qr }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Estado Vazio -->
+            <div style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 50px; text-align: center; margin-top: 30px;">
+                <h3 style="color: #ffffff; font-size: 1.4rem; margin-bottom: 10px;">Você ainda não possui ingressos</h3>
+                <p style="color: #94a3b8; margin-bottom: 25px;">Escolha um evento disponível e garanta sua experiência exclusiva.</p>
+                <a href="/#eventos" class="btn-primary">Ver Eventos Disponíveis</a>
+            </div>
+        {% endif %}
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+        <div class="container footer-bottom" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 30px 0;">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

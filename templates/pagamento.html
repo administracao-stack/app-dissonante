@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark">
+
+    <main class="login-wrapper">
+        <div class="login-card" style="max-width: 480px; text-align: center;">
+            
+            <a href="/" class="brand-logo" style="margin-bottom: 20px; display: inline-flex;">
+                <div class="logo-icon">D</div>
+                <div class="logo-text">
+                    <strong>DISSONANTE</strong> <span>Pagamentos</span>
+                </div>
+            </a>
+
+            <h3 style="color: #ffffff; margin-bottom: 5px;">Aguardando Pagamento PIX</h3>
+            <p style="color: #94a3b8; font-size: 0.9rem;">Escaneie o QR Code abaixo com o app do seu banco ou use o Pix Copia e Cola</p>
+
+            <!-- Renderização do QR Code em Base64 gerado pela API do Mercado Pago -->
+            <div class="qr-code-box" style="margin: 20px auto; padding: 15px; background: white; border-radius: 12px; display: inline-block;">
+                {% if compra.qr_code_base64 %}
+                    <img src="data:image/jpeg;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix Mercado Pago" style="width: 180px; height: 180px; display: block;" />
+                {% else %}
+                    <p style="color: #000; font-size: 0.85rem;">Erro ao carregar imagem do QR Code.</p>
+                {% endif %}
+            </div>
+
+            <!-- Pix Copia e Cola -->
+            {% if compra.qr_code %}
+            <div style="margin-bottom: 20px;">
+                <label style="color: #94a3b8; font-size: 0.8rem; display: block; margin-bottom: 5px;">Código Pix Copia e Cola:</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly style="flex: 1; padding: 10px; border-radius: 6px; background: #0f172a; color: #94a3b8; border: 1px solid #334155; font-size: 0.85rem; text-overflow: ellipsis;">
+                    <button type="button" onclick="copiarPix()" id="btn-copiar" style="padding: 10px 15px; background: #6366f1; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Copiar</button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
+                <p style="color: #cbd5e1; font-size: 0.9rem;">Resumo do Pedido:</p>
+                <strong style="color: #a855f7; font-size: 1.2rem;">{{ compra.quantidade }}x Ingresso(s) = R$ {{ "%.2f"|format(compra.total)|replace('.', ',') }}</strong>
+            </div>
+
+            <p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">
+                O pagamento é identificado automaticamente pelo sistema em instantes. Assim que aprovado, seus ingressos estarão disponíveis na aba <strong>Meus Ingressos</strong>.
+            </p>
+
+            <a href="{{ url_for('meus_ingressos') }}" class="btn-submit" style="display: block; text-decoration: none; text-align: center; margin-top: 15px; background: #334155;">
+                Ir para Meus Ingressos
+            </a>
+
+        </div>
+    </main>
+
+    <script>
+        function copiarPix() {
+            const inputPix = document.getElementById("pix-copia-cola");
+            inputPix.select();
+            inputPix.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(inputPix.value);
+            
+            const btnCopiar = document.getElementById("btn-copiar");
+            btnCopiar.innerText = "Copiado! ✓";
+            btnCopiar.style.background = "#16a34a";
+            
+            setTimeout(() => {
+                btnCopiar.innerText = "Copiar";
+                btnCopiar.style.background = "#6366f1";
+            }, 3000);
+        }
+    </script>
+
+</body>
+</html>

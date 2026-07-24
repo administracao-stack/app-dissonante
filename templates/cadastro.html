@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Conta | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark">
+
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="/#eventos">Eventos</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="auth-wrapper">
+        <div class="auth-container">
+            
+            <div class="auth-benefits">
+                <h2>Crie sua conta gratuita</h2>
+                <p>Tenha controle total sobre seus ingressos e garanta entradas exclusivas.</p>
+                
+                <ul class="benefits-list">
+                    <li>🎟️ <strong>Ingressos na palma da mão:</strong> Histórico completo de eventos.</li>
+                    <li>⚡ <strong>Acesso Rápido:</strong> Validação ágil direto na portaria.</li>
+                    <li>🔒 <strong>Total Segurança:</strong> Senha criptografada e dados protegidos.</li>
+                </ul>
+            </div>
+
+            <div class="auth-form-side">
+                <h3>Cadastre-se</h3>
+                <p class="form-sub">Preencha os dados abaixo para criar seu perfil.</p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('cadastro') }}" method="POST">
+                    <div class="auth-group">
+                        <label for="nome">Nome Completo</label>
+                        <input type="text" id="nome" name="nome" placeholder="Seu nome" required>
+                    </div>
+
+                    <div class="auth-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" name="email" placeholder="seu-melhor-email@exemplo.com" required>
+                    </div>
+
+                    <div class="auth-group">
+                        <label for="senha">Senha</label>
+                        <input type="password" id="senha" name="senha" placeholder="Crie uma senha forte" required>
+                    </div>
+
+                    <div class="auth-group">
+                        <label for="confirmar_senha">Confirmar Senha</label>
+                        <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Repita a senha" required>
+                    </div>
+
+                    <button type="submit" class="btn-auth-submit">Criar Conta</button>
+                </form>
+
+                <p style="margin-top: 20px; font-size: 0.85rem; color: #94a3b8; text-align: center;">
+                    Já tem uma conta? <a href="{{ url_for('login') }}" style="color: var(--primary); font-weight: 600;">Faça login</a>
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-bottom" style="border-top: none; padding: 20px 0;">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
