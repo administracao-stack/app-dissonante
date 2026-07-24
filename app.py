@@ -235,6 +235,11 @@ def checkout():
         preco_unitario = lote_ativo.preco
         total = quantidade * preco_unitario
 
+        # Separação adequada do Nome e Sobrenome para exigência das APIS
+        nome_completo = session.get('usuario_nome', 'Cliente').strip().split(' ', 1)
+        first_name = nome_completo[0]
+        last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
+
         # --- PAGAMENTO VIA PIX ---
         if metodo_pagamento == 'pix':
             payment_data = {
@@ -243,26 +248,32 @@ def checkout():
                 "payment_method_id": "pix",
                 "payer": {
                     "email": session['usuario_email'],
-                    "first_name": session['usuario_nome']
+                    "first_name": first_name,
+                    "last_name": last_name
                 }
             }
 
-            payment_response = sdk.payment().create(payment_data)
-            payment = payment_response.get("response", {})
+            try:
+                payment_response = sdk.payment().create(payment_data)
+                payment = payment_response.get("response", {})
 
-            if payment.get("status") in ["pending", "approved"]:
-                pix_info = payment["point_of_interaction"]["transaction_data"]
-                session['compra_atual'] = {
-                    'payment_id': payment["id"],
-                    'lote_id': lote_ativo.id,
-                    'total': total,
-                    'quantidade': quantidade,
-                    'qr_code': pix_info["qr_code"],
-                    'qr_code_base64': pix_info["qr_code_base64"]
-                }
-                return redirect(url_for('pagamento'))
-            else:
-                flash('Erro ao gerar cobrança Pix. Tente novamente.', 'danger')
+                if payment.get("status") in ["pending", "approved"]:
+                    pix_info = payment["point_of_interaction"]["transaction_data"]
+                    session['compra_atual'] = {
+                        'payment_id': payment["id"],
+                        'lote_id': lote_ativo.id,
+                        'total': total,
+                        'quantidade': quantidade,
+                        'qr_code': pix_info["qr_code"],
+                        'qr_code_base64': pix_info["qr_code_base64"]
+                    }
+                    return redirect(url_for('pagamento'))
+                else:
+                    print("Erro no Mercado Pago (PIX):", payment)
+                    flash('Erro ao gerar cobrança Pix. Tente novamente.', 'danger')
+            except Exception as e:
+                print("Exceção ao criar PIX:", str(e))
+                flash('Falha na comunicação com o Mercado Pago.', 'danger')
 
         # --- PAGAMENTO VIA CARTÃO DE CRÉDITO ---
         elif metodo_pagamento == 'credit_card':
@@ -282,33 +293,39 @@ def checkout():
                 "payment_method_id": payment_method_id,
                 "payer": {
                     "email": session['usuario_email'],
-                    "first_name": session['usuario_nome']
+                    "first_name": first_name,
+                    "last_name": last_name
                 }
             }
 
-            payment_response = sdk.payment().create(payment_data)
-            payment = payment_response.get("response", {})
-            status = payment.get("status")
+            try:
+                payment_response = sdk.payment().create(payment_data)
+                payment = payment_response.get("response", {})
+                status = payment.get("status")
 
-            if status == "approved":
-                for _ in range(quantidade):
-                    novo_ingresso = Ingresso(
-                        codigo_qr=gerar_codigo_ingresso(),
-                        usuario_id=session['usuario_id'],
-                        lote_id=lote_ativo.id,
-                        pagamento_id=str(payment.get("id"))
-                    )
-                    db.session.add(novo_ingresso)
-                db.session.commit()
+                if status == "approved":
+                    for _ in range(quantidade):
+                        novo_ingresso = Ingresso(
+                            codigo_qr=gerar_codigo_ingresso(),
+                            usuario_id=session['usuario_id'],
+                            lote_id=lote_ativo.id,
+                            pagamento_id=str(payment.get("id"))
+                        )
+                        db.session.add(novo_ingresso)
+                    db.session.commit()
 
-                flash('Pagamento aprovado com sucesso! Seus ingressos foram gerados.', 'success')
-                return redirect(url_for('meus_ingressos'))
-            
-            elif status == "in_process":
-                flash('Pagamento em análise pelo seu banco. Acompanhe na aba Meus Ingressos.', 'info')
-                return redirect(url_for('meus_ingressos'))
-            else:
-                flash('Cartão recusado ou dados incorretos. Tente novamente.', 'danger')
+                    flash('Pagamento aprovado com sucesso! Seus ingressos foram gerados.', 'success')
+                    return redirect(url_for('meus_ingressos'))
+                
+                elif status == "in_process":
+                    flash('Pagamento em análise pelo seu banco. Acompanhe na aba Meus Ingressos.', 'info')
+                    return redirect(url_for('meus_ingressos'))
+                else:
+                    print("Erro no Mercado Pago (Cartão):", payment)
+                    flash('Cartão recusado ou dados incorretos. Tente novamente.', 'danger')
+            except Exception as e:
+                print("Exceção ao processar Cartão:", str(e))
+                flash('Falha na comunicação com a operadora do cartão.', 'danger')
 
     return render_template('checkout.html', lote=lote_ativo)
 
