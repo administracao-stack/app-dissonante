@@ -11,17 +11,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 
 # --------------------------------------------------------------------------
-# Configurações do App e Banco de Dados MySQL
+# Configurações do App e Banco de Dados (PostgreSQL / Render)
 # --------------------------------------------------------------------------
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolvimento')
 
-MYSQL_USER = os.environ.get('DB_USER', 'root')
-MYSQL_PASS = os.environ.get('DB_PASS', 'senha')
-MYSQL_HOST = os.environ.get('DB_HOST', 'localhost')
-MYSQL_PORT = os.environ.get('DB_PORT', '3306')
-MYSQL_DB   = os.environ.get('DB_NAME', 'dissonante_db')
+# Pega a DATABASE_URL do Render (ou do .env local)
+database_url = os.environ.get('DATABASE_URL')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASS}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
+# Correção automática para o SQLAlchemy se a URL começar com 'postgres://' em vez de 'postgresql://'
+if database_url and database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
