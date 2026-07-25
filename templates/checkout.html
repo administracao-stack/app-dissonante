@@ -12,114 +12,179 @@
     <!-- SDK v2 do Mercado Pago -->
     <script src="https://sdk.mercadopago.com/js/v2"></script>
 </head>
-<body class="bg-dark">
+<body>
+
+    <!-- Header Padrão do Site -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="/#eventos">Eventos</a>
+                    <a href="https://wa.me/5585999263606?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:14px; fill:currentColor; margin-right:5px;">
+                            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                        </svg>
+                        Fale Conosco
+                    </a>
+                </nav>
+
+                <div class="header-cta">
+                    <a href="{{ url_for('meus_ingressos') }}" class="btn-cliente">Meus Ingressos</a>
+                </div>
+            </div>
+        </div>
+    </header>
 
     {% set e_promocional = 'promocional' in lote.nome.lower() %}
 
-    <main class="login-wrapper">
-        <div class="login-card" style="max-width: 520px;">
+    <!-- Seção Principal de Checkout -->
+    <section class="services" style="padding: 120px 0 60px 0;">
+        <div class="container" style="max-width: 600px;">
             
-            <div class="login-header">
-                <a href="/" class="brand-logo" style="margin-bottom: 20px; display: inline-flex;">
-                    <div class="logo-icon">D</div>
-                    <div class="logo-text">
-                        <strong>DISSONANTE</strong> <span>Experiências</span>
-                    </div>
-                </a>
-                <h2 style="color: #ffffff; font-size: 1.4rem;">MaréVibes Halloween 2026</h2>
-                <p>31 de Outubro, às 17h • Itaperi, Fortaleza</p>
+            <div class="event-card" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 30px;">
                 
-                <div style="margin-top: 15px; padding: 8px 12px; background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; border-radius: 8px; color: #a5b4fc; font-weight: 600; font-size: 0.9rem;">
-                    Lote Atual: {{ lote.nome }} — R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}
-                </div>
-            </div>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }}" style="margin-bottom: 15px; padding: 10px; border-radius: 6px; color: #fff; font-size: 0.9rem; text-align: center;">
-                    {{ message }}
-                  </div>
-                {% endfor %}
-              {% endif %}
-            {% endwith %}
-
-            <form action="{{ url_for('checkout') }}" method="POST" id="form-checkout" class="login-form">
-                
-                <!-- Quantidade -->
-                <div class="form-group">
-                    <label for="quantidade">Quantidade de Ingressos</label>
-                    <select id="quantidade" name="quantidade" style="width: 100%; padding: 12px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 1rem;" onchange="atualizarValores()">
-                        <option value="1">1 Ingresso - R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}</option>
-                        <option value="2">2 Ingressos - R$ {{ "%.2f"|format(lote.preco * 2)|replace('.', ',') }}</option>
-                        <option value="3">3 Ingressos - R$ {{ "%.2f"|format(lote.preco * 3)|replace('.', ',') }}</option>
-                        <option value="4">4 Ingressos - R$ {{ "%.2f"|format(lote.preco * 4)|replace('.', ',') }}</option>
-                    </select>
-                </div>
-
-                <!-- Método de Pagamento -->
-                <div class="form-group" style="margin-top: 20px;">
-                    <label style="display: block; margin-bottom: 10px; color: #cbd5e1; font-weight: 600;">Forma de Pagamento</label>
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <h2 class="event-title" style="font-size: 1.8rem; margin-bottom: 8px;">MaréVibes Halloween 2026</h2>
+                    <p style="color: #94a3b8; font-size: 0.95rem;">📅 31 de Outubro, às 17h • Itaperi, Fortaleza</p>
                     
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <label style="flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; cursor: pointer; text-align: center; color: white;">
-                            <input type="radio" name="metodo_pagamento" value="pix" checked onclick="alternarPagamento('pix')">
-                            <span style="margin-left: 5px;">Pix</span>
-                        </label>
-
-                        <label style="flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 8px; background: #0f172a; cursor: {% if e_promocional %}not-allowed{% else %}pointer{% endif %}; text-align: center; color: {% if e_promocional %}#64748b{% else %}white{% endif %}; opacity: {% if e_promocional %}0.5{% else %}1{% endif %};">
-                            <input type="radio" name="metodo_pagamento" value="credit_card" {% if e_promocional %}disabled{% else %}onclick="alternarPagamento('credit_card')"{% endif %}>
-                            <span style="margin-left: 5px;">Cartão (Até 2x) {% if e_promocional %}(Indisponível){% endif %}</span>
-                        </label>
+                    <div style="margin-top: 15px; padding: 10px 15px; background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; border-radius: 8px; color: #a5b4fc; font-weight: 600; font-size: 0.95rem; display: inline-block;">
+                        Lote Atual: {{ lote.nome }} — R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}
                     </div>
-
-                    {% if e_promocional %}
-                        <p style="color: #a5b4fc; font-size: 0.8rem; margin-top: 5px;">* O Lote Promocional aceita apenas pagamento via Pix.</p>
-                    {% endif %}
                 </div>
 
-                <!-- Campos de Cartão de Crédito -->
-                <div id="secao-cartao" style="display: none; background: #0b1120; padding: 15px; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 20px;">
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label style="font-size: 0.85rem;">Número do Cartão</label>
-                        <div id="form-checkout__cardNumber" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
-                    </div>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                  {% if messages %}
+                    {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}" style="margin-bottom: 20px; padding: 12px; border-radius: 6px; color: #fff; font-size: 0.9rem; text-align: center; background-color: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444;">
+                        {{ message }}
+                      </div>
+                    {% endfor %}
+                  {% endif %}
+                {% endwith %}
 
-                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                        <div style="flex: 1;">
-                            <label style="font-size: 0.85rem;">Validade (MM/AA)</label>
-                            <div id="form-checkout__expirationDate" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="font-size: 0.85rem;">CVV</label>
-                            <div id="form-checkout__securityCode" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
-                        </div>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <label style="font-size: 0.85rem;">Nome Impresso no Cartão</label>
-                        <input type="text" id="form-checkout__cardholderName" placeholder="Nome do titular" style="width: 100%; padding: 10px; border-radius: 6px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 0.9rem;">
-                    </div>
-
-                    <div class="form-group">
-                        <label style="font-size: 0.85rem;">Parcelamento</label>
-                        <select name="installments" id="form-checkout__installments" style="width: 100%; padding: 10px; border-radius: 6px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 0.9rem;">
-                            <!-- Preenchido via JavaScript -->
+                <form action="{{ url_for('checkout') }}" method="POST" id="form-checkout">
+                    
+                    <!-- Quantidade -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="quantidade" style="display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: 600;">Quantidade de Ingressos</label>
+                        <select id="quantidade" name="quantidade" style="width: 100%; padding: 12px; border-radius: 8px; background: #0b1120; color: white; border: 1px solid #334155; font-size: 1rem;" onchange="atualizarValores()">
+                            <option value="1">1 Ingresso - R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}</option>
+                            <option value="2">2 Ingressos - R$ {{ "%.2f"|format(lote.preco * 2)|replace('.', ',') }}</option>
+                            <option value="3">3 Ingressos - R$ {{ "%.2f"|format(lote.preco * 3)|replace('.', ',') }}</option>
+                            <option value="4">4 Ingressos - R$ {{ "%.2f"|format(lote.preco * 4)|replace('.', ',') }}</option>
                         </select>
                     </div>
-                </div>
 
-                <input type="hidden" name="token" id="token">
-                <input type="hidden" name="payment_method_id" id="payment_method_id">
+                    <!-- Forma de Pagamento -->
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 10px; color: #cbd5e1; font-weight: 600;">Forma de Pagamento</label>
+                        
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <label style="flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 8px; background: #0b1120; cursor: pointer; text-align: center; color: white;">
+                                <input type="radio" name="metodo_pagamento" value="pix" checked onclick="alternarPagamento('pix')">
+                                <span style="margin-left: 5px;">Pix</span>
+                            </label>
 
-                <button type="submit" id="btn-submit" class="btn-submit" style="background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); cursor: pointer;">
-                    Ir para o Pagamento PIX
-                </button>
+                            <label style="flex: 1; padding: 12px; border: 1px solid #334155; border-radius: 8px; background: #0b1120; cursor: {% if e_promocional %}not-allowed{% else %}pointer{% endif %}; text-align: center; color: {% if e_promocional %}#64748b{% else %}white{% endif %}; opacity: {% if e_promocional %}0.5{% else %}1{% endif %};">
+                                <input type="radio" name="metodo_pagamento" value="credit_card" {% if e_promocional %}disabled{% else %}onclick="alternarPagamento('credit_card')"{% endif %}>
+                                <span style="margin-left: 5px;">Cartão (Até 2x) {% if e_promocional %}(Indisponível){% endif %}</span>
+                            </label>
+                        </div>
 
-            </form>
+                        {% if e_promocional %}
+                            <p style="color: #a5b4fc; font-size: 0.85rem; margin-top: 5px;">* O Lote Promocional aceita apenas pagamento via Pix.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Campos de Cartão de Crédito -->
+                    <div id="secao-cartao" style="display: none; background: #0b1120; padding: 15px; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 20px;">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; color: #cbd5e1;">Número do Cartão</label>
+                            <div id="form-checkout__cardNumber" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.85rem; color: #cbd5e1;">Validade (MM/AA)</label>
+                                <div id="form-checkout__expirationDate" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="font-size: 0.85rem; color: #cbd5e1;">CVV</label>
+                                <div id="form-checkout__securityCode" style="height: 42px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px;"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label style="font-size: 0.85rem; color: #cbd5e1;">Nome Impresso no Cartão</label>
+                            <input type="text" id="form-checkout__cardholderName" placeholder="Nome do titular" style="width: 100%; padding: 10px; border-radius: 6px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 0.9rem;">
+                        </div>
+
+                        <div class="form-group">
+                            <label style="font-size: 0.85rem; color: #cbd5e1;">Parcelamento</label>
+                            <select name="installments" id="form-checkout__installments" style="width: 100%; padding: 10px; border-radius: 6px; background: #0f172a; color: white; border: 1px solid #334155; font-size: 0.9rem;">
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="token" id="token">
+                    <input type="hidden" name="payment_method_id" id="payment_method_id">
+
+                    <button type="submit" id="btn-submit" class="ticket-btn" style="width: 100%; border: none; cursor: pointer; text-align: center; display: block;">
+                        Ir para o Pagamento PIX
+                    </button>
+
+                </form>
+            </div>
 
         </div>
-    </main>
+    </section>
+
+    <!-- Footer Padrão do Site -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Dissonante Experiências</h3>
+                <p>Transformando eventos em memórias vivas.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
+                    <li><a href="/#eventos">Eventos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Contato</h4>
+                <ul>
+                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
+                    <li>Fortaleza - CE</li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
 
     <script>
         const precoUnitario = parseFloat("{{ lote.preco }}");
