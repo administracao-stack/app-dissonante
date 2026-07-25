@@ -260,7 +260,7 @@ def checkout():
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
 
-        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual and usuario_atual.cpf else ''
+        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf) if (usuario_atual and usuario_atual.cpf) else '00000000000'
         ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone if usuario_atual else '')
 
         # Payload de pagador completo para o Mercado Pago
@@ -292,23 +292,25 @@ def checkout():
                 payment = payment_response.get("response", {})
 
                 if payment.get("status") in ["pending", "approved"]:
-                    pix_info = payment["point_of_interaction"]["transaction_data"]
+                    pix_info = payment.get("point_of_interaction", {}).get("transaction_data", {})
                     session['compra_atual'] = {
                         'metodo_pagamento': 'pix',
-                        'payment_id': payment["id"],
+                        'payment_id': payment.get("id"),
                         'lote_id': lote_ativo.id,
-                        'total': total,
+                        'total': float(total),
                         'quantidade': quantidade,
-                        'qr_code': pix_info["qr_code"],
-                        'qr_code_base64': pix_info["qr_code_base64"]
+                        'qr_code': pix_info.get("qr_code"),
+                        'qr_code_base64': pix_info.get("qr_code_base64")
                     }
                     return redirect(url_for('pagamento'))
                 else:
                     print("Erro no Mercado Pago (PIX):", payment)
                     flash('Erro ao gerar cobrança Pix. Tente novamente.', 'danger')
+                    return redirect(url_for('checkout'))
             except Exception as e:
                 print("Exceção ao criar PIX:", str(e))
                 flash('Falha na comunicação com o Mercado Pago.', 'danger')
+                return redirect(url_for('checkout'))
 
         # --- PAGAMENTO VIA CARTÃO DE CRÉDITO ---
         elif metodo_pagamento == 'credit_card':
@@ -350,7 +352,7 @@ def checkout():
                         'status': 'approved',
                         'payment_id': payment.get("id"),
                         'lote_id': lote_ativo.id,
-                        'total': total,
+                        'total': float(total),
                         'quantidade': quantidade
                     }
 
@@ -363,7 +365,7 @@ def checkout():
                         'status': 'in_process',
                         'payment_id': payment.get("id"),
                         'lote_id': lote_ativo.id,
-                        'total': total,
+                        'total': float(total),
                         'quantidade': quantidade
                     }
                     flash('Pagamento em análise pelo seu banco. Acompanhe o status nesta página ou em Meus Ingressos.', 'info')
@@ -371,9 +373,14 @@ def checkout():
                 else:
                     print("Erro no Mercado Pago (Cartão):", payment)
                     flash('Cartão recusado ou dados incorretos. Tente novamente.', 'danger')
+                    return redirect(url_for('checkout'))
             except Exception as e:
                 print("Exceção ao processar Cartão:", str(e))
                 flash('Falha na comunicação com a operadora do cartão.', 'danger')
+                return redirect(url_for('checkout'))
+
+        # Redirecionamento fallback de segurança
+        return redirect(url_for('checkout'))
 
     return render_template('checkout.html', lote=lote_ativo)
 
@@ -382,6 +389,7 @@ def checkout():
 def pagamento():
     compra = session.get('compra_atual')
     if not compra:
+        flash('Nenhuma transação ativa encontrada.', 'info')
         return redirect(url_for('checkout'))
     return render_template('pagamento.html', compra=compra)
 
