@@ -50,7 +50,7 @@
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}" style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 8px; font-size: 0.85rem; margin-bottom: 15px;">
+                            <div class="alert alert-{{ category }}">
                                 {{ message }}
                             </div>
                         {% endfor %}
@@ -60,7 +60,7 @@
                 <form action="{{ url_for('cadastro') }}" method="POST">
                     <div class="auth-group">
                         <label for="nome">Nome Completo</label>
-                        <input type="text" id="nome" name="nome" placeholder="Seu nome" required>
+                        <input type="text" id="nome" name="nome" placeholder="Seu nome completo" required>
                     </div>
 
                     <div class="auth-group">
@@ -68,21 +68,43 @@
                         <input type="email" id="email" name="email" placeholder="seu-melhor-email@exemplo.com" required>
                     </div>
 
+                    <div class="auth-row">
+                        <div class="auth-group">
+                            <label for="cpf">CPF</label>
+                            <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" maxlength="14" required>
+                        </div>
+
+                        <div class="auth-group">
+                            <label for="telefone">WhatsApp / Telefone</label>
+                            <input type="text" id="telefone" name="telefone" placeholder="(85) 99999-9999" maxlength="15" required>
+                        </div>
+                    </div>
+
                     <div class="auth-group">
                         <label for="senha">Senha</label>
-                        <input type="password" id="senha" name="senha" placeholder="Crie uma senha forte" required>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="senha" name="senha" placeholder="Crie uma senha forte" required>
+                            <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('senha', this)">
+                                👁️
+                            </button>
+                        </div>
                     </div>
 
                     <div class="auth-group">
                         <label for="confirmar_senha">Confirmar Senha</label>
-                        <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Repita a senha" required>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Repita a senha" required>
+                            <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('confirmar_senha', this)">
+                                👁️
+                            </button>
+                        </div>
                     </div>
 
                     <button type="submit" class="btn-auth-submit">Criar Conta</button>
                 </form>
 
-                <p style="margin-top: 20px; font-size: 0.85rem; color: #94a3b8; text-align: center;">
-                    Já tem uma conta? <a href="{{ url_for('login') }}" style="color: var(--primary); font-weight: 600;">Faça login</a>
+                <p class="auth-footer-text">
+                    Já tem uma conta? <a href="{{ url_for('login') }}">Faça login</a>
                 </p>
             </div>
 
@@ -90,10 +112,42 @@
     </main>
 
     <footer class="footer">
-        <div class="container footer-bottom" style="border-top: none; padding: 20px 0;">
+        <div class="container footer-bottom">
             <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
         </div>
     </footer>
+
+    <!-- Scripts de Máscaras e Alternância de Visibilidade da Senha -->
+    <script>
+        // Função para mostrar/ocultar senha
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁️';
+            }
+        }
+
+        // Máscara dinâmica de CPF
+        document.getElementById('cpf').addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d)/, '$1.$2');
+            v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = v;
+        });
+
+        // Máscara dinâmica de Telefone
+        document.getElementById('telefone').addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
+            v = v.replace(/(\d{5})(\d)/, '$1-$2');
+            e.target.value = v;
+        });
+    </script>
 
 </body>
 </html>
