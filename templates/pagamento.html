@@ -11,69 +11,157 @@
 </head>
 <body class="bg-dark">
 
-    <main class="login-wrapper">
-        <div class="login-card" style="max-width: 480px; text-align: center;">
-            
-            <a href="/" class="brand-logo" style="margin-bottom: 20px; display: inline-flex;">
-                <div class="logo-icon">D</div>
-                <div class="logo-text">
-                    <strong>DISSONANTE</strong> <span>Pagamentos</span>
+    <!-- Header Padrão do Site -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="/" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="/#eventos">Eventos</a>
+                    <a href="https://wa.me/5585999263606?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                        </svg>
+                        Fale Conosco
+                    </a>
+                </nav>
+
+                <div class="header-cta">
+                    <a href="{{ url_for('meus_ingressos') }}" class="btn-cliente">Meus Ingressos</a>
                 </div>
-            </a>
+            </div>
+        </div>
+    </header>
 
-            <h3 style="color: #ffffff; margin-bottom: 5px;">Aguardando Pagamento PIX</h3>
-            <p style="color: #94a3b8; font-size: 0.9rem;">Escaneie o QR Code abaixo com o app do seu banco ou use o Pix Copia e Cola</p>
+    <!-- Conteúdo Principal de Pagamento -->
+    <main class="container" style="max-width: 550px; padding-top: 60px; padding-bottom: 80px;">
+        <div class="card-admin" style="text-align: center;">
 
-            <!-- Renderização do QR Code em Base64 gerado pela API do Mercado Pago -->
-            <div class="qr-code-box" style="margin: 20px auto; padding: 15px; background: white; border-radius: 12px; display: inline-block;">
-                {% if compra.qr_code_base64 %}
-                    <img src="data:image/jpeg;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix Mercado Pago" style="width: 180px; height: 180px; display: block;" />
+            {% if compra.metodo_pagamento == 'credit_card' %}
+                <!-- ================= CASO 1: CARTÃO DE CRÉDITO ================= -->
+                {% if compra.status == 'approved' %}
+                    <div style="font-size: 3rem; margin-bottom: 10px;">✅</div>
+                    <h3 style="color: #ffffff; font-size: 1.6rem; margin-bottom: 8px;">Pagamento Aprovado!</h3>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">
+                        Seu pagamento via cartão de crédito foi processado com sucesso.
+                    </p>
                 {% else %}
-                    <p style="color: #000; font-size: 0.85rem;">Erro ao carregar imagem do QR Code.</p>
+                    <div style="font-size: 3rem; margin-bottom: 10px;">⏳</div>
+                    <h3 style="color: #ffffff; font-size: 1.6rem; margin-bottom: 8px;">Processando Pagamento</h3>
+                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">
+                        O pagamento está em análise pela operadora do cartão. Atualizaremos o status em instantes.
+                    </p>
                 {% endif %}
-            </div>
 
-            <!-- Pix Copia e Cola -->
-            {% if compra.qr_code %}
-            <div style="margin-bottom: 20px;">
-                <label style="color: #94a3b8; font-size: 0.8rem; display: block; margin-bottom: 5px;">Código Pix Copia e Cola:</label>
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly style="flex: 1; padding: 10px; border-radius: 6px; background: #0f172a; color: #94a3b8; border: 1px solid #334155; font-size: 0.85rem; text-overflow: ellipsis;">
-                    <button type="button" onclick="copiarPix()" id="btn-copiar" style="padding: 10px 15px; background: #6366f1; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Copiar</button>
+            {% else %}
+                <!-- ================= CASO 2: PAGAMENTO VIA PIX ================= -->
+                <h3 style="color: #ffffff; font-size: 1.6rem; margin-bottom: 8px;">Aguardando Pagamento PIX</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">
+                    Escaneie o QR Code abaixo com o app do seu banco ou utilize a opção Pix Copia e Cola.
+                </p>
+
+                <!-- Renderização do QR Code em Base64 -->
+                <div class="qr-code-box" style="margin: 0 auto 25px auto; padding: 15px; background: #ffffff; border-radius: 12px; display: inline-block;">
+                    {% if compra.qr_code_base64 %}
+                        <img src="data:image/jpeg;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix Mercado Pago" style="width: 200px; height: 200px; display: block;" />
+                    {% else %}
+                        <p style="color: #000; font-size: 0.85rem; margin: 0;">Erro ao carregar imagem do QR Code.</p>
+                    {% endif %}
                 </div>
-            </div>
+
+                <!-- Pix Copia e Cola -->
+                {% if compra.qr_code %}
+                <div style="margin-bottom: 25px; text-align: left;">
+                    <label class="form-label" style="font-size: 0.85rem;">Código Pix Copia e Cola:</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly class="form-control" style="margin-bottom: 0; font-size: 0.85rem; text-overflow: ellipsis; background-color: var(--bg-night-dark);">
+                        <button type="button" onclick="copiarPix()" id="btn-copiar" class="btn-cookie" style="padding: 0 20px; font-size: 0.9rem;">Copiar</button>
+                    </div>
+                </div>
+                {% endif %}
             {% endif %}
 
-            <div style="background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 20px;">
-                <p style="color: #cbd5e1; font-size: 0.9rem;">Resumo do Pedido:</p>
-                <strong style="color: #a855f7; font-size: 1.2rem;">{{ compra.quantidade }}x Ingresso(s) = R$ {{ "%.2f"|format(compra.total)|replace('.', ',') }}</strong>
+            <!-- Resumo do Pedido (Exibido para ambos os métodos) -->
+            <div style="background: var(--bg-night-dark); padding: 18px; border-radius: 10px; border: 1px solid var(--border-dark); margin-bottom: 25px;">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 4px;">Resumo do Pedido</p>
+                <strong style="color: #a855f7; font-size: 1.3rem;">
+                    {{ compra.quantidade }}x Ingresso(s) — R$ {{ "%.2f"|format(compra.total)|replace('.', ',') }}
+                </strong>
             </div>
 
-            <p style="color: #64748b; font-size: 0.85rem; margin-top: 10px;">
-                O pagamento é identificado automaticamente pelo sistema em instantes. Assim que aprovado, seus ingressos estarão disponíveis na aba <strong>Meus Ingressos</strong>.
+            <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 25px;">
+                Assim que a transação for confirmada pelo sistema, seus ingressos estarão disponíveis na sua conta.
             </p>
 
-            <a href="{{ url_for('meus_ingressos') }}" class="btn-submit" style="display: block; text-decoration: none; text-align: center; margin-top: 15px; background: #334155;">
+            <!-- Ações -->
+            <a href="{{ url_for('meus_ingressos') }}" class="ticket-btn" style="text-decoration: none;">
                 Ir para Meus Ingressos
             </a>
 
         </div>
     </main>
 
+    <!-- Footer Padrão do Site -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Dissonante Experiências</h3>
+                <p>Transformando eventos em memórias vivas.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
+                    <li><a href="/#eventos">Eventos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Contato</h4>
+                <ul>
+                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
+                    <li>Fortaleza - CE</li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
     <script>
         function copiarPix() {
             const inputPix = document.getElementById("pix-copia-cola");
+            if (!inputPix) return;
             inputPix.select();
             inputPix.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(inputPix.value);
             
             const btnCopiar = document.getElementById("btn-copiar");
             btnCopiar.innerText = "Copiado! ✓";
-            btnCopiar.style.background = "#16a34a";
+            btnCopiar.style.background = "var(--success-color)";
             
             setTimeout(() => {
                 btnCopiar.innerText = "Copiar";
-                btnCopiar.style.background = "#6366f1";
+                btnCopiar.style.background = "";
             }, 3000);
         }
     </script>
