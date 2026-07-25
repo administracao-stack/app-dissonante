@@ -16,13 +16,23 @@
     --bg-light: #f8f9fa;
     --text-dark: #212529;
     --text-muted: #94a3b8;
+    
+    /* Cores de Destaque */
     --gold: #c5a059;            /* Tom dourado idêntico ao logo */
     --primary: #6366f1;
     --primary-hover: #4f46e5;
+    --accent-purple: #a855f7;   /* Roxo complementar para gradientes */
+    
+    /* Redes & Status */
+    --whatsapp-green: #25d366;
+    --whatsapp-hover: #20ba5a;
     --success-color: #16a34a;
     --danger-color: #dc2626;
+    
+    /* Bordas & Fontes */
     --border-dark: rgba(255, 255, 255, 0.1);
-    --font-main: 'Inter', sans-serif;
+    --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+    --transition-fast: all 0.3s ease;
 }
 
 body {
@@ -48,7 +58,7 @@ body.bg-dark {
 a {
     text-decoration: none;
     color: inherit;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
 }
 
 /* ==========================================================================
@@ -123,7 +133,7 @@ a {
     color: #b3b3b3;
     font-size: 0.95rem;
     font-weight: 500;
-    transition: color 0.3s ease;
+    transition: var(--transition-fast);
 }
 
 .nav-menu a:hover {
@@ -135,13 +145,13 @@ a {
 }
 
 .btn-cliente {
-    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
     color: #ffffff !important;
     padding: 10px 20px;
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
     box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
 }
 
@@ -239,7 +249,7 @@ a {
 }
 
 .about-text {
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 1.05rem;
     line-height: 1.8;
     margin-bottom: 30px;
@@ -249,7 +259,7 @@ a {
    Seção Serviços / Eventos
    ========================================================================== */
 .services {
-    background-color: #f8f9fa;
+    background-color: var(--bg-light);
     text-align: center;
 }
 
@@ -321,7 +331,7 @@ a {
 
 .event-description {
     font-size: 1rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     margin-bottom: 35px;
     line-height: 1.6;
 }
@@ -329,7 +339,7 @@ a {
 .ticket-btn {
     display: block;
     width: 100%;
-    background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
     color: #ffffff !important;
     padding: 15px;
     border-radius: 8px;
@@ -337,7 +347,7 @@ a {
     font-size: 1.05rem;
     text-align: center;
     box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
 }
 
 .ticket-btn:hover {
@@ -423,7 +433,7 @@ a {
 }
 
 .info-box-label {
-    color: #94a3b8;
+    color: var(--text-muted);
     display: block;
     font-size: 0.75rem;
     font-weight: 700;
@@ -446,7 +456,7 @@ a {
 
 .btn-whatsapp-corpo {
     display: inline-block;
-    background-color: #25d366;
+    background-color: var(--whatsapp-green);
     color: #ffffff;
     padding: 12px 20px;
     border-radius: 8px;
@@ -454,13 +464,13 @@ a {
     font-weight: 700;
     text-align: center;
     width: 100%;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
     box-sizing: border-box;
     box-shadow: 0 0 10px rgba(37, 211, 102, 0.3);
 }
 
 .btn-whatsapp-corpo:hover {
-    background-color: #20ba5a;
+    background-color: var(--whatsapp-hover);
     box-shadow: 0 0 18px rgba(37, 211, 102, 0.6);
 }
 
@@ -497,7 +507,7 @@ a {
 
 .card-stat h3 {
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 10px;
@@ -529,14 +539,14 @@ a {
     max-width: 400px;
     margin: 0 auto;
     padding: 18px;
-    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
     color: #ffffff;
     text-align: center;
     text-decoration: none;
     font-weight: 800;
     font-size: 1.1rem;
     border-radius: 12px;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
     box-sizing: border-box;
     box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
 }
@@ -587,11 +597,11 @@ a {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
 }
 
 .btn-buscar {
-    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
     color: #ffffff;
 }
 
@@ -670,7 +680,7 @@ a {
     font-family: var(--font-main);
     box-sizing: border-box;
     color: #ffffff;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
 }
 
 .form-control:focus {
@@ -711,7 +721,7 @@ a {
    ========================================================================== */
 .footer {
     background-color: var(--bg-night-dark);
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 0.9rem;
 }
 
@@ -764,7 +774,7 @@ a {
 }
 
 .data-evento {
-    color: #94a3b8;
+    color: var(--text-muted);
     margin-bottom: 20px;
     font-size: 0.95rem;
 }
@@ -830,7 +840,7 @@ a {
    Botão WhatsApp no Menu Superior
    ========================================================================== */
 .nav-menu .btn-whatsapp {
-    background-color: #25D366 !important;
+    background-color: var(--whatsapp-green) !important;
     color: #ffffff !important;
     padding: 8px 16px;
     border-radius: 20px;
@@ -840,7 +850,7 @@ a {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
     box-shadow: 0 0 10px rgba(37, 211, 102, 0.35);
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -849,7 +859,7 @@ a {
 }
 
 .nav-menu .btn-whatsapp:hover {
-    background-color: #20ba5a !important;
+    background-color: var(--whatsapp-hover) !important;
     box-shadow: 0 0 18px rgba(37, 211, 102, 0.65);
     transform: translateY(-1px);
 }
@@ -901,7 +911,7 @@ a {
 }
 
 .btn-cookie {
-    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
     color: #ffffff;
     border: none;
     padding: 10px 18px;
@@ -910,7 +920,7 @@ a {
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
 }
 
 .btn-cookie:hover {
@@ -957,7 +967,7 @@ a {
 }
 
 .auth-benefits p {
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 0.9rem;
     margin-bottom: 25px;
     line-height: 1.5;
@@ -993,7 +1003,7 @@ a {
 }
 
 .auth-form-side p.form-sub {
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 0.85rem;
     margin-bottom: 25px;
 }
@@ -1018,7 +1028,7 @@ a {
     padding: 12px 15px;
     color: #ffffff;
     font-size: 0.95rem;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
 }
 
 .auth-group input:focus {
@@ -1027,39 +1037,80 @@ a {
     box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
 }
 
-.btn-auth-submit {
+.btn-auth-submit, .btn-enviar {
     width: 100%;
-    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
     color: #ffffff;
     border: none;
-    padding: 12px;
+    padding: 12px 14px;
     border-radius: 8px;
     font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition-fast);
 }
 
-.btn-auth-submit:hover {
+.btn-auth-submit:hover, .btn-enviar:hover {
     filter: brightness(1.15);
     transform: translateY(-1px);
 }
 
-.btn-enviar {
-    background: linear-gradient(90deg, var(--primary) 0%, #a855f7 100%);
-    color: #ffffff;
-    font-weight: 700;
+/* ==========================================================================
+   Atualizações do Formulário de Cadastro (Máscaras e Senha)
+   ========================================================================== */
+/* Disposição em 2 colunas para CPF e Telefone */
+.auth-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* Wrapper para alinhar o input e o botão de mostrar/ocultar senha */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper input {
+    padding-right: 45px; /* Espaço para o botão não sobrepor o texto */
     width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    cursor: pointer;
 }
 
-.btn-enviar:hover {
-    filter: brightness(1.15);
-    transform: translateY(-1px);
+.btn-toggle-password {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0;
+    line-height: 1;
+    user-select: none;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+    color: #cbd5e1;
+}
+
+.btn-toggle-password:hover {
+    opacity: 1;
+}
+
+.auth-footer-text {
+    margin-top: 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.auth-footer-text a {
+    color: var(--accent-purple);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-footer-text a:hover {
+    text-decoration: underline;
 }
 
 /* ==========================================================================
@@ -1100,5 +1151,9 @@ a {
         bottom: 10px;
         left: 10px;
         right: 10px;
+    }
+    .auth-row {
+        grid-template-columns: 1fr;
+        gap: 0;
     }
 }
