@@ -1,4 +1,5 @@
 import os
+import re
 import random
 import string
 import mercadopago
@@ -18,7 +19,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolviment
 # Pega a DATABASE_URL do Render (ou do .env local)
 database_url = os.environ.get('DATABASE_URL')
 
-# Correção automática para o SQLAlchemy se a URL começar com 'postgres://' em vez de 'postgresql://'
+# Correção automática para o SQLAlchemy se a URL começar com 'postgres://'
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
@@ -43,6 +44,8 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
+    cpf = db.Column(db.String(14), nullable=True)        # CPF do cliente
+    telefone = db.Column(db.String(20), nullable=True)   # Telefone/WhatsApp do cliente
     senha_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
@@ -54,7 +57,7 @@ class Lote(db.Model):
     __tablename__ = 'lotes'
 
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(50), nullable=False)  # Ex: 'Lote Promocional', '1º Lote', '2º Lote'
+    nome = db.Column(db.String(50), nullable=False)  # Ex: 'Lote Promocional', '1º Lote'
     preco = db.Column(db.Float, nullable=False)
     quantidade_total = db.Column(db.Integer, nullable=False)
     ativo = db.Column(db.Boolean, default=False)
@@ -111,6 +114,13 @@ def gerar_codigo_ingresso():
     hash_aleatorio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
     return f"DISSONANTE-HLW-{hash_aleatorio}"
 
+def extrair_ddd_e_numero(telefone_raw):
+    """Extrai DDD (2 dígitos) e número de telefone limpando caracteres."""
+    numeros = re.sub(r'\D', '', str(telefone_raw or ''))
+    if len(numeros) >= 10:
+        return numeros[:2], numeros[2:]
+    return "85", numeros if numeros else "999999999"
+
 # --------------------------------------------------------------------------
 # Rotas Públicas
 # --------------------------------------------------------------------------
@@ -150,8 +160,10 @@ def contato():
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
-        nome = request.form.get('nome')
+        nome = request.form.get('nome', '').strip()
         email = request.form.get('email', '').strip().lower()
+        cpf = re.sub(r'\D', '', request.form.get('cpf', ''))
+        telefone = re.sub(r'\D', '', request.form.get('telefone', ''))
         senha = request.form.get('senha')
         confirmar = request.form.get('confirmar_senha')
 
@@ -164,7 +176,13 @@ def cadastro():
             return redirect(url_for('login'))
 
         hash_senha = generate_password_hash(senha)
-        novo_usuario = Usuario(nome=nome, email=email, senha_hash=hash_senha)
+        novo_usuario = Usuario(
+            nome=nome,
+            email=email,
+            cpf=cpf,
+            telefone=telefone,
+            senha_hash=hash_senha
+        )
         
         db.session.add(novo_usuario)
         db.session.commit()
@@ -235,10 +253,30 @@ def checkout():
         preco_unitario = lote_ativo.preco
         total = quantidade * preco_unitario
 
-        # Separação adequada do Nome e Sobrenome para exigência das APIS
-        nome_completo = session.get('usuario_nome', 'Cliente').strip().split(' ', 1)
+        # Busca dados atualizados do usuário no BD para montar a requisição do Mercado Pago
+        usuario_atual = Usuario.query.get(session['usuario_id'])
+
+        nome_completo = (usuario_atual.nome if usuario_atual else session.get('usuario_nome', 'Cliente')).strip().split(' ', 1)
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
+
+        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual and usuario_atual.cpf else ''
+        ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone if usuario_atual else '')
+
+        # Payload de pagador completo para o Mercado Pago
+        payer_payload = {
+            "email": session['usuario_email'],
+            "first_name": first_name,
+            "last_name": last_name,
+            "identification": {
+                "type": "CPF",
+                "number": cpf_usuario
+            },
+            "phone": {
+                "area_code": ddd_tel,
+                "number": num_tel
+            }
+        }
 
         # --- PAGAMENTO VIA PIX ---
         if metodo_pagamento == 'pix':
@@ -246,11 +284,7 @@ def checkout():
                 "transaction_amount": float(total),
                 "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
                 "payment_method_id": "pix",
-                "payer": {
-                    "email": session['usuario_email'],
-                    "first_name": first_name,
-                    "last_name": last_name
-                }
+                "payer": payer_payload
             }
 
             try:
@@ -260,6 +294,7 @@ def checkout():
                 if payment.get("status") in ["pending", "approved"]:
                     pix_info = payment["point_of_interaction"]["transaction_data"]
                     session['compra_atual'] = {
+                        'metodo_pagamento': 'pix',
                         'payment_id': payment["id"],
                         'lote_id': lote_ativo.id,
                         'total': total,
@@ -291,11 +326,7 @@ def checkout():
                 "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
                 "installments": installments,
                 "payment_method_id": payment_method_id,
-                "payer": {
-                    "email": session['usuario_email'],
-                    "first_name": first_name,
-                    "last_name": last_name
-                }
+                "payer": payer_payload
             }
 
             try:
@@ -314,12 +345,29 @@ def checkout():
                         db.session.add(novo_ingresso)
                     db.session.commit()
 
+                    session['compra_atual'] = {
+                        'metodo_pagamento': 'credit_card',
+                        'status': 'approved',
+                        'payment_id': payment.get("id"),
+                        'lote_id': lote_ativo.id,
+                        'total': total,
+                        'quantidade': quantidade
+                    }
+
                     flash('Pagamento aprovado com sucesso! Seus ingressos foram gerados.', 'success')
-                    return redirect(url_for('meus_ingressos'))
+                    return redirect(url_for('pagamento'))
                 
                 elif status == "in_process":
-                    flash('Pagamento em análise pelo seu banco. Acompanhe na aba Meus Ingressos.', 'info')
-                    return redirect(url_for('meus_ingressos'))
+                    session['compra_atual'] = {
+                        'metodo_pagamento': 'credit_card',
+                        'status': 'in_process',
+                        'payment_id': payment.get("id"),
+                        'lote_id': lote_ativo.id,
+                        'total': total,
+                        'quantidade': quantidade
+                    }
+                    flash('Pagamento em análise pelo seu banco. Acompanhe o status nesta página ou em Meus Ingressos.', 'info')
+                    return redirect(url_for('pagamento'))
                 else:
                     print("Erro no Mercado Pago (Cartão):", payment)
                     flash('Cartão recusado ou dados incorretos. Tente novamente.', 'danger')
