@@ -2,9 +2,9 @@ import os
 import re
 import random
 import string
-import mercadopago
+from datetime import datetime, timedelta
 from functools import wraps
-from datetime import datetime
+import mercadopago
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,6 +15,9 @@ app = Flask(__name__)
 # Configurações do App e Banco de Dados (PostgreSQL / Render)
 # --------------------------------------------------------------------------
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolvimento')
+
+# Duração estendida da sessão para não deslogar durante o checkout
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 # Pega a DATABASE_URL do Render (ou do .env local)
 database_url = os.environ.get('DATABASE_URL')
@@ -201,6 +204,9 @@ def login():
         usuario = Usuario.query.filter_by(email=email).first()
 
         if usuario and check_password_hash(usuario.senha_hash, senha):
+            # Garante a permanência do cookie de sessão
+            session.permanent = True
+            
             session['usuario_id'] = usuario.id
             session['usuario_nome'] = usuario.nome
             session['usuario_email'] = usuario.email
@@ -233,6 +239,15 @@ def checkout():
         flash('Nenhum lote de ingressos disponível no momento.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
+    # Validação e busca segura do usuário logado
+    usuario_id = session.get('usuario_id')
+    usuario_atual = Usuario.query.get(usuario_id) if usuario_id else None
+
+    if not usuario_atual:
+        session.clear()
+        flash('Sua sessão expirou. Por favor, faça login novamente.', 'warning')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         quantidade = int(request.form.get('quantidade', 1))
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
@@ -253,19 +268,16 @@ def checkout():
         preco_unitario = lote_ativo.preco
         total = quantidade * preco_unitario
 
-        # Busca dados atualizados do usuário no BD para montar a requisição do Mercado Pago
-        usuario_atual = Usuario.query.get(session['usuario_id'])
-
-        nome_completo = (usuario_atual.nome if usuario_atual else session.get('usuario_nome', 'Cliente')).strip().split(' ', 1)
+        # Formatação dos dados do pagador
+        nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
 
-        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf) if (usuario_atual and usuario_atual.cpf) else '00000000000'
-        ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone if usuario_atual else '')
+        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual.cpf else '00000000000'
+        ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone)
 
-        # Payload de pagador completo para o Mercado Pago
         payer_payload = {
-            "email": session['usuario_email'],
+            "email": usuario_atual.email,
             "first_name": first_name,
             "last_name": last_name,
             "identification": {
@@ -318,7 +330,6 @@ def checkout():
             installments = int(request.form.get('installments', 1))
             payment_method_id = request.form.get('payment_method_id')
 
-            # Trava no backend limitando parcelas a no máximo 2x
             if installments > 2:
                 installments = 2
 
@@ -340,7 +351,7 @@ def checkout():
                     for _ in range(quantidade):
                         novo_ingresso = Ingresso(
                             codigo_qr=gerar_codigo_ingresso(),
-                            usuario_id=session['usuario_id'],
+                            usuario_id=usuario_atual.id,
                             lote_id=lote_ativo.id,
                             pagamento_id=str(payment.get("id"))
                         )
@@ -379,7 +390,6 @@ def checkout():
                 flash('Falha na comunicação com a operadora do cartão.', 'danger')
                 return redirect(url_for('checkout'))
 
-        # Redirecionamento fallback de segurança
         return redirect(url_for('checkout'))
 
     return render_template('checkout.html', lote=lote_ativo)
