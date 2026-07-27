@@ -88,13 +88,14 @@ def inicializar_banco():
     with app.app_context():
         db.create_all()
         
-        # Garante a existência do Lote Promocional (R$ 160,00)
+        # Garante a existência do Lote Promocional (R$ 160,00) - Limitado a 15 unidades
         lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
         if not lote_promo:
-            lote_promo = Lote(nome='Lote Promocional', preco=160.00, quantidade_total=100, ativo=True)
+            lote_promo = Lote(nome='Lote Promocional', preco=160.00, quantidade_total=15, ativo=True)
             db.session.add(lote_promo)
         else:
-            lote_promo.preco = 160.00  # Atualiza valor existente caso necessário
+            lote_promo.preco = 160.00
+            lote_promo.quantidade_total = 15  # Atualiza o limite para 15 unidades
 
         # Garante a existência do 1º Lote (R$ 230,00)
         lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
@@ -102,7 +103,7 @@ def inicializar_banco():
             lote_1 = Lote(nome='1º Lote', preco=230.00, quantidade_total=150, ativo=False)
             db.session.add(lote_1)
         else:
-            lote_1.preco = 230.00  # Atualiza valor existente caso necessário
+            lote_1.preco = 230.00
 
         db.session.commit()
 
