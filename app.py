@@ -87,10 +87,24 @@ def inicializar_banco():
     """Cria o esquema do banco de dados e semente inicial de forma segura."""
     with app.app_context():
         db.create_all()
-        if not Lote.query.first():
-            lote_inicial = Lote(nome='Lote Promocional', preco=35.00, quantidade_total=100, ativo=True)
-            db.session.add(lote_inicial)
-            db.session.commit()
+        
+        # Garante a existência do Lote Promocional (R$ 160,00)
+        lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
+        if not lote_promo:
+            lote_promo = Lote(nome='Lote Promocional', preco=160.00, quantidade_total=100, ativo=True)
+            db.session.add(lote_promo)
+        else:
+            lote_promo.preco = 160.00  # Atualiza valor existente caso necessário
+
+        # Garante a existência do 1º Lote (R$ 230,00)
+        lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
+        if not lote_1:
+            lote_1 = Lote(nome='1º Lote', preco=230.00, quantidade_total=150, ativo=False)
+            db.session.add(lote_1)
+        else:
+            lote_1.preco = 230.00  # Atualiza valor existente caso necessário
+
+        db.session.commit()
 
 # --------------------------------------------------------------------------
 # Decoradores e Funções Auxiliares
@@ -139,8 +153,9 @@ def quem_somos():
 
 @app.route('/evento/marevibes-halloween')
 def evento_marevibes():
+    lotes = Lote.query.order_by(Lote.id.asc()).all()
     lote_ativo = Lote.query.filter_by(ativo=True).first()
-    return render_template('evento_marevibes.html', lote=lote_ativo)
+    return render_template('evento_marevibes.html', lote=lote_ativo, lotes=lotes)
 
 @app.route('/termos-de-uso')
 def termos_de_uso():
@@ -232,7 +247,12 @@ def logout():
 @app.route('/checkout', methods=['GET', 'POST'])
 @cliente_required
 def checkout():
-    lote_ativo = Lote.query.filter_by(ativo=True).first()
+    # Permite passar o lote desejado via URL (?lote_id=X) ou usa o ativo
+    lote_id_req = request.args.get('lote_id', type=int)
+    if lote_id_req:
+        lote_ativo = Lote.query.get(lote_id_req)
+    else:
+        lote_ativo = Lote.query.filter_by(ativo=True).first()
 
     if not lote_ativo:
         flash('Nenhum lote de ingressos disponível no momento.', 'warning')
@@ -252,14 +272,14 @@ def checkout():
         
         if 'promocional' in lote_ativo.nome.lower() and metodo_pagamento != 'pix':
             flash('O Lote Promocional aceita apenas pagamento via Pix.', 'warning')
-            return redirect(url_for('checkout'))
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
         ingressos_vendidos_lote = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
         disponiveis_lote = lote_ativo.quantidade_total - ingressos_vendidos_lote
 
         if quantidade > disponiveis_lote:
             flash(f'Restam apenas {disponiveis_lote} ingresso(s) no {lote_ativo.nome}.', 'danger')
-            return redirect(url_for('checkout'))
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
         preco_unitario = lote_ativo.preco
         total = quantidade * preco_unitario
@@ -313,11 +333,11 @@ def checkout():
                     return redirect(url_for('pagamento'))
                 else:
                     flash('Erro ao gerar cobrança Pix. Tente novamente.', 'danger')
-                    return redirect(url_for('checkout'))
+                    return redirect(url_for('checkout', lote_id=lote_ativo.id))
             except Exception as e:
                 print("Exceção ao criar PIX:", str(e))
                 flash('Falha na comunicação com o Mercado Pago.', 'danger')
-                return redirect(url_for('checkout'))
+                return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
         # --- PAGAMENTO VIA CARTÃO DE CRÉDITO ---
         elif metodo_pagamento == 'credit_card':
@@ -379,11 +399,11 @@ def checkout():
                     return redirect(url_for('pagamento'))
                 else:
                     flash('Cartão recusado ou dados incorretos. Tente novamente.', 'danger')
-                    return redirect(url_for('checkout'))
+                    return redirect(url_for('checkout', lote_id=lote_ativo.id))
             except Exception as e:
                 print("Exceção ao processar Cartão:", str(e))
                 flash('Falha na comunicação com a operadora do cartão.', 'danger')
-                return redirect(url_for('checkout'))
+                return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
     return render_template('checkout.html', lote=lote_ativo)
 
@@ -467,6 +487,17 @@ def admin_dashboard():
     }
     
     return render_template('admin/dashboard.html', stats=stats, lotes=lotes)
+
+@app.route('/admin/trocar-lote/<int:lote_id>')
+@admin_required
+def trocar_lote_ativo(lote_id):
+    """Auxiliar para ativar/desativar lotes para testes."""
+    Lote.query.update({Lote.ativo: False})
+    lote_alvo = Lote.query.get_or_404(lote_id)
+    lote_alvo.ativo = True
+    db.session.commit()
+    flash(f'Lote ativo alterado para: {lote_alvo.nome} (R$ {lote_alvo.preco:.2f})', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/validar', methods=['GET', 'POST'])
 @admin_required
