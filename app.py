@@ -33,7 +33,7 @@ db = SQLAlchemy(app)
 # --------------------------------------------------------------------------
 # Configuração do Mercado Pago
 # --------------------------------------------------------------------------
-MERCADOPAGO_TOKEN = os.environ.get('MP_ACCESS_TOKEN', 'SEU_ACCESS_TOKEN_DO_MERCADO_PAGO')
+MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN')
 sdk = mercadopago.SDK(MERCADOPAGO_TOKEN)
 
 # --------------------------------------------------------------------------
