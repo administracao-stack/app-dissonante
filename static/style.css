@@ -18,7 +18,7 @@
     --text-muted: #94a3b8;
     
     /* Cores de Destaque */
-    --gold: #c5a059;             /* Tom dourado idêntico ao logo */
+    --gold: #c5a059;              /* Tom dourado idêntico ao logo */
     --primary: #6366f1;
     --primary-hover: #4f46e5;
     --accent-purple: #a855f7;   /* Roxo complementar para gradientes */
@@ -1119,6 +1119,42 @@ a {
 
 .auth-footer-text a:hover {
     text-decoration: underline;
+}
+
+/* ==========================================================================
+   Estilos da Página de Checkout & Gradiente Neon (Exemplo A)
+   ========================================================================== */
+
+/* Título principal do checkout com brilho Neon */
+.checkout-event-title,
+.checkout-card h1,
+.card-admin h1 {
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    /* Efeito neon roxo/índigo de alto contraste para destacar sobre o fundo escuro */
+    text-shadow: 0 0 15px rgba(168, 85, 247, 0.65), 0 0 30px rgba(99, 102, 241, 0.4);
+}
+
+/* Destaque para palavras de marca/evento dentro do título */
+.neon-highlight {
+    background: linear-gradient(90deg, #a855f7 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.8));
+}
+
+/* Ajustes visuais nos blocos e opções de pagamento no Checkout */
+#form-checkout label:hover {
+    border-color: var(--primary) !important;
+    transition: var(--transition-fast);
+}
+
+#form-checkout input[type="radio"]:checked + span {
+    color: #a855f7;
+    font-weight: 700;
 }
 
 /* ==========================================================================
