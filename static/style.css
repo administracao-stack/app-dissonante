@@ -12,13 +12,13 @@
     /* Paleta Céu Noturno / Night Sky */
     --bg-night-dark: #070a13;   /* Azul Noite Profundo Escuro */
     --bg-night-light: #172036;  /* Azul Noite Suave (Centro da Hero) */
-    --bg-card: #0f172a;         /* Card em tom azul-escuro slate */
+    --bg-card: #0f172a;          /* Card em tom azul-escuro slate */
     --bg-light: #f8f9fa;
     --text-dark: #212529;
     --text-muted: #94a3b8;
     
     /* Cores de Destaque */
-    --gold: #c5a059;            /* Tom dourado idêntico ao logo */
+    --gold: #c5a059;             /* Tom dourado idêntico ao logo */
     --primary: #6366f1;
     --primary-hover: #4f46e5;
     --accent-purple: #a855f7;   /* Roxo complementar para gradientes */
@@ -1056,16 +1056,14 @@ a {
 }
 
 /* ==========================================================================
-   Atualizações do Formulário de Cadastro (Máscaras e Senha)
+   Atualizações do Formulário de Cadastro (Máscaras e Senha Formal)
    ========================================================================== */
-/* Disposição em 2 colunas para CPF e Telefone */
 .auth-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
 }
 
-/* Wrapper para alinhar o input e o botão de mostrar/ocultar senha */
 .password-input-wrapper {
     position: relative;
     display: flex;
@@ -1073,7 +1071,7 @@ a {
 }
 
 .password-input-wrapper input {
-    padding-right: 45px; /* Espaço para o botão não sobrepor o texto */
+    padding-right: 45px; /* Espaço para o botão não sobrepor o texto da senha */
     width: 100%;
 }
 
@@ -1083,17 +1081,27 @@ a {
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 1.1rem;
-    padding: 0;
-    line-height: 1;
-    user-select: none;
-    opacity: 0.7;
-    transition: opacity 0.2s ease;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: #cbd5e1;
+    opacity: 0.7;
+    transition: opacity 0.2s ease, color 0.2s ease;
 }
 
 .btn-toggle-password:hover {
     opacity: 1;
+    color: #ffffff;
+}
+
+.btn-toggle-password:focus {
+    outline: none;
+}
+
+.btn-toggle-password .icon-eye {
+    display: block;
+    pointer-events: none;
 }
 
 .auth-footer-text {
