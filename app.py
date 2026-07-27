@@ -95,7 +95,7 @@ def inicializar_banco():
             db.session.add(lote_promo)
         else:
             lote_promo.preco = 160.00
-            lote_promo.quantidade_total = 15  # Atualiza o limite para 15 unidades
+            lote_promo.quantidade_total = 15
 
         # Garante a existência do 1º Lote (R$ 230,00)
         lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
@@ -248,7 +248,6 @@ def logout():
 @app.route('/checkout', methods=['GET', 'POST'])
 @cliente_required
 def checkout():
-    # Permite passar o lote desejado via URL (?lote_id=X) ou usa o ativo
     lote_id_req = request.args.get('lote_id', type=int)
     if lote_id_req:
         lote_ativo = Lote.query.get(lote_id_req)
@@ -289,22 +288,26 @@ def checkout():
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
 
-        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual.cpf else '00000000000'
+        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf or '')
         ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone)
 
+        # Trata estrutura do Payer exigida pela API do Mercado Pago
         payer_payload = {
             "email": usuario_atual.email,
             "first_name": first_name,
             "last_name": last_name,
-            "identification": {
-                "type": "CPF",
-                "number": cpf_usuario
-            },
             "phone": {
                 "area_code": ddd_tel,
                 "number": num_tel
             }
         }
+
+        # Adiciona a identificação apenas se houver CPF cadastrado
+        if len(cpf_usuario) == 11:
+            payer_payload["identification"] = {
+                "type": "CPF",
+                "number": cpf_usuario
+            }
 
         # --- PAGAMENTO VIA PIX ---
         if metodo_pagamento == 'pix':
@@ -319,8 +322,12 @@ def checkout():
             try:
                 payment_response = sdk.payment().create(payment_data)
                 payment = payment_response.get("response", {})
+                status_code = payment_response.get("status")
 
-                if payment.get("status") in ["pending", "approved"]:
+                print(f"--- [DEBUG LOG PIX] Status: {status_code} ---")
+                print("Response Payload:", payment)
+
+                if status_code in [200, 201] and payment.get("status") in ["pending", "approved"]:
                     pix_info = payment.get("point_of_interaction", {}).get("transaction_data", {})
                     session['compra_atual'] = {
                         'metodo_pagamento': 'pix',
@@ -333,11 +340,15 @@ def checkout():
                     }
                     return redirect(url_for('pagamento'))
                 else:
-                    flash('Erro ao gerar cobrança Pix. Tente novamente.', 'danger')
+                    # Captura mensagens detalhadas da API do Mercado Pago
+                    cause = payment.get("cause", [])
+                    detalhe = cause[0].get("description") if cause else payment.get("message", "Erro desconhecido")
+                    flash(f'Erro MP ({status_code}): {detalhe}', 'danger')
                     return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
             except Exception as e:
-                print("Exceção ao criar PIX:", str(e))
-                flash('Falha na comunicação com o Mercado Pago.', 'danger')
+                print("Exceção fatal ao criar PIX:", str(e))
+                flash('Falha de conexão com o Mercado Pago. Tente novamente.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
         # --- PAGAMENTO VIA CARTÃO DE CRÉDITO ---
@@ -429,13 +440,11 @@ def webhook_mercadopago():
             if not Ingresso.query.filter_by(pagamento_id=str(payment_id)).first():
                 ext_ref = payment_info.get("external_reference", "")
                 
-                # Extrai os dados do external_reference (usuario_id|lote_id|quantidade)
                 if ext_ref and "|" in ext_ref:
                     user_id, lote_id, qtd = map(int, ext_ref.split("|"))
                     usuario = Usuario.query.get(user_id)
                     lote = Lote.query.get(lote_id)
                 else:
-                    # Fallback para o e-mail caso external_reference não exista
                     payer_email = payment_info.get("payer", {}).get("email")
                     usuario = Usuario.query.filter_by(email=payer_email).first()
                     lote = Lote.query.filter_by(ativo=True).first()
@@ -474,7 +483,6 @@ def admin_dashboard():
     vendidos = Ingresso.query.count()
     utilizados = Ingresso.query.filter_by(status='utilizado').count()
     
-    # Consulta direta ao banco de dados usando SUM e JOIN
     receita_total = db.session.query(func.sum(Lote.preco))\
         .join(Ingresso, Ingresso.lote_id == Lote.id)\
         .scalar() or 0.0
@@ -492,7 +500,6 @@ def admin_dashboard():
 @app.route('/admin/trocar-lote/<int:lote_id>')
 @admin_required
 def trocar_lote_ativo(lote_id):
-    """Auxiliar para ativar/desativar lotes para testes."""
     Lote.query.update({Lote.ativo: False})
     lote_alvo = Lote.query.get_or_404(lote_id)
     lote_alvo.ativo = True
