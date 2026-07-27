@@ -11,12 +11,12 @@
 </head>
 <body class="bg-dark">
 
-    <!-- Header Padrão Corrigido -->
+    <!-- Header Padrão -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
                 
-                <!-- Logo Híbrido Corrigido (url_for) -->
+                <!-- Logo Híbrido -->
                 <a href="{{ url_for('index') }}" class="brand-logo">
                     <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
                     <div class="logo-text">
@@ -56,7 +56,7 @@
             
             <h1 class="about-title" style="font-size: 2.2rem; margin-bottom: 20px;">MaréVibes Halloween 2026</h1>
             
-            <div class="event-details" style="display: flex; gap: 20px; margin-bottom: 30px; font-size: 1rem; color: #cbd5e1;">
+            <div class="event-details" style="display: flex; gap: 20px; margin-bottom: 30px; font-size: 1rem; color: #cbd5e1; flex-wrap: wrap;">
                 <div>📅 31 de Outubro, às 17h</div>
                 <div>📍 Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE</div>
             </div>
@@ -69,7 +69,7 @@
                 Nossa experiência foi pensada nos mínimos detalhes para garantir uma noite inesquecível. Além de muita música e de uma cenografia temática imersiva, o evento conta com uma estrutura completa de open bar e open food para você aproveitar sem preocupações.
             </p>
 
-            <!-- O que está incluso (Destaque visual) -->
+            <!-- O que está incluso -->
             <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 12px; margin-bottom: 35px;">
                 <h3 style="color: #ffffff; margin-bottom: 15px; font-size: 1.2rem;">O que está incluso na sua experiência:</h3>
                 <ul style="list-style: none; padding: 0; color: #cbd5e1; display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
@@ -81,8 +81,10 @@
                 </ul>
             </div>
             
-            <!-- Botão para Checkout -->
-            <a href="{{ url_for('checkout') }}" class="btn-primary" style="display: block; text-align: center; text-decoration: none;">Garantir Meu Ingresso Agora</a>
+            <!-- Botão Encaminhando para Checkout -->
+            <a href="{{ url_for('checkout') }}" class="btn-primary" style="display: block; text-align: center; text-decoration: none; width: 100%; font-size: 1.1rem; padding: 16px;">
+                Garantir Meu Ingresso Agora
+            </a>
         </div>
     </main>
 
