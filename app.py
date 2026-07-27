@@ -7,6 +7,7 @@ from functools import wraps
 import mercadopago
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -16,17 +17,15 @@ app = Flask(__name__)
 # --------------------------------------------------------------------------
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolvimento')
 
-# Duração estendida da sessão para não deslogar durante o checkout
+# Duração estendida da sessão para evitar deslogar no checkout
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# Pega a DATABASE_URL do Render (ou do .env local)
+# URL do Banco de Dados
 database_url = os.environ.get('DATABASE_URL')
-
-# Correção automática para o SQLAlchemy se a URL começar com 'postgres://'
 if database_url and database_url.startswith("postgres://"):
     database_url = database_url.replace("postgres://", "postgresql://", 1)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///dev.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -47,8 +46,8 @@ class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    cpf = db.Column(db.String(14), nullable=True)        # CPF do cliente
-    telefone = db.Column(db.String(20), nullable=True)   # Telefone/WhatsApp do cliente
+    cpf = db.Column(db.String(14), nullable=True)
+    telefone = db.Column(db.String(20), nullable=True)
     senha_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
@@ -60,7 +59,7 @@ class Lote(db.Model):
     __tablename__ = 'lotes'
 
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(50), nullable=False)  # Ex: 'Lote Promocional', '1º Lote'
+    nome = db.Column(db.String(50), nullable=False)
     preco = db.Column(db.Float, nullable=False)
     quantidade_total = db.Column(db.Integer, nullable=False)
     ativo = db.Column(db.Boolean, default=False)
@@ -84,12 +83,14 @@ class Ingresso(db.Model):
     pagamento_id = db.Column(db.String(100), nullable=True)
 
 
-with app.app_context():
-    db.create_all()
-    if not Lote.query.first():
-        lote_inicial = Lote(nome='Lote Promocional', preco=35.00, quantidade_total=100, ativo=True)
-        db.session.add(lote_inicial)
-        db.session.commit()
+def inicializar_banco():
+    """Cria o esquema do banco de dados e semente inicial de forma segura."""
+    with app.app_context():
+        db.create_all()
+        if not Lote.query.first():
+            lote_inicial = Lote(nome='Lote Promocional', preco=35.00, quantidade_total=100, ativo=True)
+            db.session.add(lote_inicial)
+            db.session.commit()
 
 # --------------------------------------------------------------------------
 # Decoradores e Funções Auxiliares
@@ -204,9 +205,7 @@ def login():
         usuario = Usuario.query.filter_by(email=email).first()
 
         if usuario and check_password_hash(usuario.senha_hash, senha):
-            # Garante a permanência do cookie de sessão
             session.permanent = True
-            
             session['usuario_id'] = usuario.id
             session['usuario_nome'] = usuario.nome
             session['usuario_email'] = usuario.email
@@ -239,7 +238,6 @@ def checkout():
         flash('Nenhum lote de ingressos disponível no momento.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
-    # Validação e busca segura do usuário logado
     usuario_id = session.get('usuario_id')
     usuario_atual = Usuario.query.get(usuario_id) if usuario_id else None
 
@@ -252,12 +250,10 @@ def checkout():
         quantidade = int(request.form.get('quantidade', 1))
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
         
-        # Trava de Regra de Negócio: Lote Promocional aceita APENAS Pix
         if 'promocional' in lote_ativo.nome.lower() and metodo_pagamento != 'pix':
             flash('O Lote Promocional aceita apenas pagamento via Pix.', 'warning')
             return redirect(url_for('checkout'))
 
-        # Validação de estoque
         ingressos_vendidos_lote = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
         disponiveis_lote = lote_ativo.quantidade_total - ingressos_vendidos_lote
 
@@ -268,7 +264,6 @@ def checkout():
         preco_unitario = lote_ativo.preco
         total = quantidade * preco_unitario
 
-        # Formatação dos dados do pagador
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
@@ -296,6 +291,7 @@ def checkout():
                 "transaction_amount": float(total),
                 "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
                 "payment_method_id": "pix",
+                "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
                 "payer": payer_payload
             }
 
@@ -316,7 +312,6 @@ def checkout():
                     }
                     return redirect(url_for('pagamento'))
                 else:
-                    print("Erro no Mercado Pago (PIX):", payment)
                     flash('Erro ao gerar cobrança Pix. Tente novamente.', 'danger')
                     return redirect(url_for('checkout'))
             except Exception as e:
@@ -339,6 +334,7 @@ def checkout():
                 "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
                 "installments": installments,
                 "payment_method_id": payment_method_id,
+                "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
                 "payer": payer_payload
             }
 
@@ -379,18 +375,15 @@ def checkout():
                         'total': float(total),
                         'quantidade': quantidade
                     }
-                    flash('Pagamento em análise pelo seu banco. Acompanhe o status nesta página ou em Meus Ingressos.', 'info')
+                    flash('Pagamento em análise pelo seu banco. Acompanhe o status nesta página.', 'info')
                     return redirect(url_for('pagamento'))
                 else:
-                    print("Erro no Mercado Pago (Cartão):", payment)
                     flash('Cartão recusado ou dados incorretos. Tente novamente.', 'danger')
                     return redirect(url_for('checkout'))
             except Exception as e:
                 print("Exceção ao processar Cartão:", str(e))
                 flash('Falha na comunicação com a operadora do cartão.', 'danger')
                 return redirect(url_for('checkout'))
-
-        return redirect(url_for('checkout'))
 
     return render_template('checkout.html', lote=lote_ativo)
 
@@ -413,19 +406,27 @@ def webhook_mercadopago():
         
         if payment_info.get("status") == "approved":
             if not Ingresso.query.filter_by(pagamento_id=str(payment_id)).first():
-                payer_email = payment_info.get("payer", {}).get("email")
-                usuario = Usuario.query.filter_by(email=payer_email).first()
-                lote_ativo = Lote.query.filter_by(ativo=True).first()
+                ext_ref = payment_info.get("external_reference", "")
                 
-                if usuario and lote_ativo:
-                    valor_total = payment_info.get("transaction_amount", lote_ativo.preco)
-                    qtd = int(valor_total // lote_ativo.preco)
-                    
+                # Extrai os dados do external_reference (usuario_id|lote_id|quantidade)
+                if ext_ref and "|" in ext_ref:
+                    user_id, lote_id, qtd = map(int, ext_ref.split("|"))
+                    usuario = Usuario.query.get(user_id)
+                    lote = Lote.query.get(lote_id)
+                else:
+                    # Fallback para o e-mail caso external_reference não exista
+                    payer_email = payment_info.get("payer", {}).get("email")
+                    usuario = Usuario.query.filter_by(email=payer_email).first()
+                    lote = Lote.query.filter_by(ativo=True).first()
+                    valor_total = payment_info.get("transaction_amount", lote.preco if lote else 0)
+                    qtd = int(valor_total // lote.preco) if lote else 1
+
+                if usuario and lote:
                     for _ in range(qtd):
                         novo_ingresso = Ingresso(
                             codigo_qr=gerar_codigo_ingresso(),
                             usuario_id=usuario.id,
-                            lote_id=lote_ativo.id,
+                            lote_id=lote.id,
                             pagamento_id=str(payment_id)
                         )
                         db.session.add(novo_ingresso)
@@ -451,7 +452,11 @@ def admin_dashboard():
     
     vendidos = Ingresso.query.count()
     utilizados = Ingresso.query.filter_by(status='utilizado').count()
-    receita_total = sum(i.lote_origem.preco for i in Ingresso.query.all() if i.lote_origem)
+    
+    # Consulta direta ao banco de dados usando SUM e JOIN
+    receita_total = db.session.query(func.sum(Lote.preco))\
+        .join(Ingresso, Ingresso.lote_id == Lote.id)\
+        .scalar() or 0.0
 
     stats = {
         'lote_ativo_nome': lote_ativo.nome if lote_ativo else 'Nenhum Lote Ativo',
@@ -490,6 +495,12 @@ def painel_validacao():
             resultado = ingresso
 
     return render_template('admin/validar.html', resultado=resultado, codigo=codigo_buscado)
+
+# --------------------------------------------------------------------------
+# Inicialização
+# --------------------------------------------------------------------------
+
+inicializar_banco()
 
 if __name__ == '__main__':
     app.run(debug=True)
