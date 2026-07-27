@@ -1201,3 +1201,9 @@ a {
         gap: 0;
     }
 }
+"""
+
+with open('styles.css', 'w', encoding='utf-8') as f:
+    f.write(css_content.strip())
+
+print("CSS gerado e salvo em styles.css com sucesso.")
