@@ -49,6 +49,9 @@
     </header>
 
     {% set e_promocional = 'promocional' in lote.nome.lower() %}
+    
+    <!-- ⚠️ MODIFICAÇÃO DE TESTE: Sobrescrevendo o preço do lote para R$ 1.00 -->
+    {% set preco_teste = 1.00 %}
 
     <!-- Seção Principal de Checkout -->
     <section class="services" style="padding: 120px 0 60px 0;">
@@ -57,14 +60,13 @@
             <div class="event-card" style="background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 30px;">
                 
                 <div style="text-align: center; margin-bottom: 25px;">
-                    <!-- Título preparado para o efeito Neon -->
                     <h2 class="checkout-event-title">
                         <span class="neon-highlight">MaréVibes</span> Halloween 2026
                     </h2>
                     <p style="color: #94a3b8; font-size: 0.95rem;">📅 31 de Outubro, às 17h • Itaperi, Fortaleza</p>
                     
                     <div style="margin-top: 15px; padding: 10px 15px; background: rgba(99, 102, 241, 0.15); border: 1px solid #6366f1; border-radius: 8px; color: #a5b4fc; font-weight: 600; font-size: 0.95rem; display: inline-block;">
-                        Lote Atual: {{ lote.nome }} — R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}
+                        Lote Atual: {{ lote.nome }} — 🧪 TESTE: R$ {{ "%.2f"|format(preco_teste)|replace('.', ',') }}
                     </div>
                 </div>
 
@@ -84,10 +86,10 @@
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label for="quantidade" style="display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: 600;">Quantidade de Ingressos</label>
                         <select id="quantidade" name="quantidade" style="width: 100%; padding: 12px; border-radius: 8px; background: #0b1120; color: white; border: 1px solid #334155; font-size: 1rem;" onchange="atualizarValores()">
-                            <option value="1">1 Ingresso - R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}</option>
-                            <option value="2">2 Ingressos - R$ {{ "%.2f"|format(lote.preco * 2)|replace('.', ',') }}</option>
-                            <option value="3">3 Ingressos - R$ {{ "%.2f"|format(lote.preco * 3)|replace('.', ',') }}</option>
-                            <option value="4">4 Ingressos - R$ {{ "%.2f"|format(lote.preco * 4)|replace('.', ',') }}</option>
+                            <option value="1">1 Ingresso - R$ {{ "%.2f"|format(preco_teste)|replace('.', ',') }}</option>
+                            <option value="2">2 Ingressos - R$ {{ "%.2f"|format(preco_teste * 2)|replace('.', ',') }}</option>
+                            <option value="3">3 Ingressos - R$ {{ "%.2f"|format(preco_teste * 3)|replace('.', ',') }}</option>
+                            <option value="4">4 Ingressos - R$ {{ "%.2f"|format(preco_teste * 4)|replace('.', ',') }}</option>
                         </select>
                     </div>
 
@@ -194,7 +196,8 @@
     </footer>
 
     <script>
-        const precoUnitario = parseFloat("{{ lote.preco }}");
+        // ⚠️ MODIFICAÇÃO DE TESTE: Fixando o preço unitário em R$ 1.00 para o cálculo JS
+        const precoUnitario = 1.00;
 
         function alternarPagamento(tipo) {
             const secaoCartao = document.getElementById('secao-cartao');
