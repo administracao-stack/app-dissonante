@@ -15,7 +15,7 @@
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
-                <a href="/" class="brand-logo">
+                <a href="{{ url_for('index') }}" class="brand-logo">
                     <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
                     <div class="logo-text">
                         <span class="brand-name">DISSONANTE</span>
@@ -24,22 +24,22 @@
                 </a>
                 <nav class="nav-menu">
                     <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
-                    <a href="/#eventos">Eventos</a>
-                    <span class="user-info" style="color: var(--gold); font-weight: 600;">Olá, {{ session.get('usuario_nome', 'Cliente') }}</span>
-                    <a href="{{ url_for('logout') }}" style="color: #ef4444; font-weight: 600;">Sair</a>
+                    <a href="{{ url_for('index', _anchor='eventos') }}">Eventos</a>
+                    <span class="user-info text-gold">Olá, {{ session.get('usuario_nome', 'Cliente') }}</span>
+                    <a href="{{ url_for('logout') }}" class="nav-logout">Sair</a>
                 </nav>
             </div>
         </div>
     </header>
 
     <!-- Conteúdo Principal da Área do Cliente -->
-    <main class="container" style="padding-top: 40px; padding-bottom: 60px;">
+    <main class="container main-content">
         
         <!-- Alertas de Feedback -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}" style="background: rgba(22, 163, 74, 0.2); border: 1px solid #16a34a; color: #86efac; padding: 15px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 25px;">
+                    <div class="alert alert-{{ category }}">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -47,32 +47,31 @@
         {% endwith %}
 
         <!-- Cabeçalho do Painel -->
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 30px;">
+        <div class="panel-header">
             <div>
-                <h1 style="color: #ffffff; font-size: 2rem; margin-bottom: 5px;">Seus Ingressos e Acessos</h1>
-                <p style="color: #94a3b8; font-size: 0.95rem;">Apresente o QR Code diretamente na portaria do evento ou guarde-os no seu histórico.</p>
+                <h1 class="panel-title">Seus Ingressos e Acessos</h1>
+                <p class="panel-subtitle">Apresente o QR Code diretamente na portaria do evento ou guarde-os no seu histórico.</p>
             </div>
-            <a href="/#eventos" class="btn-primary" style="text-align: center; padding: 12px 24px; font-size: 0.9rem;">Explorar Novos Eventos</a>
+            <a href="{{ url_for('index', _anchor='eventos') }}" class="btn-primary btn-explore">Explorar Novos Eventos</a>
         </div>
 
         <!-- Bloco de Ingressos Comprados -->
         {% if vendas %}
             {% for pedido in vendas %}
             <div class="bloco-venda">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 15px; margin-bottom: 20px;">
+                <div class="bloco-venda-header">
                     <div>
-                        <h3 style="color: #ffffff; font-size: 1.3rem; margin-bottom: 4px;">{{ pedido.evento }}</h3>
-                        <p class="data-evento" style="margin: 0;">📅 Data do Evento: <strong>{{ pedido.data }}</strong> | Pedido #{{ pedido.id }}</p>
+                        <h3 class="evento-titulo">{{ pedido.evento_nome if pedido.evento_nome else 'MaréVibes Halloween 2026' }}</h3>
+                        <p class="data-evento">📅 Compra em: <strong>{{ pedido.data_compra.strftime('%d/%m/%Y %H:%M') if pedido.data_compra else 'Data recente' }}</strong> | Ingresso #{{ pedido.id }}</p>
                     </div>
-                    <span style="background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">
-                        Enviado para: {{ session.get('usuario_email', 'seu e-mail') }}
+                    <span class="titular-tag">
+                        Titular: {{ session.get('usuario_email', 'seu e-mail') }}
                     </span>
                 </div>
 
                 <div class="grid-ingressos">
-                    {% for ingresso in pedido.ingressos %}
                     <div class="card-ingresso">
-                        <h4>Ingresso #{{ ingresso.id }}</h4>
+                        <h4>Ingresso #{{ pedido.id }}</h4>
                         
                         <!-- Simulação visual de QR Code em SVG dinâmico -->
                         <div class="qr-code-box">
@@ -90,34 +89,57 @@
                         </div>
 
                         <div>
-                            {% if ingresso.status == 'valido' %}
+                            {% if pedido.status == 'valido' %}
                                 <span class="status-tag status-valido">VÁLIDO</span>
                             {% else %}
                                 <span class="status-tag status-utilizado">UTILIZADO</span>
                             {% endif %}
                         </div>
 
-                        <span class="codigo-texto" title="{{ ingresso.codigo_qr }}">{{ ingresso.codigo_qr }}</span>
+                        <span class="codigo-texto" title="{{ pedido.codigo_qr }}">{{ pedido.codigo_qr }}</span>
                     </div>
-                    {% endfor %}
                 </div>
             </div>
             {% endfor %}
         {% else %}
             <!-- Estado Vazio -->
-            <div style="background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 50px; text-align: center; margin-top: 30px;">
-                <h3 style="color: #ffffff; font-size: 1.4rem; margin-bottom: 10px;">Você ainda não possui ingressos</h3>
-                <p style="color: #94a3b8; margin-bottom: 25px;">Escolha um evento disponível e garanta sua experiência exclusiva.</p>
-                <a href="/#eventos" class="btn-primary">Ver Eventos Disponíveis</a>
+            <div class="empty-state">
+                <h3 class="empty-state-title">Você ainda não possui ingressos</h3>
+                <p class="empty-state-text">Escolha um evento disponível e garanta sua experiência exclusiva.</p>
+                <a href="{{ url_for('index', _anchor='eventos') }}" class="btn-primary">Ver Eventos Disponíveis</a>
             </div>
         {% endif %}
 
     </main>
 
-    <!-- Rodapé -->
+    <!-- Botão Flutuante do WhatsApp -->
+    <a href="https://wa.me/558592636062?text=Olá!%20Preciso%20de%20ajuda%20com%20meus%20ingressos%20na%20Dissonante." 
+       target="_blank" 
+       rel="noopener noreferrer" 
+       class="whatsapp-float"
+       title="Falar no WhatsApp">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984 0 1.762.459 3.48 1.332 5.001l-1.416 5.176 5.302-1.39a9.923 9.923 0 004.767 1.213h.005c5.505 0 9.988-4.478 9.989-9.985 0-2.668-1.037-5.176-2.922-7.062a9.919 9.919 0 00-7.067-2.937zm5.69 14.186c-.235.66-1.37 1.26-1.892 1.338-.485.073-1.118.105-1.802-.114-.415-.133-.949-.308-1.638-.605-2.884-1.248-4.757-4.167-4.901-4.359-.143-.192-1.168-1.554-1.168-2.963 0-1.409.738-2.102 1.002-2.39.263-.288.572-.36.763-.36.191 0 .382.002.548.01.178.008.416-.067.65.495.235.562.8 1.956.87 2.099.071.144.119.312.024.503-.095.192-.143.312-.287.48-.143.168-.302.376-.431.504-.143.144-.293.301-.126.589.167.288.742 1.206 1.593 1.964 1.093.974 2.016 1.277 2.303 1.42.288.144.455.12.623-.072.168-.192.718-.839.91-1.127.192-.288.383-.24.646-.144.263.096 1.672.788 1.959.932.287.144.479.216.551.336.072.12.072.696-.163 1.356z"/>
+        </svg>
+    </a>
+
+    <!-- Rodapé Padrão -->
     <footer class="footer">
-        <div class="container footer-bottom" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 30px 0;">
-            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        <div class="container">
+            <div class="footer-content">
+                <div class="logo-text">
+                    <span class="brand-name footer-brand-name">DISSONANTE</span>
+                    <span class="brand-sub footer-brand-sub">EXPERIÊNCIAS</span>
+                </div>
+                <div class="footer-links">
+                    <a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a>
+                    <a href="{{ url_for('politica_privacidade') }}">Privacidade</a>
+                    <a href="{{ url_for('contato') }}">Contato</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+            </div>
         </div>
     </footer>
 
