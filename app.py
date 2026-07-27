@@ -281,7 +281,8 @@ def checkout():
             flash(f'Restam apenas {disponiveis_lote} ingresso(s) no {lote_ativo.nome}.', 'danger')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
-        preco_unitario = lote_ativo.preco
+        # ⚠️ MODIFICAÇÃO DE TESTE: Sobrescrevendo o preço unitário para R$ 1,00
+        preco_unitario = 1.00
         total = quantidade * preco_unitario
 
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
@@ -313,7 +314,7 @@ def checkout():
         if metodo_pagamento == 'pix':
             payment_data = {
                 "transaction_amount": float(total),
-                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
+                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes [TESTE]",
                 "payment_method_id": "pix",
                 "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
                 "payer": payer_payload
@@ -363,7 +364,7 @@ def checkout():
             payment_data = {
                 "transaction_amount": float(total),
                 "token": token,
-                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
+                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes [TESTE]",
                 "installments": installments,
                 "payment_method_id": payment_method_id,
                 "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
@@ -448,8 +449,7 @@ def webhook_mercadopago():
                     payer_email = payment_info.get("payer", {}).get("email")
                     usuario = Usuario.query.filter_by(email=payer_email).first()
                     lote = Lote.query.filter_by(ativo=True).first()
-                    valor_total = payment_info.get("transaction_amount", lote.preco if lote else 0)
-                    qtd = int(valor_total // lote.preco) if lote else 1
+                    qtd = 1
 
                 if usuario and lote:
                     for _ in range(qtd):
