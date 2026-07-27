@@ -15,6 +15,7 @@
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
+                
                 <a href="{{ url_for('index') }}" class="brand-logo">
                     <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
                     <div class="logo-text">
@@ -22,17 +23,30 @@
                         <span class="brand-sub">EXPERIÊNCIAS</span>
                     </div>
                 </a>
+
                 <nav class="nav-menu">
                     <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
                     <a href="{{ url_for('index', _anchor='eventos') }}">Eventos</a>
-                    <span class="user-info text-gold">Olá, {{ session.get('usuario_nome', 'Cliente') }}</span>
-                    <a href="{{ url_for('logout') }}" class="nav-logout">Sair</a>
+                    
+                    <!-- Botão WhatsApp padronizado -->
+                    <a href="https://wa.me/55859992636062?text=Olá!%20Preciso%20de%20ajuda%20com%20meus%20ingressos." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                        </svg>
+                        Fale Conosco
+                    </a>
                 </nav>
+
+                <div class="header-cta">
+                    <span class="user-info text-gold">Olá, {{ session.get('usuario_nome', 'Cliente') }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn-cliente btn-logout">Sair</a>
+                </div>
+
             </div>
         </div>
     </header>
 
-    <!-- Conteúdo Principal da Área do Cliente -->
+    <!-- Conteúdo Principal -->
     <main class="container main-content">
         
         <!-- Alertas de Feedback -->
@@ -73,7 +87,6 @@
                     <div class="card-ingresso">
                         <h4>Ingresso #{{ pedido.id }}</h4>
                         
-                        <!-- Simulação visual de QR Code em SVG dinâmico -->
                         <div class="qr-code-box">
                             <svg width="110" height="110" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M2 2H10V10H2V2Z" stroke="#0f172a" stroke-width="2"/>
@@ -112,36 +125,68 @@
 
     </main>
 
-    <!-- Botão Flutuante do WhatsApp -->
-    <a href="https://wa.me/558592636062?text=Olá!%20Preciso%20de%20ajuda%20com%20meus%20ingressos%20na%20Dissonante." 
-       target="_blank" 
-       rel="noopener noreferrer" 
-       class="whatsapp-float"
-       title="Falar no WhatsApp">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984 0 1.762.459 3.48 1.332 5.001l-1.416 5.176 5.302-1.39a9.923 9.923 0 004.767 1.213h.005c5.505 0 9.988-4.478 9.989-9.985 0-2.668-1.037-5.176-2.922-7.062a9.919 9.919 0 00-7.067-2.937zm5.69 14.186c-.235.66-1.37 1.26-1.892 1.338-.485.073-1.118.105-1.802-.114-.415-.133-.949-.308-1.638-.605-2.884-1.248-4.757-4.167-4.901-4.359-.143-.192-1.168-1.554-1.168-2.963 0-1.409.738-2.102 1.002-2.39.263-.288.572-.36.763-.36.191 0 .382.002.548.01.178.008.416-.067.65.495.235.562.8 1.956.87 2.099.071.144.119.312.024.503-.095.192-.143.312-.287.48-.143.168-.302.376-.431.504-.143.144-.293.301-.126.589.167.288.742 1.206 1.593 1.964 1.093.974 2.016 1.277 2.303 1.42.288.144.455.12.623-.072.168-.192.718-.839.91-1.127.192-.288.383-.24.646-.144.263.096 1.672.788 1.959.932.287.144.479.216.551.336.072.12.072.696-.163 1.356z"/>
-        </svg>
-    </a>
-
-    <!-- Rodapé Padrão -->
+    <!-- Rodapé Padronizado -->
     <footer class="footer">
-        <div class="container">
-            <div class="footer-content">
-                <div class="logo-text">
-                    <span class="brand-name footer-brand-name">DISSONANTE</span>
-                    <span class="brand-sub footer-brand-sub">EXPERIÊNCIAS</span>
-                </div>
-                <div class="footer-links">
-                    <a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a>
-                    <a href="{{ url_for('politica_privacidade') }}">Privacidade</a>
-                    <a href="{{ url_for('contato') }}">Contato</a>
-                </div>
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Dissonante Experiências</h3>
+                <p>Transformando eventos em memórias vivas.</p>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+            
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
+                    <li><a href="{{ url_for('index', _anchor='eventos') }}">Eventos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links" id="contato">
+                <h4>Contato</h4>
+                <ul>
+                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
+                    <li>Fortaleza - CE</li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+                </ul>
             </div>
         </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
     </footer>
+
+    <!-- Banner de Cookies (LGPD) -->
+    <div id="cookieBanner" class="cookie-banner">
+        <p class="cookie-text">
+            Utilizamos cookies para melhorar sua experiência no site. Ao continuar navegando, você concorda com a nossa 
+            <a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a>.
+        </p>
+        <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const banner = document.getElementById("cookieBanner");
+            const btnAceitar = document.getElementById("aceitarCookies");
+
+            if (!localStorage.getItem("cookiesAceitos")) {
+                banner.style.display = "flex";
+            }
+
+            btnAceitar.addEventListener("click", function () {
+                localStorage.setItem("cookiesAceitos", "true");
+                banner.style.display = "none";
+            });
+        });
+    </script>
 
 </body>
 </html>
