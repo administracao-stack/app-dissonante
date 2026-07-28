@@ -163,16 +163,21 @@ a {
     transform: translateY(-1px);
 }
 
-.btn-logout {
+.btn-logout, .nav-link-logout {
     background: rgba(239, 68, 68, 0.15);
     border: 1px solid rgba(239, 68, 68, 0.4);
     color: #f87171 !important;
-    box-shadow: none;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: var(--transition-fast);
 }
 
-.btn-logout:hover {
+.btn-logout:hover, .nav-link-logout:hover {
     background: rgba(239, 68, 68, 0.3);
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    color: #ffffff !important;
 }
 
 /* ==========================================================================
