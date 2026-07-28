@@ -11,6 +11,7 @@
 </head>
 <body class="bg-dark">
 
+    <!-- Header / Navegação Principal (Painel Admin) -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
@@ -29,12 +30,13 @@
         </div>
     </header>
 
+    <!-- Conteúdo Principal - Validação de Portaria -->
     <main class="admin-main">
         <div class="container">
             <div class="card-admin">
                 <h1 class="card-admin-titulo">Validação de Portaria</h1>
 
-                <!-- Mensagens de Alerta -->
+                <!-- Mensagens de Alerta Flutuantes / Status -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -48,7 +50,7 @@
                 <!-- Formulário de Leitura de Código / QR -->
                 <form method="POST" action="{{ url_for('painel_validacao') }}">
                     <label for="codigo" class="form-label">Código do Ingresso (ou QR Code):</label>
-                    <input type="text" id="codigo" name="codigo" class="form-control" placeholder="Ex: DISSONANTE-HLW-XXXX" value="{{ codigo }}" autofocus required>
+                    <input type="text" id="codigo" name="codigo" class="form-control" placeholder="Ex: DISSONANTE-HLW-XXXX" value="{{ codigo if codigo else '' }}" autofocus required autocomplete="off">
                     <button type="submit" name="acao" value="buscar" class="btn-acao btn-buscar">Consultar Ingresso</button>
                 </form>
 
@@ -57,7 +59,7 @@
                     <div class="resultado-container">
                         <h3 class="resultado-titulo">Dados do Ingresso:</h3>
                         <p class="resultado-item"><strong>Código:</strong> <code>{{ resultado.codigo_qr }}</code></p>
-                        <p class="resultado-item"><strong>Titular:</strong> {{ resultado.comprador.nome }}</p>
+                        <p class="resultado-item"><strong>Titular:</strong> {{ resultado.comprador.nome if resultado.comprador else 'N/A' }}</p>
                         <p class="resultado-item"><strong>Evento:</strong> {{ resultado.evento_nome }}</p>
                         <p class="resultado-status"><strong>Status Atual:</strong> 
                             {% if resultado.status == 'valido' %}
@@ -67,6 +69,7 @@
                             {% endif %}
                         </p>
 
+                        <!-- Ação para Confirmação de Entrada -->
                         {% if resultado.status == 'valido' %}
                             <form method="POST" action="{{ url_for('painel_validacao') }}">
                                 <input type="hidden" name="codigo" value="{{ resultado.codigo_qr }}">
@@ -79,6 +82,15 @@
             </div>
         </div>
     </main>
+
+    <!-- Rodapé -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2026 Dissonante Experiências. Módulo de Controle de Acesso e Portaria.</p>
+            </div>
+        </div>
+    </footer>
 
 </body>
 </html>
