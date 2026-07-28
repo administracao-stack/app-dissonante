@@ -2,15 +2,15 @@ import os
 import re
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from functools import wraps
-from dotenv import load_dotenv  # <--- Carrega o arquivo .env
+from dotenv import load_dotenv
 import mercadopago
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_mail import Mail, Message  # <--- Integração para envio de e-mail
+from flask_mail import Mail, Message
 
 # Carrega as variáveis de ambiente localizadas no arquivo .env
 load_dotenv()
@@ -25,10 +25,11 @@ app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolviment
 # Duração estendida da sessão para evitar deslogar no checkout
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# --- Configurações do Servidor SMTP (E-mail) ---
+# --- Configurações do Servidor SMTP (E-mail / Google Workspace) ---
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
+app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'False').lower() in ['true', 'on', '1']
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', '')
@@ -48,7 +49,7 @@ db = SQLAlchemy(app)
 # --------------------------------------------------------------------------
 # Configuração do Mercado Pago
 # --------------------------------------------------------------------------
-MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN')
+MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN', '')
 sdk = mercadopago.SDK(MERCADOPAGO_TOKEN)
 
 # --------------------------------------------------------------------------
@@ -65,7 +66,7 @@ class Usuario(db.Model):
     telefone = db.Column(db.String(20), nullable=True)
     senha_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
-    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     ingressos = db.relationship('Ingresso', backref='comprador', lazy=True)
 
@@ -78,7 +79,7 @@ class Lote(db.Model):
     preco = db.Column(db.Float, nullable=False)
     quantidade_total = db.Column(db.Integer, nullable=False)
     ativo = db.Column(db.Boolean, default=False)
-    data_inicio = db.Column(db.DateTime, default=datetime.utcnow)
+    data_inicio = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     ingressos = db.relationship('Ingresso', backref='lote_origem', lazy=True)
 
@@ -90,7 +91,7 @@ class Ingresso(db.Model):
     codigo_qr = db.Column(db.String(50), unique=True, nullable=False)
     evento_nome = db.Column(db.String(100), nullable=False, default="MaréVibes Halloween 2026")
     status = db.Column(db.String(20), default='valido')  # 'valido', 'utilizado', 'cancelado'
-    data_compra = db.Column(db.DateTime, default=datetime.utcnow)
+    data_compra = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     data_uso = db.Column(db.DateTime, nullable=True)
     
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
@@ -101,26 +102,30 @@ class Ingresso(db.Model):
 def inicializar_banco():
     """Cria o esquema do banco de dados e semente inicial de forma segura."""
     with app.app_context():
-        db.create_all()
-        
-        # Garante a existência do Lote Promocional (R$ 160,00) - Limitado a 15 unidades
-        lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
-        if not lote_promo:
-            lote_promo = Lote(nome='Lote Promocional', preco=160.00, quantidade_total=15, ativo=True)
-            db.session.add(lote_promo)
-        else:
-            lote_promo.preco = 160.00
-            lote_promo.quantidade_total = 15
+        try:
+            db.create_all()
+            
+            # Garante a existência do Lote Promocional (R$ 160,00) - Limitado a 15 unidades
+            lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
+            if not lote_promo:
+                lote_promo = Lote(nome='Lote Promocional', preco=160.00, quantidade_total=15, ativo=True)
+                db.session.add(lote_promo)
+            else:
+                lote_promo.preco = 160.00
+                lote_promo.quantidade_total = 15
 
-        # Garante a existência do 1º Lote (R$ 230,00)
-        lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
-        if not lote_1:
-            lote_1 = Lote(nome='1º Lote', preco=230.00, quantidade_total=150, ativo=False)
-            db.session.add(lote_1)
-        else:
-            lote_1.preco = 230.00
+            # Garante a existência do 1º Lote (R$ 230,00)
+            lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
+            if not lote_1:
+                lote_1 = Lote(nome='1º Lote', preco=230.00, quantidade_total=150, ativo=False)
+                db.session.add(lote_1)
+            else:
+                lote_1.preco = 230.00
 
-        db.session.commit()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar banco: {str(e)}")
 
 # --------------------------------------------------------------------------
 # Decoradores e Funções Auxiliares
@@ -189,10 +194,12 @@ def contato():
         assunto = request.form.get('assunto', '').strip()
         mensagem = request.form.get('mensagem', '').strip()
 
-        # E-mail destinatário configurado nas variáveis de ambiente
         email_empresa = app.config['MAIL_USERNAME']
 
-        # Prepara o objeto da mensagem
+        if not email_empresa:
+            flash('Serviço de e-mail indisponível no momento. Tente contato via WhatsApp.', 'warning')
+            return redirect(url_for('contato'))
+
         msg = Message(
             subject=f"[Contato via Site] {assunto}",
             recipients=[email_empresa],
@@ -200,23 +207,23 @@ def contato():
         )
 
         msg.body = f"""
-        Nova mensagem de contato recebida pelo site:
+Nova mensagem de contato recebida pelo site:
 
-        Nome: {nome}
-        E-mail do Cliente: {email_cliente}
-        Assunto: {assunto}
+Nome: {nome}
+E-mail do Cliente: {email_cliente}
+Assunto: {assunto}
 
-        Mensagem:
-        --------------------------------------------------
-        {mensagem}
-        --------------------------------------------------
+Mensagem:
+--------------------------------------------------
+{mensagem}
+--------------------------------------------------
         """
 
         try:
             mail.send(msg)
             flash('Mensagem enviada com sucesso! Em breve entraremos em contato.', 'success')
         except Exception as e:
-            print("Erro ao enviar e-mail:", str(e))
+            print(f"[ERRO SMTP FORMULARIO CONTATO]: {str(e)}")
             flash('Ocorreu um erro ao enviar a mensagem. Tente novamente mais tarde ou pelo WhatsApp.', 'danger')
 
         return redirect(url_for('contato'))
@@ -342,7 +349,6 @@ def checkout():
         cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf or '')
         ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone)
 
-        # Trata estrutura do Payer exigida pela API do Mercado Pago
         payer_payload = {
             "email": usuario_atual.email,
             "first_name": first_name,
@@ -353,7 +359,6 @@ def checkout():
             }
         }
 
-        # Adiciona a identificação apenas se houver CPF cadastrado
         if len(cpf_usuario) == 11:
             payer_payload["identification"] = {
                 "type": "CPF",
@@ -484,32 +489,37 @@ def webhook_mercadopago():
     data = request.get_json() or {}
     if data.get("type") == "payment":
         payment_id = data.get("data", {}).get("id")
-        payment_info = sdk.payment().get(payment_id).get("response", {})
         
-        if payment_info.get("status") == "approved":
-            if not Ingresso.query.filter_by(pagamento_id=str(payment_id)).first():
-                ext_ref = payment_info.get("external_reference", "")
-                
-                if ext_ref and "|" in ext_ref:
-                    user_id, lote_id, qtd = map(int, ext_ref.split("|"))
-                    usuario = Usuario.query.get(user_id)
-                    lote = Lote.query.get(lote_id)
-                else:
-                    payer_email = payment_info.get("payer", {}).get("email")
-                    usuario = Usuario.query.filter_by(email=payer_email).first()
-                    lote = Lote.query.filter_by(ativo=True).first()
-                    qtd = 1
+        try:
+            payment_info = sdk.payment().get(payment_id).get("response", {})
+            
+            if payment_info.get("status") == "approved":
+                if not Ingresso.query.filter_by(pagamento_id=str(payment_id)).first():
+                    ext_ref = payment_info.get("external_reference", "")
+                    
+                    if ext_ref and "|" in ext_ref:
+                        user_id, lote_id, qtd = map(int, ext_ref.split("|"))
+                        usuario = Usuario.query.get(user_id)
+                        lote = Lote.query.get(lote_id)
+                    else:
+                        payer_email = payment_info.get("payer", {}).get("email")
+                        usuario = Usuario.query.filter_by(email=payer_email).first()
+                        lote = Lote.query.filter_by(ativo=True).first()
+                        qtd = 1
 
-                if usuario and lote:
-                    for _ in range(qtd):
-                        novo_ingresso = Ingresso(
-                            codigo_qr=gerar_codigo_ingresso(),
-                            usuario_id=usuario.id,
-                            lote_id=lote.id,
-                            pagamento_id=str(payment_id)
-                        )
-                        db.session.add(novo_ingresso)
-                    db.session.commit()
+                    if usuario and lote:
+                        for _ in range(qtd):
+                            novo_ingresso = Ingresso(
+                                codigo_qr=gerar_codigo_ingresso(),
+                                usuario_id=usuario.id,
+                                lote_id=lote.id,
+                                pagamento_id=str(payment_id)
+                            )
+                            db.session.add(novo_ingresso)
+                        db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[ERRO WEBHOOK MERCADO PAGO]: {str(e)}")
 
     return jsonify({"status": "ok"}), 200
 
@@ -576,7 +586,7 @@ def painel_validacao():
                     flash('ATENÇÃO: Este ingresso JÁ FOI UTILIZADO anteriormente!', 'warning')
                 else:
                     ingresso.status = 'utilizado'
-                    ingresso.data_uso = datetime.utcnow()
+                    ingresso.data_uso = datetime.now(timezone.utc)
                     db.session.commit()
                     flash('ENTRADA LIBERADA! Ingresso marcado como UTILIZADO.', 'success')
             
