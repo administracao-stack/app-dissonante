@@ -4,21 +4,36 @@ import random
 import string
 from datetime import datetime, timedelta
 from functools import wraps
+from dotenv import load_dotenv  # <--- Carrega o arquivo .env
 import mercadopago
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_mail import Mail, Message  # <--- Integração para envio de e-mail
+
+# Carrega as variáveis de ambiente localizadas no arquivo .env
+load_dotenv()
 
 app = Flask(__name__)
 
 # --------------------------------------------------------------------------
-# Configurações do App e Banco de Dados (PostgreSQL / Render)
+# Configurações do App, Banco de Dados e E-mail
 # --------------------------------------------------------------------------
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolvimento')
 
 # Duração estendida da sessão para evitar deslogar no checkout
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
+# --- Configurações do Servidor SMTP (E-mail) ---
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', 'on', '1']
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', '')
+
+mail = Mail(app)
 
 # URL do Banco de Dados
 database_url = os.environ.get('DATABASE_URL')
@@ -169,8 +184,43 @@ def politica_privacidade():
 @app.route('/contato', methods=['GET', 'POST'])
 def contato():
     if request.method == 'POST':
-        flash('Mensagem enviada com sucesso! Em breve entraremos em contato.', 'success')
+        nome = request.form.get('nome', '').strip()
+        email_cliente = request.form.get('email', '').strip()
+        assunto = request.form.get('assunto', '').strip()
+        mensagem = request.form.get('mensagem', '').strip()
+
+        # E-mail destinatário configurado nas variáveis de ambiente
+        email_empresa = app.config['MAIL_USERNAME']
+
+        # Prepara o objeto da mensagem
+        msg = Message(
+            subject=f"[Contato via Site] {assunto}",
+            recipients=[email_empresa],
+            reply_to=email_cliente
+        )
+
+        msg.body = f"""
+        Nova mensagem de contato recebida pelo site:
+
+        Nome: {nome}
+        E-mail do Cliente: {email_cliente}
+        Assunto: {assunto}
+
+        Mensagem:
+        --------------------------------------------------
+        {mensagem}
+        --------------------------------------------------
+        """
+
+        try:
+            mail.send(msg)
+            flash('Mensagem enviada com sucesso! Em breve entraremos em contato.', 'success')
+        except Exception as e:
+            print("Erro ao enviar e-mail:", str(e))
+            flash('Ocorreu um erro ao enviar a mensagem. Tente novamente mais tarde ou pelo WhatsApp.', 'danger')
+
         return redirect(url_for('contato'))
+
     return render_template('contato.html')
 
 # --------------------------------------------------------------------------
@@ -341,7 +391,6 @@ def checkout():
                     }
                     return redirect(url_for('pagamento'))
                 else:
-                    # Captura mensagens detalhadas da API do Mercado Pago
                     cause = payment.get("cause", [])
                     detalhe = cause[0].get("description") if cause else payment.get("message", "Erro desconhecido")
                     flash(f'Erro MP ({status_code}): {detalhe}', 'danger')
