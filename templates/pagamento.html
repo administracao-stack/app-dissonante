@@ -46,72 +46,77 @@
     </header>
 
     <!-- Conteúdo Principal de Pagamento -->
-    <main class="container" style="max-width: 550px; padding-top: 60px; padding-bottom: 80px;">
-        <div class="card-admin" style="text-align: center;">
+    <main class="container payment-container">
+        <div class="card-admin card-payment">
 
             {% if compra.metodo_pagamento == 'credit_card' %}
                 <!-- ================= CASO 1: CARTÃO DE CRÉDITO ================= -->
                 {% if compra.status == 'approved' %}
-                    <div style="font-size: 3rem; margin-bottom: 10px;">✅</div>
-                    <h3 class="checkout-title" style="font-size: 1.6rem; margin-bottom: 8px;">Pagamento Aprovado!</h3>
-                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">
+                    <div class="status-icon">✅</div>
+                    <h3 class="checkout-title status-title">Pagamento Aprovado!</h3>
+                    <p class="status-desc">
                         Seu pagamento via cartão de crédito foi processado com sucesso.
                     </p>
                 {% else %}
-                    <div style="font-size: 3rem; margin-bottom: 10px;">⏳</div>
-                    <h3 class="checkout-title" style="font-size: 1.6rem; margin-bottom: 8px;">Processando Pagamento</h3>
-                    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">
+                    <div class="status-icon">⏳</div>
+                    <h3 class="checkout-title status-title">Processando Pagamento</h3>
+                    <p class="status-desc">
                         O pagamento está em análise pela operadora do cartão. Atualizaremos o status em instantes.
                     </p>
                 {% endif %}
 
             {% else %}
                 <!-- ================= CASO 2: PAGAMENTO VIA PIX ================= -->
-                <h3 class="checkout-title" style="font-size: 1.6rem; margin-bottom: 8px;">
+                <h3 class="checkout-title status-title">
                     Aguardando Pagamento PIX
                 </h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">
+                <p class="status-desc-sm">
                     Escaneie o QR Code abaixo com o app do seu banco ou utilize a opção Pix Copia e Cola.
                 </p>
 
+                <!-- Status em tempo real do Pix -->
+                <div id="status-pix-badge" class="status-pix-badge">
+                    ⏳ Checando pagamento automaticamente...
+                </div>
+
                 <!-- Renderização do QR Code em Base64 -->
-                <div class="qr-code-box" style="margin: 0 auto 25px auto; padding: 15px; background: #ffffff; border-radius: 12px; display: inline-block;">
+                <div class="qr-code-box">
                     {% if compra.qr_code_base64 %}
-                        <img src="data:image/jpeg;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix Mercado Pago" style="width: 200px; height: 200px; display: block;" />
+                        <img src="data:image/png;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix Mercado Pago" class="qr-code-img" />
                     {% else %}
-                        <p style="color: #000; font-size: 0.85rem; margin: 0;">Erro ao carregar imagem do QR Code.</p>
+                        <p class="qr-code-error">Erro ao carregar imagem do QR Code.</p>
                     {% endif %}
                 </div>
 
                 <!-- Pix Copia e Cola -->
                 {% if compra.qr_code %}
-                <div style="margin-bottom: 25px; text-align: left;">
-                    <label class="form-label" style="font-size: 0.85rem;">Código Pix Copia e Cola:</label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly class="form-control" style="margin-bottom: 0; font-size: 0.85rem; text-overflow: ellipsis; background-color: var(--bg-night-dark);">
-                        <button type="button" onclick="copiarPix()" id="btn-copiar" class="btn-cookie" style="padding: 0 20px; font-size: 0.9rem;">Copiar</button>
+                <div class="copia-cola-wrapper">
+                    <label class="form-label copia-cola-label">Código Pix Copia e Cola:</label>
+                    <div class="copia-cola-group">
+                        <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly class="form-control copia-cola-input">
+                        <button type="button" onclick="copiarPix()" id="btn-copiar" class="btn-cookie btn-copiar">Copiar</button>
                     </div>
                 </div>
                 {% endif %}
             {% endif %}
 
             <!-- Resumo do Pedido -->
-            <div style="background: var(--bg-night-dark); padding: 18px; border-radius: 10px; border: 1px solid var(--border-dark); margin-bottom: 25px;">
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 4px;">Resumo do Pedido</p>
-                <h2 class="checkout-title" style="font-size: 1.3rem; margin-bottom: 4px;">
+            <div class="order-summary-card">
+                <p class="order-summary-label">Resumo do Pedido</p>
+                <h2 class="checkout-title order-summary-title">
                     <span class="event-title-highlight">MaréVibes</span> Halloween 2026
                 </h2>
-                <strong style="color: #a855f7; font-size: 1.1rem; display: block;">
+                <strong class="order-summary-price">
                     {{ compra.quantidade }}x Ingresso(s) — R$ {{ "%.2f"|format(compra.total)|replace('.', ',') }}
                 </strong>
             </div>
 
-            <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.5; margin-bottom: 25px;">
+            <p class="payment-notice">
                 Assim que a transação for confirmada pelo sistema, seus ingressos estarão disponíveis na sua conta.
             </p>
 
             <!-- Ações -->
-            <a href="{{ url_for('meus_ingressos') }}" class="ticket-btn" style="text-decoration: none;">
+            <a href="{{ url_for('meus_ingressos') }}" class="ticket-btn ticket-btn-link">
                 Ir para Meus Ingressos
             </a>
 
@@ -166,13 +171,37 @@
             
             const btnCopiar = document.getElementById("btn-copiar");
             btnCopiar.innerText = "Copiado! ✓";
-            btnCopiar.style.background = "var(--success-color)";
+            btnCopiar.classList.add("btn-success");
             
             setTimeout(() => {
                 btnCopiar.innerText = "Copiar";
-                btnCopiar.style.background = "";
+                btnCopiar.classList.remove("btn-success");
             }, 3000);
         }
+
+        {% if compra.metodo_pagamento == 'pix' and compra.payment_id %}
+        const paymentId = "{{ compra.payment_id }}";
+        
+        function checarStatusPix() {
+            fetch(`/api/checar-status-pagamento/${paymentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'approved' && data.redirect_url) {
+                        const badge = document.getElementById('status-pix-badge');
+                        if (badge) {
+                            badge.classList.add('approved');
+                            badge.innerText = '✅ Pagamento Aprovado! Redirecionando...';
+                        }
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 1000);
+                    }
+                })
+                .catch(err => console.error("Erro ao verificar status do pagamento:", err));
+        }
+
+        setInterval(checarStatusPix, 3000);
+        {% endif %}
     </script>
 
 </body>
