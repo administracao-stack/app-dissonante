@@ -25,12 +25,12 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolvimento')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# --- Configurações de E-mail Ajustadas para Evitar Conflitos de SSL/TLS ---
+# --- Configurações do Servidor SMTP (Google Workspace / Gmail) ---
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
 mail_port = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_PORT'] = mail_port
 
-# Previne o conflito: Porta 465 usa SSL, Porta 587 usa TLS
+# Previne conflito entre SSL e TLS
 if mail_port == 465:
     app.config['MAIL_USE_SSL'] = True
     app.config['MAIL_USE_TLS'] = False
@@ -41,11 +41,11 @@ else:
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_TIMEOUT'] = 10  # Previne travamentos na conexão SMTP
+app.config['MAIL_TIMEOUT'] = 10
 
 mail = Mail(app)
 
-# URL do Banco de Dados com Tratamento SSL para o Render
+# URL do Banco de Dados com ajuste para SSL no Render
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
     if database_url.startswith("postgres://"):
@@ -151,7 +151,7 @@ def inicializar_banco():
             print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar banco: {str(e)}")
 
 # --------------------------------------------------------------------------
-# Funções Auxiliares e Envio Assíncrono
+# Decoradores e Funções Auxiliares
 # --------------------------------------------------------------------------
 
 def cliente_required(f):
@@ -188,9 +188,9 @@ def disparar_email_async(app_obj, msg):
     with app_obj.app_context():
         try:
             mail.send(msg)
-            print(f"[E-MAIL ENVIADO]: Para {msg.recipients}")
+            print(f"[E-MAIL ENVIADO COM SUCESSO]: Para {msg.recipients}")
         except Exception as e:
-            print(f"[ERRO NO ENVIO DE E-MAIL]: {str(e)}")
+            print(f"[ERRO DISPARO E-MAIL ASYNC]: {str(e)}")
 
 def enviar_email_confirmacao(usuario_email, usuario_nome, token):
     link_validacao = url_for('validar_email', token=token, _external=True)
@@ -204,7 +204,7 @@ def enviar_email_confirmacao(usuario_email, usuario_nome, token):
 
 Seja bem-vindo(a) à Dissonante Experiências.
 
-Para ativar a sua conta, clique no link de confirmação abaixo:
+Para ativar a sua conta e garantir o acesso aos seus ingressos, clique no link de confirmação abaixo:
 {link_validacao}
 
 Atenção: Este link expirará em 24 horas.
@@ -219,8 +219,43 @@ Equipe Dissonante Experiências
     thread.start()
     return True
 
+def gerar_codigo_ingresso():
+    hash_aleatorio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+    return f"DISSONANTE-HLW-{hash_aleatorio}"
+
+def extrair_ddd_e_numero(telefone_raw):
+    numeros = re.sub(r'\D', '', str(telefone_raw or ''))
+    if len(numeros) >= 10:
+        return numeros[:2], numeros[2:]
+    return "85", numeros if numeros else "999999999"
+
+def extrair_ref_externa(ext_ref):
+    try:
+        if ext_ref and "|" in ext_ref:
+            partes = ext_ref.split("|")
+            if len(partes) == 3:
+                return int(partes[0]), int(partes[1]), int(partes[2])
+    except (ValueError, TypeError):
+        pass
+    return None, None, None
+
+def gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade):
+    existentes = Ingresso.query.filter_by(pagamento_id=str(payment_id)).count()
+    if existentes == 0:
+        for _ in range(quantidade):
+            novo_ingresso = Ingresso(
+                codigo_qr=gerar_codigo_ingresso(),
+                usuario_id=user_id,
+                lote_id=lote_id,
+                pagamento_id=str(payment_id)
+            )
+            db.session.add(novo_ingresso)
+        db.session.commit()
+        return True
+    return False
+
 # --------------------------------------------------------------------------
-# Rotas
+# Rotas Públicas
 # --------------------------------------------------------------------------
 
 @app.route('/')
@@ -236,6 +271,62 @@ def evento_marevibes():
     lotes = Lote.query.order_by(Lote.id.asc()).all()
     lote_ativo = Lote.query.filter_by(ativo=True).first()
     return render_template('evento_marevibes.html', lote=lote_ativo, lotes=lotes)
+
+@app.route('/termos-de-uso')
+def termos_de_uso():
+    return render_template('termos_de_uso.html')
+
+@app.route('/politica-de-privacidade')
+def politica_privacidade():
+    return render_template('politica_privacidade.html')
+
+@app.route('/contato', methods=['GET', 'POST'])
+def contato():
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        email_cliente = request.form.get('email', '').strip()
+        assunto = request.form.get('assunto', '').strip()
+        mensagem = request.form.get('mensagem', '').strip()
+
+        email_empresa = app.config['MAIL_USERNAME']
+
+        if not email_empresa:
+            flash('Serviço de e-mail indisponível no momento. Tente contato via WhatsApp.', 'warning')
+            return redirect(url_for('contato'))
+
+        msg = Message(
+            subject=f"[Contato via Site] {assunto}",
+            recipients=[email_empresa],
+            reply_to=email_cliente
+        )
+
+        msg.body = f"""
+Nova mensagem de contato recebida pelo site:
+
+Nome: {nome}
+E-mail do Cliente: {email_cliente}
+Assunto: {assunto}
+
+Mensagem:
+--------------------------------------------------
+{mensagem}
+--------------------------------------------------
+        """
+
+        thread = threading.Thread(
+            target=disparar_email_async, 
+            args=(app._get_current_object(), msg)
+        )
+        thread.start()
+
+        flash('Mensagem enviada com sucesso! Em breve entraremos em contato.', 'success')
+        return redirect(url_for('contato'))
+
+    return render_template('contato.html')
+
+# --------------------------------------------------------------------------
+# Autenticação e Cadastro
+# --------------------------------------------------------------------------
 
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
@@ -276,7 +367,6 @@ def cadastro():
             db.session.add(novo_usuario)
             db.session.commit()
 
-            # Envio de e-mail em background
             token = gerar_token_confirmacao(novo_usuario.email)
             enviar_email_confirmacao(novo_usuario.email, novo_usuario.nome, token)
 
@@ -286,7 +376,7 @@ def cadastro():
         except Exception as e:
             db.session.rollback()
             print(f"[ERRO NO CADASTRO]: {str(e)}")
-            flash(f'Erro ao realizar cadastro: {str(e)}', 'danger')
+            flash(f'Erro interno ao realizar cadastro: {str(e)}', 'danger')
             return redirect(url_for('cadastro'))
 
     return render_template('cadastro.html')
@@ -344,7 +434,329 @@ def logout():
     flash('Sessão encerrada com sucesso.', 'info')
     return redirect(url_for('login'))
 
-# Inicializa banco de dados
+# --------------------------------------------------------------------------
+# Checkout
+# --------------------------------------------------------------------------
+
+@app.route('/checkout', methods=['GET', 'POST'])
+@cliente_required
+def checkout():
+    lote_id_req = request.form.get('lote_id', type=int) or request.args.get('lote_id', type=int)
+    
+    if lote_id_req:
+        lote_ativo = Lote.query.get(lote_id_req)
+    else:
+        lote_ativo = Lote.query.filter_by(ativo=True).first()
+
+    if not lote_ativo:
+        flash('Nenhum lote de ingressos disponível no momento.', 'warning')
+        return redirect(url_for('evento_marevibes'))
+
+    usuario_id = session.get('usuario_id')
+    usuario_atual = Usuario.query.get(usuario_id) if usuario_id else None
+
+    if not usuario_atual:
+        session.clear()
+        flash('Sua sessão expirou. Por favor, faça login novamente.', 'warning')
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        try:
+            quantidade = max(1, int(request.form.get('quantidade', 1)))
+        except (ValueError, TypeError):
+            quantidade = 1
+
+        metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
+        
+        if 'promocional' in lote_ativo.nome.lower() and metodo_pagamento != 'pix':
+            flash('O Lote Promocional aceita apenas pagamento via Pix.', 'warning')
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+        ingressos_vendidos_lote = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
+        disponiveis_lote = lote_ativo.quantidade_total - ingressos_vendidos_lote
+
+        if quantidade > disponiveis_lote:
+            flash(f'Restam apenas {disponiveis_lote} ingresso(s) no {lote_ativo.nome}.', 'danger')
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+        total = quantidade * lote_ativo.preco
+
+        nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
+        first_name = nome_completo[0]
+        last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
+
+        cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf or '')
+        ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone)
+
+        if len(cpf_usuario) != 11:
+            flash('É necessário possuir um CPF válido cadastrado na conta para concluir a compra.', 'danger')
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+        payer_payload = {
+            "email": usuario_atual.email,
+            "first_name": first_name,
+            "last_name": last_name,
+            "phone": {
+                "area_code": ddd_tel,
+                "number": num_tel
+            },
+            "identification": {
+                "type": "CPF",
+                "number": cpf_usuario
+            }
+        }
+
+        if not sdk:
+            flash('Ambiente de demonstração: Configure MP_ACCESS_TOKEN no .env para integrar ao Mercado Pago.', 'info')
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+        if metodo_pagamento == 'pix':
+            payment_data = {
+                "transaction_amount": float(total),
+                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
+                "payment_method_id": "pix",
+                "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
+                "payer": payer_payload
+            }
+
+            try:
+                payment_response = sdk.payment().create(payment_data)
+                payment = payment_response.get("response", {})
+                status_code = payment_response.get("status")
+
+                if status_code in [200, 201] and payment.get("status") in ["pending", "approved"]:
+                    pix_info = payment.get("point_of_interaction", {}).get("transaction_data", {})
+                    session['compra_atual'] = {
+                        'metodo_pagamento': 'pix',
+                        'payment_id': str(payment.get("id")),
+                        'lote_id': lote_ativo.id,
+                        'total': float(total),
+                        'quantidade': quantidade,
+                        'qr_code': pix_info.get("qr_code"),
+                        'qr_code_base64': pix_info.get("qr_code_base64")
+                    }
+                    return redirect(url_for('pagamento'))
+                else:
+                    cause = payment.get("cause", [])
+                    detalhe = cause[0].get("description") if cause else payment.get("message", "Erro desconhecido")
+                    flash(f'Erro no processamento do Pix: {detalhe}', 'danger')
+                    return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+            except Exception as e:
+                print("Exceção fatal ao criar PIX:", str(e))
+                flash('Falha de conexão com o Mercado Pago. Tente novamente.', 'danger')
+                return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+        elif metodo_pagamento == 'credit_card':
+            token = request.form.get('token')
+            installments = int(request.form.get('installments', 1))
+            payment_method_id = request.form.get('payment_method_id')
+            issuer_id = request.form.get('issuer_id')
+
+            if installments > 2:
+                installments = 2
+
+            if not token or not payment_method_id:
+                flash('Dados do cartão incompletos ou não tokenizados. Verifique os dados inseridos.', 'warning')
+                return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+            payment_data = {
+                "transaction_amount": float(total),
+                "token": token,
+                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
+                "installments": installments,
+                "payment_method_id": payment_method_id,
+                "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
+                "payer": payer_payload
+            }
+
+            if issuer_id:
+                payment_data["issuer_id"] = issuer_id
+
+            try:
+                payment_response = sdk.payment().create(payment_data)
+                payment = payment_response.get("response", {})
+                status = payment.get("status")
+                payment_id = payment.get("id")
+
+                if status == "approved":
+                    gerar_ingressos_para_pagamento(payment_id, usuario_atual.id, lote_ativo.id, quantidade)
+
+                    session['compra_atual'] = {
+                        'metodo_pagamento': 'credit_card',
+                        'status': 'approved',
+                        'payment_id': str(payment_id),
+                        'lote_id': lote_ativo.id,
+                        'total': float(total),
+                        'quantidade': quantidade
+                    }
+
+                    flash('Pagamento aprovado com sucesso! Seus ingressos foram gerados.', 'success')
+                    return redirect(url_for('pagamento'))
+                
+                elif status == "in_process":
+                    session['compra_atual'] = {
+                        'metodo_pagamento': 'credit_card',
+                        'status': 'in_process',
+                        'payment_id': str(payment_id),
+                        'lote_id': lote_ativo.id,
+                        'total': float(total),
+                        'quantidade': quantidade
+                    }
+                    flash('Pagamento em análise pela operadora.', 'info')
+                    return redirect(url_for('pagamento'))
+                else:
+                    status_detail = payment.get("status_detail", "Cartão recusado.")
+                    flash(f'Transação não autorizada: {status_detail}.', 'danger')
+                    return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+            except Exception as e:
+                print("Exceção ao processar Cartão:", str(e))
+                flash('Falha na comunicação com a operadora do cartão.', 'danger')
+                return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
+    return render_template('checkout.html', lote=lote_ativo)
+
+@app.route('/pagamento')
+@cliente_required
+def pagamento():
+    compra = session.get('compra_atual')
+    if not compra:
+        flash('Nenhuma transação ativa encontrada.', 'info')
+        return redirect(url_for('checkout'))
+    return render_template('pagamento.html', compra=compra)
+
+@app.route('/api/checar-status-pagamento/<payment_id>')
+@cliente_required
+def checar_status_pagamento(payment_id):
+    if not sdk:
+        return jsonify({"status": "pending"})
+
+    try:
+        payment_response = sdk.payment().get(payment_id)
+        payment_info = payment_response.get("response", {})
+        status = payment_info.get("status")
+
+        if status == "approved":
+            ext_ref = payment_info.get("external_reference", "")
+            user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
+            if user_id and lote_id and qtd:
+                gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
+
+            session.pop('compra_atual', None)
+            return jsonify({"status": "approved", "redirect_url": url_for('meus_ingressos')})
+
+        return jsonify({"status": status or "pending"})
+    except Exception as e:
+        print(f"[ERRO POLLING PAGAMENTO]: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/webhook/mercadopago', methods=['POST'])
+def webhook_mercadopago():
+    if not sdk:
+        return jsonify({"status": "ok"}), 200
+
+    data = request.get_json() or {}
+    if data.get("type") == "payment":
+        payment_id = data.get("data", {}).get("id")
+        
+        try:
+            payment_info = sdk.payment().get(payment_id).get("response", {})
+            
+            if payment_info.get("status") == "approved":
+                ext_ref = payment_info.get("external_reference", "")
+                user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
+                
+                if user_id and lote_id and qtd:
+                    gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
+                else:
+                    payer_email = payment_info.get("payer", {}).get("email")
+                    usuario = Usuario.query.filter_by(email=payer_email).first()
+                    lote = Lote.query.filter_by(ativo=True).first()
+                    if usuario and lote:
+                        gerar_ingressos_para_pagamento(payment_id, usuario.id, lote.id, 1)
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"[ERRO WEBHOOK MERCADO PAGO]: {str(e)}")
+
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/meus-ingressos')
+@cliente_required
+def meus_ingressos():
+    ingressos_db = Ingresso.query.filter_by(usuario_id=session['usuario_id']).order_by(Ingresso.data_compra.desc()).all()
+    return render_template('meus_ingressos.html', vendas=ingressos_db)
+
+# --------------------------------------------------------------------------
+# Área Administrativa
+# --------------------------------------------------------------------------
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    lotes = Lote.query.all()
+    lote_ativo = Lote.query.filter_by(ativo=True).first()
+    
+    vendidos = Ingresso.query.count()
+    utilizados = Ingresso.query.filter_by(status='utilizado').count()
+    
+    receita_total = db.session.query(func.sum(Lote.preco))\
+        .join(Ingresso, Ingresso.lote_id == Lote.id)\
+        .scalar() or 0.0
+
+    stats = {
+        'lote_ativo_nome': lote_ativo.nome if lote_ativo else 'Nenhum Lote Ativo',
+        'lote_ativo_preco': lote_ativo.preco if lote_ativo else 0.0,
+        'ingressos_vendidos': vendidos,
+        'ingressos_utilizados': utilizados,
+        'receita_total': receita_total
+    }
+    
+    return render_template('admin/dashboard.html', stats=stats, lotes=lotes)
+
+@app.route('/admin/trocar-lote/<int:lote_id>')
+@admin_required
+def trocar_lote_ativo(lote_id):
+    Lote.query.update({Lote.ativo: False})
+    lote_alvo = Lote.query.get_or_404(lote_id)
+    lote_alvo.ativo = True
+    db.session.commit()
+    flash(f'Lote ativo alterado para: {lote_alvo.nome} (R$ {lote_alvo.preco:.2f})', 'success')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/validar', methods=['GET', 'POST'])
+@admin_required
+def painel_validacao():
+    resultado = None
+    codigo_buscado = ""
+
+    if request.method == 'POST':
+        codigo_buscado = request.form.get('codigo', '').strip()
+        acao = request.form.get('acao')
+
+        ingresso = Ingresso.query.filter_by(codigo_qr=codigo_buscado).first()
+
+        if not ingresso:
+            flash('INGRESSO NÃO ENCONTRADO NO BANCO DE DADOS!', 'danger')
+        else:
+            if acao == 'dar_baixa':
+                if ingresso.status == 'utilizado':
+                    flash('ATENÇÃO: Este ingresso JÁ FOI UTILIZADO anteriormente!', 'warning')
+                else:
+                    ingresso.status = 'utilizado'
+                    ingresso.data_uso = datetime.now(timezone.utc)
+                    db.session.commit()
+                    flash('ENTRADA LIBERADA! Ingresso marcado como UTILIZADO.', 'success')
+            
+            resultado = ingresso
+
+    return render_template('admin/validar.html', resultado=resultado, codigo=codigo_buscado)
+
+# --------------------------------------------------------------------------
+# Inicialização do Banco de Dados
+# --------------------------------------------------------------------------
+
 inicializar_banco()
 
 if __name__ == '__main__':
