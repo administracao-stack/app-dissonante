@@ -160,6 +160,22 @@ def extrair_ddd_e_numero(telefone_raw):
         return numeros[:2], numeros[2:]
     return "85", numeros if numeros else "999999999"
 
+def gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade):
+    """Gera os ingressos no banco evitando duplicações para o mesmo pagamento."""
+    existentes = Ingresso.query.filter_by(pagamento_id=str(payment_id)).count()
+    if existentes == 0:
+        for _ in range(quantidade):
+            novo_ingresso = Ingresso(
+                codigo_qr=gerar_codigo_ingresso(),
+                usuario_id=user_id,
+                lote_id=lote_id,
+                pagamento_id=str(payment_id)
+            )
+            db.session.add(novo_ingresso)
+        db.session.commit()
+        return True
+    return False
+
 # --------------------------------------------------------------------------
 # Rotas Públicas
 # --------------------------------------------------------------------------
@@ -338,8 +354,8 @@ def checkout():
             flash(f'Restam apenas {disponiveis_lote} ingresso(s) no {lote_ativo.nome}.', 'danger')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
-        # ⚠️ MODIFICAÇÃO DE TESTE: Sobrescrevendo o preço unitário para R$ 1,00
-        preco_unitario = 1.00
+        # Preço real vindo da tabela do lote ativo
+        preco_unitario = lote_ativo.preco
         total = quantidade * preco_unitario
 
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
@@ -369,7 +385,7 @@ def checkout():
         if metodo_pagamento == 'pix':
             payment_data = {
                 "transaction_amount": float(total),
-                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes [TESTE]",
+                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
                 "payment_method_id": "pix",
                 "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
                 "payer": payer_payload
@@ -379,9 +395,6 @@ def checkout():
                 payment_response = sdk.payment().create(payment_data)
                 payment = payment_response.get("response", {})
                 status_code = payment_response.get("status")
-
-                print(f"--- [DEBUG LOG PIX] Status: {status_code} ---")
-                print("Response Payload:", payment)
 
                 if status_code in [200, 201] and payment.get("status") in ["pending", "approved"]:
                     pix_info = payment.get("point_of_interaction", {}).get("transaction_data", {})
@@ -398,7 +411,7 @@ def checkout():
                 else:
                     cause = payment.get("cause", [])
                     detalhe = cause[0].get("description") if cause else payment.get("message", "Erro desconhecido")
-                    flash(f'Erro MP ({status_code}): {detalhe}', 'danger')
+                    flash(f'Erro no processamento do Pix: {detalhe}', 'danger')
                     return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
             except Exception as e:
@@ -418,7 +431,7 @@ def checkout():
             payment_data = {
                 "transaction_amount": float(total),
                 "token": token,
-                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes [TESTE]",
+                "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
                 "installments": installments,
                 "payment_method_id": payment_method_id,
                 "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
@@ -429,22 +442,15 @@ def checkout():
                 payment_response = sdk.payment().create(payment_data)
                 payment = payment_response.get("response", {})
                 status = payment.get("status")
+                payment_id = payment.get("id")
 
                 if status == "approved":
-                    for _ in range(quantidade):
-                        novo_ingresso = Ingresso(
-                            codigo_qr=gerar_codigo_ingresso(),
-                            usuario_id=usuario_atual.id,
-                            lote_id=lote_ativo.id,
-                            pagamento_id=str(payment.get("id"))
-                        )
-                        db.session.add(novo_ingresso)
-                    db.session.commit()
+                    gerar_ingressos_para_pagamento(payment_id, usuario_atual.id, lote_ativo.id, quantidade)
 
                     session['compra_atual'] = {
                         'metodo_pagamento': 'credit_card',
                         'status': 'approved',
-                        'payment_id': payment.get("id"),
+                        'payment_id': payment_id,
                         'lote_id': lote_ativo.id,
                         'total': float(total),
                         'quantidade': quantidade
@@ -457,7 +463,7 @@ def checkout():
                     session['compra_atual'] = {
                         'metodo_pagamento': 'credit_card',
                         'status': 'in_process',
-                        'payment_id': payment.get("id"),
+                        'payment_id': payment_id,
                         'lote_id': lote_ativo.id,
                         'total': float(total),
                         'quantidade': quantidade
@@ -483,6 +489,29 @@ def pagamento():
         return redirect(url_for('checkout'))
     return render_template('pagamento.html', compra=compra)
 
+# API Polling para consultar status do pagamento Pix
+@app.route('/api/checar-status-pagamento/<payment_id>')
+@cliente_required
+def checar_status_pagamento(payment_id):
+    try:
+        payment_response = sdk.payment().get(payment_id)
+        payment_info = payment_response.get("response", {})
+        status = payment_info.get("status")
+
+        if status == "approved":
+            ext_ref = payment_info.get("external_reference", "")
+            if ext_ref and "|" in ext_ref:
+                user_id, lote_id, qtd = map(int, ext_ref.split("|"))
+                gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
+
+            session.pop('compra_atual', None)
+            return jsonify({"status": "approved", "redirect_url": url_for('meus_ingressos')})
+
+        return jsonify({"status": status or "pending"})
+    except Exception as e:
+        print(f"[ERRO POLLING PAGAMENTO]: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 # Webhook Mercado Pago
 @app.route('/webhook/mercadopago', methods=['POST'])
 def webhook_mercadopago():
@@ -494,29 +523,18 @@ def webhook_mercadopago():
             payment_info = sdk.payment().get(payment_id).get("response", {})
             
             if payment_info.get("status") == "approved":
-                if not Ingresso.query.filter_by(pagamento_id=str(payment_id)).first():
-                    ext_ref = payment_info.get("external_reference", "")
-                    
-                    if ext_ref and "|" in ext_ref:
-                        user_id, lote_id, qtd = map(int, ext_ref.split("|"))
-                        usuario = Usuario.query.get(user_id)
-                        lote = Lote.query.get(lote_id)
-                    else:
-                        payer_email = payment_info.get("payer", {}).get("email")
-                        usuario = Usuario.query.filter_by(email=payer_email).first()
-                        lote = Lote.query.filter_by(ativo=True).first()
-                        qtd = 1
-
+                ext_ref = payment_info.get("external_reference", "")
+                
+                if ext_ref and "|" in ext_ref:
+                    user_id, lote_id, qtd = map(int, ext_ref.split("|"))
+                    gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
+                else:
+                    payer_email = payment_info.get("payer", {}).get("email")
+                    usuario = Usuario.query.filter_by(email=payer_email).first()
+                    lote = Lote.query.filter_by(ativo=True).first()
                     if usuario and lote:
-                        for _ in range(qtd):
-                            novo_ingresso = Ingresso(
-                                codigo_qr=gerar_codigo_ingresso(),
-                                usuario_id=usuario.id,
-                                lote_id=lote.id,
-                                pagamento_id=str(payment_id)
-                            )
-                            db.session.add(novo_ingresso)
-                        db.session.commit()
+                        gerar_ingressos_para_pagamento(payment_id, usuario.id, lote.id, 1)
+
         except Exception as e:
             db.session.rollback()
             print(f"[ERRO WEBHOOK MERCADO PAGO]: {str(e)}")
