@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Checkout - {{ evento.titulo }}{% endblock %}
+{% block title %}Checkout — MaréVibes Halloween 2026{% endblock %}
 
 {% block content %}
 <div class="checkout-wrapper">
@@ -22,16 +22,23 @@
             
             <!-- Cabeçalho do Evento -->
             <div class="checkout-header-info">
-                <h1 class="checkout-event-title neon-highlight">{{ evento.titulo }}</h1>
+                <h1 class="checkout-event-title neon-highlight">
+                    {{ evento.titulo if evento else 'MaréVibes Halloween 2026' }}
+                </h1>
                 <p class="event-details">
-                    <i class="fas fa-calendar-alt"></i> {{ evento.data_hora.strftime('%d de %B, às %HH') }} • {{ evento.local }}
+                    <i class="fas fa-calendar-alt"></i> 
+                    {% if evento and evento.data_hora %}
+                        {{ evento.data_hora.strftime('%d de %B, às %HH') }} • {{ evento.local }}
+                    {% else %}
+                        31 de Outubro, às 22h • Barraca MaréVibes, Praia do Futuro
+                    {% endif %}
                 </p>
                 <div class="lote-badge-info">
                     <strong>Lote Atual:</strong> {{ lote.nome }} — <span class="text-gold">R$ {{ "%.2f"|format(lote.preco) }}</span>
                 </div>
             </div>
 
-            <!-- Avisos e Alertas do Systema -->
+            <!-- Avisos e Alertas do Sistema -->
             {% if ambiente_teste %}
             <div class="alert alert-warning">
                 <strong>⚠️ ATENÇÃO — AMBIENTE DE TESTES:</strong><br>
@@ -46,7 +53,7 @@
             {% endif %}
 
             <!-- Formulário do Checkout -->
-            <form method="POST" id="form-checkout">
+            <form method="POST" action="{{ url_for('checkout') }}" id="form-checkout">
                 <input type="hidden" name="lote_id" value="{{ lote.id }}">
 
                 <!-- ETAPA 1: SELEÇÃO DE INGRESSOS -->
@@ -72,10 +79,10 @@
                     <h3 class="checkout-section-title">Forma de Pagamento</h3>
                     
                     <div class="auth-group">
-                        <label for="forma_pagamento">Como deseja pagar?</label>
-                        <select name="forma_pagamento" id="forma_pagamento" class="form-control form-select" onchange="togglePaymentFields()">
+                        <label for="metodo_pagamento">Como deseja pagar?</label>
+                        <select name="metodo_pagamento" id="metodo_pagamento" class="form-control form-select" onchange="togglePaymentFields()">
                             <option value="pix">Pix (Liberação imediata)</option>
-                            <option value="cartao">Cartão de Crédito (Até 2x)</option>
+                            <option value="credit_card">Cartão de Crédito (Até 2x)</option>
                         </select>
                     </div>
 
@@ -107,8 +114,8 @@
                         </div>
                         
                         <div class="auth-group">
-                            <label for="parcelas">Parcelamento</label>
-                            <select name="parcelas" id="parcelas" class="form-control form-select">
+                            <label for="installments">Parcelamento</label>
+                            <select name="installments" id="installments" class="form-control form-select">
                                 <option value="1">1x de R$ {{ "%.2f"|format(lote.preco) }} (À vista)</option>
                                 <option value="2">2x de R$ {{ "%.2f"|format(lote.preco / 2) }}</option>
                             </select>
@@ -148,12 +155,12 @@
     }
 
     function togglePaymentFields() {
-        const forma = document.getElementById('forma_pagamento').value;
+        const forma = document.getElementById('metodo_pagamento').value;
         const divCartao = document.getElementById('dados_cartao');
         const pixNote = document.getElementById('pix-note');
         const btnFinalizar = document.getElementById('btn-finalizar');
 
-        if (forma === 'cartao') {
+        if (forma === 'credit_card') {
             divCartao.classList.remove('step-hidden');
             pixNote.classList.add('step-hidden');
             btnFinalizar.innerText = 'Finalizar Pagamento com Cartão';
