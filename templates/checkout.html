@@ -1,292 +1,186 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comprar Ingresso | Dissonante Experiências</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- SDK v2 do Mercado Pago -->
-    <script src="https://sdk.mercadopago.com/js/v2"></script>
-</head>
-<body class="bg-dark">
+{% extends 'base.html' %}
+{% block title %}Checkout - {{ evento.titulo }}{% endblock %}
 
-    <!-- Header Padrão do Site -->
-    <header class="site-header">
-        <div class="container">
-            <div class="navbar-content">
-                <a href="{{ url_for('index') }}" class="brand-logo">
-                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
-                    <div class="logo-text">
-                        <span class="brand-name">DISSONANTE</span>
-                        <span class="brand-sub">EXPERIÊNCIAS</span>
-                    </div>
-                </a>
-
-                <nav class="nav-menu">
-                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
-                    <a href="{{ url_for('index') }}#eventos">Eventos</a>
-                    <a href="https://wa.me/558592636062?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" class="svg-whatsapp-icon">
-                            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
-                        </svg>
-                        Fale Conosco
-                    </a>
-                </nav>
-
-                <div class="header-cta">
-                    {% if session.get('usuario_id') %}
-                        <a href="{{ url_for('meus_ingressos') }}" class="btn-cliente">Meus Ingressos</a>
-                    {% else %}
-                        <a href="{{ url_for('login') }}" class="btn-cliente">Área do Cliente</a>
-                    {% endif %}
-                </div>
+{% block content %}
+<div class="checkout-wrapper">
+    <div class="container checkout-container-narrow">
+        
+        <!-- Indicador de Etapas (Wizard) -->
+        <div class="checkout-steps">
+            <div class="step-item active" id="indicator-step-1">
+                <div class="step-number">1</div>
+                <span>Ingressos</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" id="indicator-step-2">
+                <div class="step-number">2</div>
+                <span>Pagamento</span>
             </div>
         </div>
-    </header>
 
-    {% set e_promocional = 'promocional' in lote.nome.lower() %}
-    
-    <!-- ⚠️ MODIFICAÇÃO DE TESTE: Sobrescrevendo o preço do lote para R$ 1.00 -->
-    {% set preco_teste = 1.00 %}
-
-    <!-- Seção Principal de Checkout -->
-    <section class="checkout-section">
-        <div class="container checkout-container">
+        <div class="checkout-card">
             
-            <div class="event-card checkout-card">
-                
-                <div class="checkout-header">
-                    <h2 class="checkout-event-title">
-                        <span class="neon-highlight">MaréVibes</span> Halloween 2026
-                    </h2>
-                    <p class="checkout-event-date">📅 31 de Outubro, às 17h • Itaperi, Fortaleza</p>
-                    
-                    <div class="lote-badge">
-                        Lote Atual: {{ lote.nome }} — 🧪 TESTE: R$ {{ "%.2f"|format(preco_teste)|replace('.', ',') }}
-                    </div>
-
-                    <!-- 🟡 NOVO AVISO DE SEGURANÇA / MODO TESTE -->
-                    <div class="alert-ambiente-teste">
-                        ⚠️ <strong>ATENÇÃO — AMBIENTE DE TESTES:</strong><br>
-                        Este formulário está em fase de homologação. Nenhum ingresso real está sendo emitido ou comercializado neste momento.
-                    </div>
+            <!-- Cabeçalho do Evento -->
+            <div class="checkout-header-info">
+                <h1 class="checkout-event-title neon-highlight">{{ evento.titulo }}</h1>
+                <p class="event-details">
+                    <i class="fas fa-calendar-alt"></i> {{ evento.data_hora.strftime('%d de %B, às %HH') }} • {{ evento.local }}
+                </p>
+                <div class="lote-badge-info">
+                    <strong>Lote Atual:</strong> {{ lote.nome }} — <span class="text-gold">R$ {{ "%.2f"|format(lote.preco) }}</span>
                 </div>
+            </div>
 
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                  {% if messages %}
-                    {% for category, message in messages %}
-                      <div class="alert alert-{{ category }} checkout-flash-alert">
-                        {{ message }}
-                      </div>
-                    {% endfor %}
-                  {% endif %}
-                {% endwith %}
+            <!-- Avisos e Alertas do Systema -->
+            {% if ambiente_teste %}
+            <div class="alert alert-warning">
+                <strong>⚠️ ATENÇÃO — AMBIENTE DE TESTES:</strong><br>
+                Este formulário está em fase de homologação. Nenhum ingresso real está sendo emitido ou comercializado neste momento.
+            </div>
+            {% endif %}
 
-                <form action="{{ url_for('checkout') }}" method="POST" id="form-checkout">
+            {% if error %}
+            <div class="alert alert-danger">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <!-- Formulário do Checkout -->
+            <form method="POST" id="form-checkout">
+                <input type="hidden" name="lote_id" value="{{ lote.id }}">
+
+                <!-- ETAPA 1: SELEÇÃO DE INGRESSOS -->
+                <div id="step-1" class="checkout-step">
+                    <h3 class="checkout-section-title">Quantidade de Ingressos</h3>
                     
-                    <!-- Quantidade -->
-                    <div class="form-group checkout-form-group">
-                        <label for="quantidade" class="checkout-label">Quantidade de Ingressos</label>
-                        <select id="quantidade" name="quantidade" class="checkout-input" onchange="atualizarValores()">
-                            <option value="1">1 Ingresso - R$ {{ "%.2f"|format(preco_teste)|replace('.', ',') }}</option>
-                            <option value="2">2 Ingressos - R$ {{ "%.2f"|format(preco_teste * 2)|replace('.', ',') }}</option>
-                            <option value="3">3 Ingressos - R$ {{ "%.2f"|format(preco_teste * 3)|replace('.', ',') }}</option>
-                            <option value="4">4 Ingressos - R$ {{ "%.2f"|format(preco_teste * 4)|replace('.', ',') }}</option>
+                    <div class="auth-group">
+                        <label for="quantidade">Selecione a quantidade</label>
+                        <select name="quantidade" id="quantidade" class="form-control form-select">
+                            {% for i in range(1, 5) %}
+                            <option value="{{ i }}">{{ i }} Ingresso{% if i > 1 %}s{% endif %} — R$ {{ "%.2f"|format(lote.preco * i) }}</option>
+                            {% endfor %}
                         </select>
                     </div>
 
-                    <!-- Forma de Pagamento -->
-                    <div class="form-group checkout-form-group">
-                        <label class="checkout-label">Forma de Pagamento</label>
-                        
-                        <div class="metodos-pagamento-grid">
-                            <label class="metodo-opcao">
-                                <input type="radio" name="metodo_pagamento" value="pix" checked onclick="alternarPagamento('pix')">
-                                <span class="metodo-texto">Pix</span>
-                            </label>
+                    <button type="button" class="btn-primary btn-block-action" onclick="goToStep(2)">
+                        Avançar para Pagamento →
+                    </button>
+                </div>
 
-                            <label class="metodo-opcao {% if e_promocional %}disabled{% endif %}">
-                                <input type="radio" name="metodo_pagamento" value="credit_card" {% if e_promocional %}disabled{% else %}onclick="alternarPagamento('credit_card')"{% endif %}>
-                                <span class="metodo-texto">Cartão (Até 2x) {% if e_promocional %}(Indisponível){% endif %}</span>
-                            </label>
-                        </div>
-
-                        {% if e_promocional %}
-                            <p class="alerta-promocional">* O Lote Promocional aceita apenas pagamento via Pix.</p>
-                        {% endif %}
+                <!-- ETAPA 2: FORMA DE PAGAMENTO -->
+                <div id="step-2" class="checkout-step step-hidden">
+                    <h3 class="checkout-section-title">Forma de Pagamento</h3>
+                    
+                    <div class="auth-group">
+                        <label for="forma_pagamento">Como deseja pagar?</label>
+                        <select name="forma_pagamento" id="forma_pagamento" class="form-control form-select" onchange="togglePaymentFields()">
+                            <option value="pix">Pix (Liberação imediata)</option>
+                            <option value="cartao">Cartão de Crédito (Até 2x)</option>
+                        </select>
                     </div>
 
-                    <!-- Campos de Cartão de Crédito -->
-                    <div id="secao-cartao" class="secao-cartao">
-                        <div class="form-group cartao-form-group">
-                            <label class="cartao-label">Número do Cartão</label>
-                            <div id="form-checkout__cardNumber" class="iframe-container"></div>
-                        </div>
+                    <p class="payment-note-text" id="pix-note">
+                        * Pagamentos via Pix possuem confirmação em poucos segundos.
+                    </p>
 
-                        <div class="cartao-row">
-                            <div class="cartao-col">
-                                <label class="cartao-label">Validade (MM/AA)</label>
-                                <div id="form-checkout__expirationDate" class="iframe-container"></div>
+                    <!-- Campos do Cartão (Exibidos apenas ao selecionar Cartão) -->
+                    <div id="dados_cartao" class="card-fields-container step-hidden">
+                        <div class="auth-group">
+                            <label for="numero_cartao">Número do Cartão</label>
+                            <input type="text" id="numero_cartao" name="numero_cartao" class="form-control" placeholder="0000 0000 0000 0000" maxlength="19">
+                        </div>
+                        
+                        <div class="auth-row">
+                            <div class="auth-group">
+                                <label for="validade_cartao">Validade</label>
+                                <input type="text" id="validade_cartao" name="validade_cartao" class="form-control" placeholder="MM/AA" maxlength="5">
                             </div>
-                            <div class="cartao-col">
-                                <label class="cartao-label">CVV</label>
-                                <div id="form-checkout__securityCode" class="iframe-container"></div>
+                            <div class="auth-group">
+                                <label for="cvv_cartao">CVV</label>
+                                <input type="text" id="cvv_cartao" name="cvv_cartao" class="form-control" placeholder="123" maxlength="4">
                             </div>
                         </div>
-
-                        <div class="form-group cartao-form-group">
-                            <label class="cartao-label">Nome Impresso no Cartão</label>
-                            <input type="text" id="form-checkout__cardholderName" placeholder="Nome do titular" class="cartao-input">
+                        
+                        <div class="auth-group">
+                            <label for="nome_cartao">Nome Impresso no Cartão</label>
+                            <input type="text" id="nome_cartao" name="nome_cartao" class="form-control" placeholder="Nome como está no cartão">
                         </div>
-
-                        <div class="form-group">
-                            <label class="cartao-label">Parcelamento</label>
-                            <select name="installments" id="form-checkout__installments" class="cartao-input">
+                        
+                        <div class="auth-group">
+                            <label for="parcelas">Parcelamento</label>
+                            <select name="parcelas" id="parcelas" class="form-control form-select">
+                                <option value="1">1x de R$ {{ "%.2f"|format(lote.preco) }} (À vista)</option>
+                                <option value="2">2x de R$ {{ "%.2f"|format(lote.preco / 2) }}</option>
                             </select>
                         </div>
                     </div>
 
-                    <input type="hidden" name="token" id="token">
-                    <input type="hidden" name="payment_method_id" id="payment_method_id">
+                    <!-- Botões de Ação da Etapa 2 -->
+                    <div class="step-actions-group">
+                        <button type="button" class="btn-logout btn-action-back" onclick="goToStep(1)">← Voltar</button>
+                        <button type="submit" id="btn-finalizar" class="btn-primary btn-action-submit">Ir para o Pagamento PIX</button>
+                    </div>
+                </div>
 
-                    <button type="submit" id="btn-submit" class="ticket-btn btn-checkout-submit">
-                        Ir para o Pagamento PIX
-                    </button>
-
-                </form>
-            </div>
-
+            </form>
         </div>
-    </section>
+    </div>
+</div>
 
-    <!-- Footer Padrão do Site -->
-    <footer class="footer">
-        <div class="container footer-content">
-            <div class="footer-brand">
-                <h3>Dissonante Experiências</h3>
-                <p>Transformando eventos em memórias vivas.</p>
-            </div>
-            
-            <div class="footer-links">
-                <h4>Navegação</h4>
-                <ul>
-                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
-                    <li><a href="{{ url_for('index') }}#eventos">Eventos</a></li>
-                </ul>
-            </div>
+<script>
+    function goToStep(step) {
+        const step1 = document.getElementById('step-1');
+        const step2 = document.getElementById('step-2');
+        const ind1 = document.getElementById('indicator-step-1');
+        const ind2 = document.getElementById('indicator-step-2');
 
-            <div class="footer-links">
-                <h4>Contato</h4>
-                <ul>
-                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
-                    <li>Fortaleza - CE</li>
-                </ul>
-            </div>
+        if (step === 1) {
+            step1.classList.remove('step-hidden');
+            step2.classList.add('step-hidden');
+            ind1.classList.add('active');
+            ind2.classList.remove('active');
+        } else if (step === 2) {
+            step1.classList.add('step-hidden');
+            step2.classList.remove('step-hidden');
+            ind1.classList.remove('active');
+            ind2.classList.add('active');
+        }
+    }
 
-            <div class="footer-links">
-                <h4>Legal</h4>
-                <ul>
-                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
-                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="footer-bottom">
-            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
-        </div>
-    </footer>
+    function togglePaymentFields() {
+        const forma = document.getElementById('forma_pagamento').value;
+        const divCartao = document.getElementById('dados_cartao');
+        const pixNote = document.getElementById('pix-note');
+        const btnFinalizar = document.getElementById('btn-finalizar');
 
-    <!-- Script de Integração Mercado Pago -->
-    <script>
-        const mp = new MercadoPago('APP_USR-051ebaf7-2fbf-4699-866d-19f57d6617c2', {
-            locale: 'pt-BR'
+        if (forma === 'cartao') {
+            divCartao.classList.remove('step-hidden');
+            pixNote.classList.add('step-hidden');
+            btnFinalizar.innerText = 'Finalizar Pagamento com Cartão';
+        } else {
+            divCartao.classList.add('step-hidden');
+            pixNote.classList.remove('step-hidden');
+            btnFinalizar.innerText = 'Ir para o Pagamento PIX';
+        }
+    }
+
+    // Máscaras para os campos de Cartão
+    const numCartao = document.getElementById('numero_cartao');
+    if (numCartao) {
+        numCartao.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            v = v.replace(/(\d{4})(?=\d)/g, '$1 ');
+            e.target.value = v;
         });
+    }
 
-        const precoUnitario = 1.00;
-        let cardForm = null;
-
-        function alternarPagamento(tipo) {
-            const secaoCartao = document.getElementById('secao-cartao');
-            const btnSubmit = document.getElementById('btn-submit');
-
-            if (tipo === 'credit_card') {
-                secaoCartao.style.display = 'block';
-                btnSubmit.innerText = 'Pagar com Cartão de Crédito';
-                
-                if (!cardForm) {
-                    inicializarCamposCartao();
-                }
-            } else {
-                secaoCartao.style.display = 'none';
-                btnSubmit.innerText = 'Ir para o Pagamento PIX';
-            }
-        }
-
-        function inicializarCamposCartao() {
-            cardForm = mp.cardForm({
-                amount: (parseInt(document.getElementById('quantidade').value) * precoUnitario).toString(),
-                iframe: true,
-                form: {
-                    id: "form-checkout",
-                    cardNumber: { id: "form-checkout__cardNumber", placeholder: "0000 0000 0000 0000" },
-                    expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/AA" },
-                    securityCode: { id: "form-checkout__securityCode", placeholder: "123" },
-                    cardholderName: { id: "form-checkout__cardholderName" },
-                    installments: { id: "form-checkout__installments" }
-                },
-                callbacks: {
-                    onFormMounted: error => {
-                        if (error) console.warn("Erro ao montar iFrames de Cartão: ", error);
-                    },
-                    onSubmit: event => {
-                        const metodo = document.querySelector('input[name="metodo_pagamento"]:checked').value;
-                        if (metodo === 'pix') {
-                            document.getElementById('form-checkout').submit();
-                            return;
-                        }
-
-                        event.preventDefault();
-
-                        const {
-                            paymentMethodId: payment_method_id,
-                            issuerId: issuer_id,
-                            cardholderEmail: email,
-                            amount,
-                            token,
-                            installments,
-                        } = cardForm.getCardFormData();
-
-                        document.getElementById('token').value = token;
-                        document.getElementById('payment_method_id').value = payment_method_id;
-
-                        document.getElementById('form-checkout').submit();
-                    }
-                }
-            });
-        }
-
-        function atualizarValores() {
-            const qtd = parseInt(document.getElementById('quantidade').value);
-            const total = qtd * precoUnitario;
-            const selectParcelas = document.getElementById('form-checkout__installments');
-
-            selectParcelas.innerHTML = `
-                <option value="1">1x de R$ ${(total).toFixed(2).replace('.', ',')} (À vista)</option>
-                <option value="2">2x de R$ ${(total / 2).toFixed(2).replace('.', ',')} (Sem juros)</option>
-            `;
-
-            if (cardForm) {
-                cardForm.update({ amount: total.toString() });
-            }
-        }
-
-        atualizarValores();
-    </script>
-
-</body>
-</html>
+    const valCartao = document.getElementById('validade_cartao');
+    if (valCartao) {
+        valCartao.addEventListener('input', function (e) {
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 2) v = v.replace(/^(\d{2})(\d)/, '$1/$2');
+            e.target.value = v;
+        });
+    }
+</script>
+{% endblock %}
