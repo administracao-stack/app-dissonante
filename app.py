@@ -50,7 +50,22 @@ db = SQLAlchemy(app)
 # Configuração do Mercado Pago
 # --------------------------------------------------------------------------
 MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN', '')
-sdk = mercadopago.SDK(MERCADOPAGO_TOKEN)
+sdk = mercadopago.SDK(MERCADOPAGO_TOKEN) if MERCADOPAGO_TOKEN else None
+
+# --------------------------------------------------------------------------
+# Injeção de Contexto Global (Templates)
+# --------------------------------------------------------------------------
+@app.context_processor
+def inject_globals():
+    """Disponibiliza variáveis globais de evento e ambiente para todos os templates Jinja."""
+    evento_default = {
+        'titulo': 'MaréVibes Halloween 2026',
+        'data_hora': datetime(2026, 10, 31, 22, 0, tzinfo=timezone.utc),
+        'local': 'Barraca MaréVibes, Praia do Futuro',
+        'descricao': 'A maior festa de Halloween à beira-mar de Fortaleza!'
+    }
+    ambiente_teste = not MERCADOPAGO_TOKEN or MERCADOPAGO_TOKEN.startswith('TEST-')
+    return dict(evento=evento_default, ambiente_teste=ambiente_teste)
 
 # --------------------------------------------------------------------------
 # Modelos do Banco de Dados (ORM SQLAlchemy)
@@ -159,6 +174,17 @@ def extrair_ddd_e_numero(telefone_raw):
     if len(numeros) >= 10:
         return numeros[:2], numeros[2:]
     return "85", numeros if numeros else "999999999"
+
+def extrair_ref_externa(ext_ref):
+    """Extrai com segurança user_id, lote_id, quantidade da external_reference."""
+    try:
+        if ext_ref and "|" in ext_ref:
+            partes = ext_ref.split("|")
+            if len(partes) == 3:
+                return int(partes[0]), int(partes[1]), int(partes[2])
+    except (ValueError, TypeError):
+        pass
+    return None, None, None
 
 def gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade):
     """Gera os ingressos no banco evitando duplicações para o mesmo pagamento."""
@@ -321,7 +347,6 @@ def logout():
 @app.route('/checkout', methods=['GET', 'POST'])
 @cliente_required
 def checkout():
-    # Captura flexível do ID do lote (seja via POST do formulário ou GET da URL)
     lote_id_req = request.form.get('lote_id', type=int) or request.args.get('lote_id', type=int)
     
     if lote_id_req:
@@ -342,7 +367,11 @@ def checkout():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        quantidade = int(request.form.get('quantidade', 1))
+        try:
+            quantidade = max(1, int(request.form.get('quantidade', 1)))
+        except (ValueError, TypeError):
+            quantidade = 1
+
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
         
         # Validação do lote promocional
@@ -366,7 +395,6 @@ def checkout():
         cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf or '')
         ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone)
 
-        # Validação preventiva de CPF para evitar erro 400 do Mercado Pago
         if len(cpf_usuario) != 11:
             flash('É necessário possuir um CPF válido cadastrado na conta para concluir a compra.', 'danger')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
@@ -384,6 +412,10 @@ def checkout():
                 "number": cpf_usuario
             }
         }
+
+        if not sdk:
+            flash('Ambiente de demonstração: Configure MP_ACCESS_TOKEN no .env para integrar ao Mercado Pago.', 'info')
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
         # --- PAGAMENTO VIA PIX ---
         if metodo_pagamento == 'pix':
@@ -404,7 +436,7 @@ def checkout():
                     pix_info = payment.get("point_of_interaction", {}).get("transaction_data", {})
                     session['compra_atual'] = {
                         'metodo_pagamento': 'pix',
-                        'payment_id': payment.get("id"),
+                        'payment_id': str(payment.get("id")),
                         'lote_id': lote_ativo.id,
                         'total': float(total),
                         'quantidade': quantidade,
@@ -434,7 +466,7 @@ def checkout():
                 installments = 2
 
             if not token or not payment_method_id:
-                flash('Dados do cartão incompletos ou inválidos. Preencha todos os campos.', 'warning')
+                flash('Dados do cartão incompletos ou não tokenizados. Verifique os dados inseridos.', 'warning')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
             payment_data = {
@@ -447,7 +479,6 @@ def checkout():
                 "payer": payer_payload
             }
 
-            # Inclui o emissor/bandeira caso capturado pelo formulário
             if issuer_id:
                 payment_data["issuer_id"] = issuer_id
 
@@ -463,7 +494,7 @@ def checkout():
                     session['compra_atual'] = {
                         'metodo_pagamento': 'credit_card',
                         'status': 'approved',
-                        'payment_id': payment_id,
+                        'payment_id': str(payment_id),
                         'lote_id': lote_ativo.id,
                         'total': float(total),
                         'quantidade': quantidade
@@ -476,7 +507,7 @@ def checkout():
                     session['compra_atual'] = {
                         'metodo_pagamento': 'credit_card',
                         'status': 'in_process',
-                        'payment_id': payment_id,
+                        'payment_id': str(payment_id),
                         'lote_id': lote_ativo.id,
                         'total': float(total),
                         'quantidade': quantidade
@@ -508,6 +539,9 @@ def pagamento():
 @app.route('/api/checar-status-pagamento/<payment_id>')
 @cliente_required
 def checar_status_pagamento(payment_id):
+    if not sdk:
+        return jsonify({"status": "pending"})
+
     try:
         payment_response = sdk.payment().get(payment_id)
         payment_info = payment_response.get("response", {})
@@ -515,8 +549,8 @@ def checar_status_pagamento(payment_id):
 
         if status == "approved":
             ext_ref = payment_info.get("external_reference", "")
-            if ext_ref and "|" in ext_ref:
-                user_id, lote_id, qtd = map(int, ext_ref.split("|"))
+            user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
+            if user_id and lote_id and qtd:
                 gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
 
             session.pop('compra_atual', None)
@@ -530,6 +564,9 @@ def checar_status_pagamento(payment_id):
 # Webhook Mercado Pago
 @app.route('/webhook/mercadopago', methods=['POST'])
 def webhook_mercadopago():
+    if not sdk:
+        return jsonify({"status": "ok"}), 200
+
     data = request.get_json() or {}
     if data.get("type") == "payment":
         payment_id = data.get("data", {}).get("id")
@@ -539,9 +576,9 @@ def webhook_mercadopago():
             
             if payment_info.get("status") == "approved":
                 ext_ref = payment_info.get("external_reference", "")
+                user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
                 
-                if ext_ref and "|" in ext_ref:
-                    user_id, lote_id, qtd = map(int, ext_ref.split("|"))
+                if user_id and lote_id and qtd:
                     gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
                 else:
                     payer_email = payment_info.get("payer", {}).get("email")
@@ -628,7 +665,7 @@ def painel_validacao():
     return render_template('admin/validar.html', resultado=resultado, codigo=codigo_buscado)
 
 # --------------------------------------------------------------------------
-# Inicialização
+# Inicialização do Banco de Dados
 # --------------------------------------------------------------------------
 
 inicializar_banco()
