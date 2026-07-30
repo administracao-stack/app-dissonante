@@ -11,8 +11,9 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
-# Carrega as variáveis de ambiente localizadas no arquivo .env
+# Carrega as variáveis de ambiente
 load_dotenv()
 
 app = Flask(__name__)
@@ -21,8 +22,6 @@ app = Flask(__name__)
 # Configurações do App, Banco de Dados e E-mail
 # --------------------------------------------------------------------------
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolvimento')
-
-# Duração estendida da sessão para evitar deslogar no checkout
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 # --- Configurações do Servidor SMTP (E-mail / Google Workspace) ---
@@ -81,6 +80,7 @@ class Usuario(db.Model):
     telefone = db.Column(db.String(20), nullable=True)
     senha_hash = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    email_verificado = db.Column(db.Boolean, default=False)
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     ingressos = db.relationship('Ingresso', backref='comprador', lazy=True)
@@ -143,7 +143,7 @@ def inicializar_banco():
             print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar banco: {str(e)}")
 
 # --------------------------------------------------------------------------
-# Decoradores e Funções Auxiliares
+# Decoradores e Funções Auxiliares de Segurança / E-mail
 # --------------------------------------------------------------------------
 
 def cliente_required(f):
@@ -164,19 +164,61 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def gerar_token_confirmacao(email):
+    """Gera um token criptografado contendo o e-mail do usuário."""
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    return serializer.dumps(email, salt='email-confirm-salt')
+
+def validar_token_confirmacao(token, max_age=86400):
+    """Valida se o token é autêntico e se foi gerado dentro de 24 horas (86400s)."""
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    try:
+        email = serializer.loads(token, salt='email-confirm-salt', max_age=max_age)
+        return email
+    except (SignatureExpired, BadTimeSignature):
+        return None
+
+def enviar_email_confirmacao(usuario_email, usuario_nome, token):
+    """Envia o e-mail contendo o link de validação de 1 clique."""
+    link_validacao = url_for('validar_email', token=token, _external=True)
+    
+    msg = Message(
+        subject="[Dissonante Experiências] Validação do seu E-mail",
+        recipients=[usuario_email]
+    )
+
+    msg.body = f"""Olá, {usuario_nome}!
+
+Seja bem-vindo(a) à Dissonante Experiências.
+
+Para ativar a sua conta e garantir o acesso aos seus ingressos, clique no link de confirmação abaixo:
+{link_validacao}
+
+Atenção: Este link expirará em 24 horas.
+
+Se você não criou esta conta, por favor ignore esta mensagem.
+
+Atenciosamente,
+Equipe Dissonante Experiências
+"""
+    try:
+        mail.send(msg)
+        return True
+    except Exception as e:
+        print(f"[ERRO DISPARO EMAIL VALIDACAO]: {str(e)}")
+        return False
+
 def gerar_codigo_ingresso():
     hash_aleatorio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
     return f"DISSONANTE-HLW-{hash_aleatorio}"
 
 def extrair_ddd_e_numero(telefone_raw):
-    """Extrai DDD (2 dígitos) e número de telefone limpando caracteres."""
     numeros = re.sub(r'\D', '', str(telefone_raw or ''))
     if len(numeros) >= 10:
         return numeros[:2], numeros[2:]
     return "85", numeros if numeros else "999999999"
 
 def extrair_ref_externa(ext_ref):
-    """Extrai com segurança user_id, lote_id, quantidade da external_reference."""
     try:
         if ext_ref and "|" in ext_ref:
             partes = ext_ref.split("|")
@@ -187,7 +229,6 @@ def extrair_ref_externa(ext_ref):
     return None, None, None
 
 def gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade):
-    """Gera os ingressos no banco evitando duplicações para o mesmo pagamento."""
     existentes = Ingresso.query.filter_by(pagamento_id=str(payment_id)).count()
     if existentes == 0:
         for _ in range(quantidade):
@@ -273,7 +314,7 @@ Mensagem:
     return render_template('contato.html')
 
 # --------------------------------------------------------------------------
-# Autenticação
+# Autenticação e Verificação de E-mail
 # --------------------------------------------------------------------------
 
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -290,9 +331,16 @@ def cadastro():
             flash('As senhas digitadas não coincidem.', 'danger')
             return redirect(url_for('cadastro'))
 
-        if Usuario.query.filter_by(email=email).first():
-            flash('Este e-mail já está cadastrado. Faça login para continuar.', 'warning')
-            return redirect(url_for('login'))
+        usuario_existente = Usuario.query.filter_by(email=email).first()
+        if usuario_existente:
+            if not usuario_existente.email_verificado:
+                token = gerar_token_confirmacao(usuario_existente.email)
+                enviar_email_confirmacao(usuario_existente.email, usuario_existente.nome, token)
+                flash('Este e-mail já possui um cadastro pendente de validação. Reenviamos o e-mail de ativação para sua caixa de entrada e spam.', 'warning')
+                return redirect(url_for('login'))
+            else:
+                flash('Este e-mail já está cadastrado e verificado. Faça login para continuar.', 'info')
+                return redirect(url_for('login'))
 
         hash_senha = generate_password_hash(senha)
         novo_usuario = Usuario(
@@ -300,16 +348,46 @@ def cadastro():
             email=email,
             cpf=cpf,
             telefone=telefone,
-            senha_hash=hash_senha
+            senha_hash=hash_senha,
+            email_verificado=False
         )
         
         db.session.add(novo_usuario)
         db.session.commit()
 
-        flash('Conta criada com sucesso! Faça login abaixo.', 'success')
+        # Envia e-mail de validação
+        token = gerar_token_confirmacao(novo_usuario.email)
+        enviado = enviar_email_confirmacao(novo_usuario.email, novo_usuario.nome, token)
+
+        if enviado:
+            flash('Cadastro realizado com sucesso! Enviamos um e-mail de ativação para você. Verifique sua caixa de entrada e spam para confirmar sua conta.', 'success')
+        else:
+            flash('Conta criada, porém ocorreu uma falha ao enviar o e-mail de ativação. Entre em contato com o suporte para liberação.', 'warning')
+
+        # OPÇÃO A: Redireciona diretamente para a tela de login com o alerta na tela
         return redirect(url_for('login'))
 
     return render_template('cadastro.html')
+
+@app.route('/validar-email/<token>')
+def validar_email(token):
+    email = validar_token_confirmacao(token)
+    
+    if not email:
+        return render_template('email_confirmado.html', sucesso=False, mensagem="O link de validação é inválido ou expirou (limite de 24 horas).")
+
+    usuario = Usuario.query.filter_by(email=email).first()
+    
+    if not usuario:
+        return render_template('email_confirmado.html', sucesso=False, mensagem="Usuário não encontrado em nossa base de dados.")
+
+    if usuario.email_verificado:
+        return render_template('email_confirmado.html', sucesso=True, mensagem="Seu e-mail já foi validado anteriormente! Você pode fazer login normalmente.", usuario=usuario)
+
+    usuario.email_verificado = True
+    db.session.commit()
+
+    return render_template('email_confirmado.html', sucesso=True, mensagem="E-mail verificado com sucesso! Sua conta agora está 100% ativa.", usuario=usuario)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -320,6 +398,12 @@ def login():
         usuario = Usuario.query.filter_by(email=email).first()
 
         if usuario and check_password_hash(usuario.senha_hash, senha):
+            if not usuario.email_verificado:
+                token = gerar_token_confirmacao(usuario.email)
+                enviar_email_confirmacao(usuario.email, usuario.nome, token)
+                flash('Sua conta ainda não foi ativada. Reenviamos um link de confirmação para o seu e-mail (verifique também a pasta SPAM).', 'warning')
+                return redirect(url_for('login'))
+
             session.permanent = True
             session['usuario_id'] = usuario.id
             session['usuario_nome'] = usuario.nome
@@ -374,7 +458,6 @@ def checkout():
 
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
         
-        # Validação do lote promocional
         if 'promocional' in lote_ativo.nome.lower() and metodo_pagamento != 'pix':
             flash('O Lote Promocional aceita apenas pagamento via Pix.', 'warning')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
@@ -535,7 +618,6 @@ def pagamento():
         return redirect(url_for('checkout'))
     return render_template('pagamento.html', compra=compra)
 
-# API Polling para consultar status do pagamento Pix
 @app.route('/api/checar-status-pagamento/<payment_id>')
 @cliente_required
 def checar_status_pagamento(payment_id):
@@ -561,7 +643,6 @@ def checar_status_pagamento(payment_id):
         print(f"[ERRO POLLING PAGAMENTO]: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# Webhook Mercado Pago
 @app.route('/webhook/mercadopago', methods=['POST'])
 def webhook_mercadopago():
     if not sdk:
