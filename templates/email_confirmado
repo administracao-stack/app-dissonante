@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validação de E-mail | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark">
+
+    <!-- Header Padrão -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="{{ url_for('index') }}" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+
+                <nav class="nav-menu">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="{{ url_for('index') }}#eventos">Eventos</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal de Confirmação -->
+    <main class="container payment-container confirmation-wrapper">
+        <div class="card-admin card-payment confirmation-card">
+
+            {% if sucesso %}
+                <div class="status-icon">✅</div>
+                <h3 class="checkout-title status-title">E-mail Confirmado!</h3>
+                
+                {% if usuario %}
+                    <p class="status-user-greeting">
+                        Olá, {{ usuario.nome }}!
+                    </p>
+                {% endif %}
+
+                <p class="status-desc">
+                    {{ mensagem }}
+                </p>
+
+                <a href="{{ url_for('login') }}" class="ticket-btn ticket-btn-link btn-confirm-action">
+                    Fazer Login Agora
+                </a>
+            {% else %}
+                <div class="status-icon">❌</div>
+                <h3 class="checkout-title status-title status-title-error">Falha na Validação</h3>
+                
+                <p class="status-desc">
+                    {{ mensagem }}
+                </p>
+
+                <a href="{{ url_for('cadastro') }}" class="ticket-btn ticket-btn-link btn-confirm-action btn-confirm-secondary">
+                    Ir para o Cadastro
+                </a>
+            {% endif %}
+
+        </div>
+    </main>
+
+    <!-- Footer Padrão -->
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-brand">
+                <h3>Dissonante Experiências</h3>
+                <p>Transformando eventos em memórias vivas.</p>
+            </div>
+            
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
+                    <li><a href="{{ url_for('index') }}#eventos">Eventos</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
