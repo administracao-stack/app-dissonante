@@ -13,6 +13,7 @@
     --bg-night-dark: #070a13;   /* Azul Noite Profundo Escuro */
     --bg-night-light: #172036;  /* Azul Noite Suave (Centro da Hero) */
     --bg-card: #0f172a;          /* Card em tom azul-escuro slate */
+    --bg-card-hover: #1e293b;
     --bg-light: #f8f9fa;
     --text-dark: #212529;
     --text-muted: #94a3b8;
@@ -876,7 +877,7 @@ a {
 
 .card-ingresso h4 {
     color: #f1f5f9;
-    font-size: 1rem;
+    font-size: 1.2rem;
     margin-bottom: 10px;
 }
 
@@ -1240,7 +1241,7 @@ a {
     text-shadow: 0 0 15px rgba(168, 85, 247, 0.65), 0 0 30px rgba(99, 102, 241, 0.4);
 }
 
-.neon-highlight {
+.neon-highlight, .event-title-highlight {
     background: linear-gradient(90deg, #a855f7 0%, #6366f1 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -1259,62 +1260,372 @@ a {
 }
 
 /* ==========================================================================
-   Responsividade Geral
+   MÓDULO DE CHECKOUT COMPLETO
    ========================================================================== */
-@media (max-width: 768px) {
-    .navbar-content {
-        flex-direction: column;
-        gap: 15px;
-    }
-    .header-cta {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .panel-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-    .bloco-venda-header {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .grid-ingressos {
-        justify-content: center;
-    }
-    .hero h1 {
-        font-size: 2.2rem;
-    }
-    .auth-container {
-        grid-template-columns: 1fr;
-    }
-    .auth-benefits {
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        padding: 30px 20px;
-    }
-    .auth-form-side {
-        padding: 30px 20px;
-    }
-    .contato-grid {
-        flex-direction: column;
-    }
+.checkout-wrapper {
+    padding: 40px 0 80px 0;
+    min-height: 85vh;
 }
 
-@media (max-width: 576px) {
-    .cookie-banner {
-        flex-direction: column;
-        align-items: stretch;
-        text-align: center;
-        bottom: 10px;
-        left: 10px;
-        right: 10px;
-    }
-    .auth-row {
-        grid-template-columns: 1fr;
-        gap: 0;
-    }
-    .card-ingresso {
-        width: 100%;
-    }
+/* Barra de Etapas / Steps Indicator */
+.checkout-steps {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 40px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #ffffff;
+}
+
+.step-item.active {
+    color: #ffffff;
+}
+
+.step-item.active .step-number {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    border-color: transparent;
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+}
+
+.step-line {
+    height: 1px;
+    width: 50px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Disposição Principal (Grid Checkout) */
+.checkout-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 30px;
+    align-items: start;
+}
+
+.checkout-main-col {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.checkout-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 30px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+.checkout-section-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Seleção de Ingressos / Seletor de Quantidade */
+.ticket-option-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ticket-option-item:last-child {
+    border-bottom: none;
+}
+
+.ticket-info-title {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.ticket-info-price {
+    color: var(--gold);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 4px 8px;
+}
+
+.btn-qty {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: var(--transition-fast);
+}
+
+.btn-qty:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--accent-purple);
+}
+
+.qty-number {
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Opções de Forma de Pagamento */
+.payment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.payment-option-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 18px 15px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    transition: var(--transition-fast);
+}
+
+.payment-option-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--primary);
+}
+
+.payment-option-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.payment-option-card input[type="radio"]:checked + .payment-content {
+    color: #ffffff;
+}
+
+.payment-option-card:has(input[type="radio"]:checked) {
+    border-color: var(--accent-purple);
+    background: rgba(168, 85, 247, 0.08);
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+}
+
+.payment-icon {
+    font-size: 1.5rem;
+    color: var(--gold);
+}
+
+.payment-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+
+/* Seção Pix / Dynamic Payment Details */
+.payment-method-details {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.pix-qr-container {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.pix-qr-image {
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 12px;
+    max-width: 180px;
+    width: 100%;
+}
+
+.pix-copy-box {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* ==========================================================================
+   PÁGINA DE STATUS DE PAGAMENTO (pagamento.html)
+   ========================================================================== */
+.payment-container {
+    max-width: 550px;
+    padding-top: 60px;
+    padding-bottom: 80px;
+}
+
+.card-payment {
+    text-align: center;
+}
+
+.status-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+}
+
+.status-title {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+}
+
+.status-desc {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 25px;
+}
+
+.status-desc-sm {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+}
+
+.status-pix-badge {
+    display: inline-block;
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    border: 1px solid rgba(168, 85, 247, 0.3);
+    transition: var(--transition-fast);
+}
+
+.status-pix-badge.approved {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+    border-color: #22c55e;
+}
+
+.qr-code-img {
+    width: 200px;
+    height: 200px;
+    display: block;
+}
+
+.qr-code-error {
+    color: #000;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.copia-cola-wrapper {
+    margin-bottom: 25px;
+    text-align: left;
+}
+
+.copia-cola-label {
+    font-size: 0.85rem;
+}
+
+.copia-cola-group {
+    display: flex;
+    gap: 8px;
+}
+
+.copia-cola-input {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+    text-overflow: ellipsis;
+    background-color: var(--bg-night-dark);
+}
+
+.btn-copiar {
+    padding: 0 20px;
+    font-size: 0.9rem;
+}
+
+.btn-success {
+    background-color: var(--success-color) !important;
+    border-color: var(--success-color) !important;
+}
+
+.order-summary-card {
+    background: var(--bg-night-dark);
+    padding: 18px;
+    border-radius: 10px;
+    border: 1px solid var(--border-dark);
+    margin-bottom: 25px;
+}
+
+.order-summary-label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+.order-summary-title {
+    font-size: 1.3rem;
+    margin-bottom: 4px;
+}
+
+.order-summary-price {
+    color: #a855f7;
+    font-size: 1.1rem;
+    display: block;
+}
+
+.payment-notice {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 25px;
+}
+
+.ticket-btn-link {
+    text-decoration: none;
 }
