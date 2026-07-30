@@ -1774,6 +1774,77 @@ a {
 }
 
 /* ==========================================================================
+   Página de Confirmação de E-mail (email_confirmado.html)
+   ========================================================================== */
+.confirmation-wrapper {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 15px;
+}
+
+.confirmation-card {
+    text-align: center;
+    max-width: 520px;
+    width: 100%;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 40px 30px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.confirmation-card .status-icon {
+    font-size: 3.5rem;
+    margin-bottom: 15px;
+}
+
+.confirmation-card .status-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 15px;
+}
+
+.confirmation-card .status-title-error {
+    color: #f87171;
+}
+
+.confirmation-card .status-user-greeting {
+    color: var(--gold);
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+}
+
+.confirmation-card .status-desc {
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.btn-confirm-action {
+    display: block;
+    width: 100%;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.btn-confirm-secondary {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-dark);
+    color: #ffffff !important;
+    box-shadow: none;
+}
+
+.btn-confirm-secondary:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
    Responsividade (Media Queries)
    ========================================================================== */
 @media (max-width: 992px) {
