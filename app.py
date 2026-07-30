@@ -321,7 +321,9 @@ def logout():
 @app.route('/checkout', methods=['GET', 'POST'])
 @cliente_required
 def checkout():
-    lote_id_req = request.args.get('lote_id', type=int)
+    # Captura flexível do ID do lote (seja via POST do formulário ou GET da URL)
+    lote_id_req = request.form.get('lote_id', type=int) or request.args.get('lote_id', type=int)
+    
     if lote_id_req:
         lote_ativo = Lote.query.get(lote_id_req)
     else:
@@ -343,6 +345,7 @@ def checkout():
         quantidade = int(request.form.get('quantidade', 1))
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
         
+        # Validação do lote promocional
         if 'promocional' in lote_ativo.nome.lower() and metodo_pagamento != 'pix':
             flash('O Lote Promocional aceita apenas pagamento via Pix.', 'warning')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
@@ -354,9 +357,7 @@ def checkout():
             flash(f'Restam apenas {disponiveis_lote} ingresso(s) no {lote_ativo.nome}.', 'danger')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
-        # Preço real vindo da tabela do lote ativo
-        preco_unitario = lote_ativo.preco
-        total = quantidade * preco_unitario
+        total = quantidade * lote_ativo.preco
 
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
         first_name = nome_completo[0]
@@ -365,6 +366,11 @@ def checkout():
         cpf_usuario = re.sub(r'\D', '', usuario_atual.cpf or '')
         ddd_tel, num_tel = extrair_ddd_e_numero(usuario_atual.telefone)
 
+        # Validação preventiva de CPF para evitar erro 400 do Mercado Pago
+        if len(cpf_usuario) != 11:
+            flash('É necessário possuir um CPF válido cadastrado na conta para concluir a compra.', 'danger')
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
         payer_payload = {
             "email": usuario_atual.email,
             "first_name": first_name,
@@ -372,14 +378,12 @@ def checkout():
             "phone": {
                 "area_code": ddd_tel,
                 "number": num_tel
-            }
-        }
-
-        if len(cpf_usuario) == 11:
-            payer_payload["identification"] = {
+            },
+            "identification": {
                 "type": "CPF",
                 "number": cpf_usuario
             }
+        }
 
         # --- PAGAMENTO VIA PIX ---
         if metodo_pagamento == 'pix':
@@ -424,9 +428,14 @@ def checkout():
             token = request.form.get('token')
             installments = int(request.form.get('installments', 1))
             payment_method_id = request.form.get('payment_method_id')
+            issuer_id = request.form.get('issuer_id')
 
             if installments > 2:
                 installments = 2
+
+            if not token or not payment_method_id:
+                flash('Dados do cartão incompletos ou inválidos. Preencha todos os campos.', 'warning')
+                return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
             payment_data = {
                 "transaction_amount": float(total),
@@ -437,6 +446,10 @@ def checkout():
                 "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
                 "payer": payer_payload
             }
+
+            # Inclui o emissor/bandeira caso capturado pelo formulário
+            if issuer_id:
+                payment_data["issuer_id"] = issuer_id
 
             try:
                 payment_response = sdk.payment().create(payment_data)
@@ -468,14 +481,16 @@ def checkout():
                         'total': float(total),
                         'quantidade': quantidade
                     }
-                    flash('Pagamento em análise pelo seu banco. Acompanhe o status nesta página.', 'info')
+                    flash('Pagamento em análise pela operadora. Acompanhe o status nesta página.', 'info')
                     return redirect(url_for('pagamento'))
                 else:
-                    flash('Cartão recusado ou dados incorretos. Tente novamente.', 'danger')
+                    status_detail = payment.get("status_detail", "Cartão recusado.")
+                    flash(f'Transação não autorizada: {status_detail}. Verifique os dados ou tente outro cartão.', 'danger')
                     return redirect(url_for('checkout', lote_id=lote_ativo.id))
+
             except Exception as e:
                 print("Exceção ao processar Cartão:", str(e))
-                flash('Falha na comunicação com a operadora do cartão.', 'danger')
+                flash('Falha na comunicação com a operadora do cartão. Tente novamente.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
     return render_template('checkout.html', lote=lote_ativo)
