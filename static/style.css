@@ -1492,9 +1492,152 @@ a {
 
 .pix-copy-box {
     display: flex;
-    width: 100%;
+    align-items: center;
     gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 8px 12px;
+    width: 100%;
+    max-width: 400px;
+}
+
+.pix-code-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    font-family: monospace;
+    outline: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.btn-copy-pix {
+    background: var(--gold);
+    color: #070a13;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-copy-pix:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+/* Campos de Cartão de Crédito */
+.credit-card-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.card-row-dual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* Sidebar do Resumo do Pedido */
+.checkout-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: sticky;
+    top: 90px;
+}
+
+.summary-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+.summary-header {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    color: #cbd5e1;
+}
+
+.summary-row.total-row {
     margin-top: 10px;
+    padding-top: 15px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.summary-total-price {
+    color: var(--gold);
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
+.btn-finish-checkout {
+    width: 100%;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: #ffffff;
+    border: none;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+
+.btn-finish-checkout:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6);
+}
+
+.security-badge-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.security-badge-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 /* ==========================================================================
@@ -1628,4 +1771,44 @@ a {
 
 .ticket-btn-link {
     text-decoration: none;
+}
+
+/* ==========================================================================
+   Responsividade (Media Queries)
+   ========================================================================== */
+@media (max-width: 992px) {
+    .checkout-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .checkout-sidebar {
+        position: static;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 40px 0;
+    }
+
+    .checkout-steps {
+        gap: 15px;
+    }
+
+    .step-line {
+        width: 25px;
+    }
+
+    .step-item span {
+        display: none;
+    }
+
+    .payment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card-row-dual, .auth-row {
+        grid-template-columns: 1fr;
+    }
 }
