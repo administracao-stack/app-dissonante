@@ -47,9 +47,23 @@
 
     <!-- Conteúdo Principal de Pagamento -->
     <main class="container payment-container">
+
+        <!-- Bloco de Mensagens Alerta (Flash) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages-container" style="margin-bottom: 20px;">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'error' else 'danger' }}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         <div class="card-admin card-payment">
 
-            {% if compra.metodo_pagamento == 'credit_card' %}
+            {% if compra and compra.metodo_pagamento == 'credit_card' %}
                 <!-- ================= CASO 1: CARTÃO DE CRÉDITO ================= -->
                 {% if compra.status == 'approved' %}
                     <div class="status-icon">✅</div>
@@ -81,15 +95,15 @@
 
                 <!-- Renderização do QR Code em Base64 -->
                 <div class="qr-code-box">
-                    {% if compra.qr_code_base64 %}
+                    {% if compra and compra.qr_code_base64 %}
                         <img src="data:image/png;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix Mercado Pago" class="qr-code-img" />
                     {% else %}
-                        <p class="qr-code-error">Erro ao carregar imagem do QR Code.</p>
+                        <p class="qr-code-error">QR Code indisponível ou em processamento.</p>
                     {% endif %}
                 </div>
 
                 <!-- Pix Copia e Cola -->
-                {% if compra.qr_code %}
+                {% if compra and compra.qr_code %}
                 <div class="copia-cola-wrapper">
                     <label class="form-label copia-cola-label">Código Pix Copia e Cola:</label>
                     <div class="copia-cola-group">
@@ -104,10 +118,14 @@
             <div class="order-summary-card">
                 <p class="order-summary-label">Resumo do Pedido</p>
                 <h2 class="checkout-title order-summary-title">
-                    <span class="event-title-highlight">MaréVibes</span> Halloween 2026
+                    <span class="event-title-highlight">{{ evento.titulo if evento else 'MaréVibes Halloween 2026' }}</span>
                 </h2>
                 <strong class="order-summary-price">
-                    {{ compra.quantidade }}x Ingresso(s) — R$ {{ "%.2f"|format(compra.total)|replace('.', ',') }}
+                    {% if compra %}
+                        {{ compra.quantidade | default(1) }}x Ingresso(s) — R$ {{ "%.2f"|format(compra.total | default(0.0))|replace('.', ',') }}
+                    {% else %}
+                        1x Ingresso
+                    {% endif %}
                 </strong>
             </div>
 
@@ -170,19 +188,22 @@
             navigator.clipboard.writeText(inputPix.value);
             
             const btnCopiar = document.getElementById("btn-copiar");
-            btnCopiar.innerText = "Copiado! ✓";
-            btnCopiar.classList.add("btn-success");
-            
-            setTimeout(() => {
-                btnCopiar.innerText = "Copiar";
-                btnCopiar.classList.remove("btn-success");
-            }, 3000);
+            if (btnCopiar) {
+                btnCopiar.innerText = "Copiado! ✓";
+                btnCopiar.classList.add("btn-success");
+                
+                setTimeout(() => {
+                    btnCopiar.innerText = "Copiar";
+                    btnCopiar.classList.remove("btn-success");
+                }, 3000);
+            }
         }
 
-        {% if compra.metodo_pagamento == 'pix' and compra.payment_id %}
+        {% if compra and compra.metodo_pagamento == 'pix' and compra.payment_id %}
         const paymentId = "{{ compra.payment_id }}";
         
         function checarStatusPix() {
+            if (!paymentId) return;
             fetch(`/api/checar-status-pagamento/${paymentId}`)
                 .then(response => response.json())
                 .then(data => {
