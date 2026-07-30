@@ -2,6 +2,7 @@ import os
 import re
 import random
 import string
+import threading
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 from dotenv import load_dotenv
@@ -32,6 +33,7 @@ app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'False').lower() in 
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_TIMEOUT'] = 10  # Previne travamentos indefinidos no socket do SMTP
 
 mail = Mail(app)
 
@@ -178,8 +180,17 @@ def validar_token_confirmacao(token, max_age=86400):
     except (SignatureExpired, BadTimeSignature):
         return None
 
+def disparar_email_async(app_obj, msg):
+    """Função executada em background para não travar a requisição HTTP."""
+    with app_obj.app_context():
+        try:
+            mail.send(msg)
+            print(f"[E-MAIL ENVIADO COM SUCESSO]: Para {msg.recipients}")
+        except Exception as e:
+            print(f"[ERRO DISPARO E-MAIL ASYNC]: {str(e)}")
+
 def enviar_email_confirmacao(usuario_email, usuario_nome, token):
-    """Envia o e-mail contendo o link de validação de 1 clique."""
+    """Monta a mensagem e dispara o e-mail em uma thread paralela."""
     link_validacao = url_for('validar_email', token=token, _external=True)
     
     msg = Message(
@@ -201,12 +212,13 @@ Se você não criou esta conta, por favor ignore esta mensagem.
 Atenciosamente,
 Equipe Dissonante Experiências
 """
-    try:
-        mail.send(msg)
-        return True
-    except Exception as e:
-        print(f"[ERRO DISPARO EMAIL VALIDACAO]: {str(e)}")
-        return False
+    # Executa em segundo plano sem travar o worker do Gunicorn
+    thread = threading.Thread(
+        target=disparar_email_async, 
+        args=(app._get_current_object(), msg)
+    )
+    thread.start()
+    return True
 
 def gerar_codigo_ingresso():
     hash_aleatorio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
@@ -302,13 +314,14 @@ Mensagem:
 --------------------------------------------------
         """
 
-        try:
-            mail.send(msg)
-            flash('Mensagem enviada com sucesso! Em breve entraremos em contato.', 'success')
-        except Exception as e:
-            print(f"[ERRO SMTP FORMULARIO CONTATO]: {str(e)}")
-            flash('Ocorreu um erro ao enviar a mensagem. Tente novamente mais tarde ou pelo WhatsApp.', 'danger')
+        # Envio assíncrono para evitar acúmulo no servidor
+        thread = threading.Thread(
+            target=disparar_email_async, 
+            args=(app._get_current_object(), msg)
+        )
+        thread.start()
 
+        flash('Mensagem enviada com sucesso! Em breve entraremos em contato.', 'success')
         return redirect(url_for('contato'))
 
     return render_template('contato.html')
@@ -355,16 +368,11 @@ def cadastro():
         db.session.add(novo_usuario)
         db.session.commit()
 
-        # Envia e-mail de validação
+        # Envia e-mail de validação assincronamente (sem travar a requisição)
         token = gerar_token_confirmacao(novo_usuario.email)
-        enviado = enviar_email_confirmacao(novo_usuario.email, novo_usuario.nome, token)
+        enviar_email_confirmacao(novo_usuario.email, novo_usuario.nome, token)
 
-        if enviado:
-            flash('Cadastro realizado com sucesso! Enviamos um e-mail de ativação para você. Verifique sua caixa de entrada e spam para confirmar sua conta.', 'success')
-        else:
-            flash('Conta criada, porém ocorreu uma falha ao enviar o e-mail de ativação. Entre em contato com o suporte para liberação.', 'warning')
-
-        # OPÇÃO A: Redireciona diretamente para a tela de login com o alerta na tela
+        flash('Cadastro realizado com sucesso! Enviamos um e-mail de ativação para você. Verifique sua caixa de entrada e spam para confirmar sua conta.', 'success')
         return redirect(url_for('login'))
 
     return render_template('cadastro.html')
