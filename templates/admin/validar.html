@@ -11,7 +11,7 @@
 </head>
 <body class="bg-dark">
 
-    <!-- Header / Navegação Principal (Painel Admin) -->
+    <!-- Header / Navegação Principal -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
@@ -36,7 +36,7 @@
             <div class="card-admin">
                 <h1 class="card-admin-titulo">Validação de Portaria</h1>
 
-                <!-- Mensagens de Alerta Flutuantes / Status -->
+                <!-- Mensagens de Alerta Flutuantes -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -83,7 +83,6 @@
         </div>
     </main>
 
-    <!-- Rodapé -->
     <footer class="footer">
         <div class="container">
             <div class="footer-bottom">
