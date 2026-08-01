@@ -325,7 +325,7 @@ Mensagem:
     return render_template('contato.html')
 
 # --------------------------------------------------------------------------
-# Autenticação e Cadastro
+# Autenticação, Cadastro e Perfil
 # --------------------------------------------------------------------------
 
 @app.route('/cadastro', methods=['GET', 'POST'])
@@ -422,11 +422,17 @@ def login():
 
             if usuario.is_admin:
                 return redirect(url_for('admin_dashboard'))
-            return redirect(url_for('meus_ingressos'))
+            return redirect(url_for('perfil'))
         else:
             flash('E-mail ou senha incorretos.', 'danger')
 
     return render_template('login.html')
+
+@app.route('/perfil')
+@cliente_required
+def perfil():
+    usuario = Usuario.query.get(session['usuario_id'])
+    return render_template('perfil.html', usuario=usuario)
 
 @app.route('/logout')
 def logout():
@@ -435,7 +441,7 @@ def logout():
     return redirect(url_for('login'))
 
 # --------------------------------------------------------------------------
-# Checkout
+# Checkout e Ingressos
 # --------------------------------------------------------------------------
 
 @app.route('/checkout', methods=['GET', 'POST'])
@@ -467,10 +473,6 @@ def checkout():
             quantidade = 1
 
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
-        
-        if 'promocional' in lote_ativo.nome.lower() and metodo_pagamento != 'pix':
-            flash('O Lote Promocional aceita apenas pagamento via Pix.', 'warning')
-            return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
         ingressos_vendidos_lote = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
         disponiveis_lote = lote_ativo.quantidade_total - ingressos_vendidos_lote
