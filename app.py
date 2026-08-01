@@ -703,6 +703,12 @@ def admin_dashboard():
     vendidos = Ingresso.query.count()
     utilizados = Ingresso.query.filter_by(status='utilizado').count()
     
+    # Ingressos disponíveis no lote ativo
+    total_disponiveis = 0
+    if lote_ativo:
+        ingressos_vendidos_lote_ativo = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
+        total_disponiveis = max(0, lote_ativo.quantidade_total - ingressos_vendidos_lote_ativo)
+
     receita_total = db.session.query(func.sum(Lote.preco))\
         .join(Ingresso, Ingresso.lote_id == Lote.id)\
         .scalar() or 0.0
@@ -712,6 +718,7 @@ def admin_dashboard():
         'lote_ativo_preco': lote_ativo.preco if lote_ativo else 0.0,
         'ingressos_vendidos': vendidos,
         'ingressos_utilizados': utilizados,
+        'total_disponiveis': total_disponiveis,
         'receita_total': receita_total
     }
     
@@ -749,6 +756,7 @@ def painel_validacao():
                     ingresso.status = 'utilizado'
                     ingresso.data_uso = datetime.now(timezone.utc)
                     db.session.commit()
+                    db.session.refresh(ingresso)
                     flash('ENTRADA LIBERADA! Ingresso marcado como UTILIZADO.', 'success')
             
             resultado = ingresso
