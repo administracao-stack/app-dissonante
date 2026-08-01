@@ -175,6 +175,17 @@ a {
     transition: var(--transition-fast);
 }
 
+.btn-logout-header {
+    background-color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+.btn-logout-header:hover {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+}
+
 .btn-logout:hover, .nav-link-logout:hover {
     background: rgba(239, 68, 68, 0.3);
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
@@ -249,7 +260,7 @@ a {
 }
 
 /* ==========================================================================
-   Página Institucional (Quem Somos)
+   Página Institucional (Quem Somos) & Termos Legais
    ========================================================================== */
 .about-card {
     max-width: 800px;
@@ -276,6 +287,35 @@ a {
     font-size: 1.05rem;
     line-height: 1.8;
     margin-bottom: 30px;
+}
+
+/* Páginas Legais (Termos de Uso e Política de Privacidade) */
+.legal-card {
+    max-width: 900px;
+    margin: 40px auto;
+    text-align: left;
+}
+
+.legal-title {
+    color: #ffffff;
+    margin-bottom: 20px;
+    font-size: 2.2rem;
+    font-weight: 800;
+}
+
+.legal-content {
+    color: #cbd5e1;
+    line-height: 1.8;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.legal-content h2 {
+    color: #ffffff;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    font-weight: 700;
 }
 
 /* ==========================================================================
@@ -552,8 +592,8 @@ a {
 }
 
 .portaria-wrapper {
+    margin-top: 40px;
     text-align: center;
-    margin-top: 50px;
 }
 
 .btn-portaria {
