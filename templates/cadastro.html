@@ -11,12 +11,11 @@
 </head>
 <body class="bg-dark">
 
-    <!-- Header Simples Corrigido -->
+    <!-- Header Simples -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
                 
-                <!-- Logo Híbrido Corrigido (url_for) -->
                 <a href="{{ url_for('index') }}" class="brand-logo">
                     <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
                     <div class="logo-text">
@@ -29,7 +28,6 @@
                     <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
                     <a href="{{ url_for('index') }}#eventos">Eventos</a>
                     
-                    <!-- Botão WhatsApp -->
                     <a href="https://wa.me/558592636062?text=Olá!%20Preciso%20de%20ajuda%20para%20criar%20minha%20conta." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
@@ -50,6 +48,7 @@
                 <p>Tenha controle total sobre seus ingressos e garanta entradas exclusivas.</p>
                 
                 <ul class="benefits-list">
+                    <li>📧 <strong>E-mail Verificado:</strong> Validação em 1 clique para ativar sua conta.</li>
                     <li>🎟️ <strong>Ingressos na palma da mão:</strong> Histórico completo de eventos.</li>
                     <li>⚡ <strong>Acesso Rápido:</strong> Validação ágil direto na portaria.</li>
                     <li>🔒 <strong>Total Segurança:</strong> Senha criptografada e dados protegidos.</li>
@@ -58,12 +57,13 @@
 
             <div class="auth-form-side">
                 <h3>Cadastre-se</h3>
-                <p class="form-sub">Preencha os dados abaixo para criar seu perfil.</p>
+                <p class="form-sub">Preencha os dados abaixo. Um link de ativação será enviado ao seu e-mail.</p>
 
+                <!-- Exibição de Mensagens Flash do Backend -->
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">
+                            <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
                                 {{ message }}
                             </div>
                         {% endfor %}
@@ -79,6 +79,7 @@
                     <div class="auth-group">
                         <label for="email">E-mail</label>
                         <input type="email" id="email" name="email" placeholder="seu-melhor-email@exemplo.com" required>
+                        <small class="input-helper-text">* Enviaremos um e-mail de ativação para este endereço.</small>
                     </div>
 
                     <div class="auth-row">
@@ -101,7 +102,7 @@
                                 <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle class="eye-open" cx="12" cy="12" r="3"></circle>
-                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display: none;"></line>
+                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23"></line>
                                 </svg>
                             </button>
                         </div>
@@ -115,7 +116,7 @@
                                 <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle class="eye-open" cx="12" cy="12" r="3"></circle>
-                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display: none;"></line>
+                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23"></line>
                                 </svg>
                             </button>
                         </div>
@@ -132,7 +133,7 @@
         </div>
     </main>
 
-    <!-- Rodapé Padrão -->
+    <!-- Rodapé -->
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-brand">
@@ -140,7 +141,6 @@
                 <p>Transformando eventos em memórias vivas.</p>
             </div>
             
-            <!-- Navegação -->
             <div class="footer-links">
                 <h4>Navegação</h4>
                 <ul>
@@ -149,7 +149,6 @@
                 </ul>
             </div>
 
-            <!-- Contato -->
             <div class="footer-links" id="contato">
                 <h4>Contato</h4>
                 <ul>
@@ -158,7 +157,6 @@
                 </ul>
             </div>
 
-            <!-- Legal -->
             <div class="footer-links">
                 <h4>Legal</h4>
                 <ul>
@@ -166,7 +164,6 @@
                     <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
                 </ul>
             </div>
-        
         </div>
         
         <div class="footer-bottom">
@@ -174,9 +171,7 @@
         </div>
     </footer>
 
-    <!-- Scripts de Máscaras e Alternância de Visibilidade da Senha -->
     <script>
-        // Função para mostrar/ocultar senha com SVG formal
         function togglePasswordVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
             const slashLine = btn.querySelector('.eye-slash');
@@ -190,7 +185,6 @@
             }
         }
 
-        // Máscara dinâmica de CPF
         document.getElementById('cpf').addEventListener('input', function (e) {
             let v = e.target.value.replace(/\D/g, '');
             v = v.replace(/(\d{3})(\d)/, '$1.$2');
@@ -199,7 +193,6 @@
             e.target.value = v;
         });
 
-        // Máscara dinâmica de Telefone
         document.getElementById('telefone').addEventListener('input', function (e) {
             let v = e.target.value.replace(/\D/g, '');
             v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
