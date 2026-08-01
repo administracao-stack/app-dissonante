@@ -3,19 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dissonante Experiências | Eventos em Fortaleza</title>
+    <title>Dissonante Experiências | Ingressos e Festas Exclusivas</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="bg-dark">
 
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
-
-                <!-- Logo Híbrido: Ícone + Texto (CORRIGIDO) -->
                 <a href="{{ url_for('index') }}" class="brand-logo">
                     <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
                     <div class="logo-text">
@@ -24,65 +22,57 @@
                     </div>
                 </a>
 
-                <!-- Menu Central -->
                 <nav class="nav-menu">
-                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
                     <a href="#eventos">Eventos</a>
-                    
-                    <!-- Botão WhatsApp com Ícone -->
-                    <a href="https://wa.me/558592636062?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="{{ url_for('contato') }}">Contato</a>
+                    <a href="https://wa.me/558592636062?text=Olá!%20Vim%20pelo%20site%20da%20Dissonante%20e%20gostaria%20de%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
                         </svg>
-                        Fale Conosco
+                        WhatsApp
                     </a>
                 </nav>
 
-                <!-- Botão Dinâmico: Verifica se já está logado -->
                 <div class="header-cta">
-                    {% if session.get('usuario_id') %}
-                        <a href="{{ url_for('meus_ingressos') }}" class="btn-cliente">Meus Ingressos</a>
-                    {% else %}
-                        <a href="{{ url_for('login') }}" class="btn-cliente">Área do Cliente</a>
-                    {% endif %}
+                    <a href="{{ url_for('perfil') }}" class="btn-cliente">Área do Cliente</a>
                 </div>
-
             </div>
         </div>
     </header>
 
-    <section class="hero">
+    <section class="hero-banner">
+        <div class="hero-overlay"></div>
         <div class="container hero-content">
-            <h1>Criando eventos memoráveis em Fortaleza</h1>
-            <p>A Dissonante transforma ideias em experiências únicas, conectando pessoas e marcas através de momentos inesquecíveis.</p>
-            <a href="#eventos" class="btn-primary">Conheça Nossos Eventos</a>
+            <span class="badge-destaque">PRÓXIMO GRANDE EVENTO</span>
+            <h1 class="hero-title">MAREVIBES HALLOWEEN 2026</h1>
+            <p class="hero-subtitle">A festa mais aguardada do ano à beira-mar. Viva uma experiência musical inesquecível.</p>
+            
+            <div class="hero-actions">
+                <a href="{{ url_for('evento_marevibes') }}" class="btn-comprar btn-lg">Garantir Meu Ingresso</a>
+            </div>
         </div>
     </section>
 
-    <!-- Seção Eventos em Andamento -->
-    <section id="eventos" class="services">
+    <section id="eventos" class="section-eventos">
         <div class="container">
-            <h2>Eventos em Andamento</h2>
-            
-            <div class="event-grid">
-                
-                <!-- Card do Evento 1 -->
-                <div class="event-card">
-                    <span class="badge badge-open">Inscrições Abertas</span>
-                    <h3 class="event-title">MaréVibes Halloween 2026</h3>
-                    
-                    <div class="event-details">
-                        <div class="detail-item">📅 31 de Outubro, às 17h</div>
-                        <div class="detail-item">📍 Rua Fagundes Varela, 690, Itaperi</div>
+            <h2 class="section-title">Eventos em Destaque</h2>
+            <div class="grid-eventos">
+                <div class="card-evento">
+                    <div class="card-thumb">
+                        <img src="{{ url_for('static', filename='event-banner.jpg') }}" alt="Marevibes Halloween 2026">
+                        <span class="card-tag">Ingressos Abertos</span>
                     </div>
-                    
-                    <p class="event-description">
-                        Prepare-se para a noite mais misteriosa do ano. O MaréVibes Halloween chega com uma proposta imersiva, unindo cenografia temática exclusiva, os melhores DJs da cena de Fortaleza e ativações assustadoramente inesquecíveis. Vista seu melhor disfarce e venha viver o inesperado.
-                    </p>
-                    
-                    <a href="{{ url_for('evento_marevibes') }}" class="ticket-btn">Saiba Mais / Garantir Ingresso</a>
+                    <div class="card-body">
+                        <h3>Marevibes Halloween 2026</h3>
+                        <p class="evento-data">📅 31 de Outubro de 2026 • 22h00</p>
+                        <p class="evento-local">📍 Barraca Marevibes, Praia do Futuro - Fortaleza/CE</p>
+                        <div class="card-footer">
+                            <span class="preco-a-partir">A partir de <strong>R$ 160,00</strong></span>
+                            <a href="{{ url_for('evento_marevibes') }}" class="btn-card">Ver Ingressos</a>
+                        </div>
+                    </div>
                 </div>
-
             </div>
         </div>
     </section>
@@ -91,27 +81,16 @@
         <div class="container footer-content">
             <div class="footer-brand">
                 <h3>Dissonante Experiências</h3>
-                <p>Transformando eventos em memórias vivas.</p>
+                <p>Transformando noites em memórias épicas.</p>
             </div>
-            
-            <!-- Navegação -->
             <div class="footer-links">
                 <h4>Navegação</h4>
                 <ul>
+                    <li><a href="{{ url_for('index') }}">Início</a></li>
                     <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
-                    <li><a href="#eventos">Eventos</a></li>
-                </ul>
-            </div>
-
-            <!-- Bloco de Informações de Contato -->
-            <div class="footer-links" id="contato">
-                <h4>Contato</h4>
-                <ul>
                     <li><a href="{{ url_for('contato') }}">Contato</a></li>
-                    <li>Fortaleza - CE</li>
                 </ul>
             </div>
-
             <div class="footer-links">
                 <h4>Legal</h4>
                 <ul>
@@ -119,24 +98,20 @@
                     <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
                 </ul>
             </div>
-        
         </div>
-        
         <div class="footer-bottom">
             <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
         </div>
     </footer>
 
-    <!-- Banner de Cookies (LGPD) -->
+    <!-- Banner LGPD -->
     <div id="cookieBanner" class="cookie-banner">
         <p class="cookie-text">
-            Utilizamos cookies para melhorar sua experiência no site. Ao continuar navegando, você concorda com a nossa 
-            <a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a>.
+            Utilizamos cookies para otimizar sua experiência no site. Ao continuar, você concorda com nossa <a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a>.
         </p>
         <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
     </div>
 
-    <!-- Script de Validação de Cookies (localStorage) -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const banner = document.getElementById("cookieBanner");
@@ -152,6 +127,5 @@
             });
         });
     </script>
-
 </body>
 </html>
