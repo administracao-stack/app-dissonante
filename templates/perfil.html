@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil | Dissonante Experiências</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="bg-dark">
+
+    <!-- Header Simples -->
+    <header class="site-header">
+        <div class="container">
+            <div class="navbar-content">
+                <a href="{{ url_for('index') }}" class="brand-logo">
+                    <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
+                    <div class="logo-text">
+                        <span class="brand-name">DISSONANTE</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                    </div>
+                </a>
+                <nav class="nav-menu">
+                    <a href="{{ url_for('index') }}">Início</a>
+                    <a href="{{ url_for('logout') }}" class="btn-whatsapp">Sair da Conta</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="auth-wrapper">
+        <div class="auth-container" style="flex-direction: column; align-items: center; text-align: center; max-width: 600px;">
+            <div class="auth-benefits" style="width: 100%; border-right: none; padding-right: 0; margin-bottom: 2rem;">
+                <h2>Meu Perfil</h2>
+                <p>Gerencie seus dados e acesse seus ingressos comprados.</p>
+            </div>
+
+            <div class="auth-form-side" style="width: 100%; text-align: left;">
+                <h3>Dados da Conta</h3>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <p><strong>Nome:</strong> {{ usuario.nome }}</p>
+                    <p><strong>E-mail:</strong> {{ usuario.email }}</p>
+                    <p><strong>CPF:</strong> {{ usuario.cpf }}</p>
+                    <p><strong>Telefone:</strong> {{ usuario.telefone }}</p>
+                </div>
+
+                <!-- Botão linkando para Meus Ingressos -->
+                <a href="{{ url_for('meus_ingressos') }}" class="btn-auth-submit" style="display: block; text-align: center; text-decoration: none; margin-bottom: 1rem;">
+                    Ver Meus Ingressos
+                </a>
+                
+                <a href="{{ url_for('logout') }}" class="btn-auth-submit" style="display: block; text-align: center; text-decoration: none; background-color: #dc3545;">
+                    Sair
+                </a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
