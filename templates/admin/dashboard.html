@@ -37,7 +37,7 @@
                 </nav>
 
                 <div class="header-cta">
-                    <a href="{{ url_for('logout') }}" class="nav-link-logout btn-cliente" style="background-color: #ef4444; border-color: #ef4444;">Sair</a>
+                    <a href="{{ url_for('logout') }}" class="nav-link-logout btn-logout-header">Sair</a>
                 </div>
             </div>
         </div>
@@ -48,7 +48,7 @@
         <div class="container">
             <h1 class="admin-titulo-pagina">Visão Geral do Evento</h1>
 
-            <!-- Grid de Métricas em Tempo Real (Puxadas do MySQL via Flask) -->
+            <!-- Grid de Métricas em Tempo Real -->
             <div class="grid-stats">
                 <div class="card-stat">
                     <h3>Ingressos Vendidos</h3>
@@ -71,8 +71,8 @@
                 </div>
             </div>
 
-            <!-- Atalho de Acesso Rápido para a Portaria -->
-            <div class="portaria-wrapper" style="margin-top: 40px; text-align: center;">
+            <!-- Atalho para Portaria -->
+            <div class="portaria-wrapper">
                 <a href="{{ url_for('painel_validacao') }}" class="btn-portaria">
                     Acessar Validador de Portaria &rarr;
                 </a>
@@ -127,7 +127,6 @@
         <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
     </div>
 
-    <!-- Script de Validação de Cookies (localStorage) -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const banner = document.getElementById("cookieBanner");
