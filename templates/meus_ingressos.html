@@ -7,186 +7,74 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body class="bg-dark">
 
-    <!-- Header do Cliente -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
-                
                 <a href="{{ url_for('index') }}" class="brand-logo">
                     <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
                     <div class="logo-text">
                         <span class="brand-name">DISSONANTE</span>
-                        <span class="brand-sub">EXPERIÊNCIAS</span>
+                        <span class="brand-sub">MEUS INGRESSOS</span>
                     </div>
                 </a>
-
                 <nav class="nav-menu">
-                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
-                    <a href="{{ url_for('index', _anchor='eventos') }}">Eventos</a>
-                    
-                    <!-- Botão WhatsApp padronizado -->
-                    <a href="https://wa.me/558592636062?text=Olá!%20Preciso%20de%20ajuda%20com%20meus%20ingressos." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                            <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
-                        </svg>
-                        Fale Conosco
-                    </a>
+                    <a href="{{ url_for('index') }}">Início</a>
+                    <a href="https://wa.me/558592636062?text=Olá!%20Preciso%20de%20suporte%20com%20meus%20ingressos." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">Suporte</a>
                 </nav>
-
-                <div class="header-cta">
-                    <span class="user-info text-gold">Olá, {{ session.get('usuario_nome', 'Cliente') }}</span>
-                    <a href="{{ url_for('logout') }}" class="btn-cliente btn-logout">Sair</a>
-                </div>
-
             </div>
         </div>
     </header>
 
-    <!-- Conteúdo Principal -->
-    <main class="container main-content">
-        
-        <!-- Alertas de Feedback -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
+    <main class="ingressos-main">
+        <div class="container">
+            <h1 class="ingressos-titulo">Seus Ingressos Confirmados</h1>
+
+            {% if pedido %}
+                <div class="card-ingresso">
+                    <div class="ingresso-header">
+                        <h2>{{ pedido.evento_nome if pedido.evento_nome else 'Marevibes Halloween 2026' }}</h2>
+                        <span class="ingresso-status status-pago">CONFIRMADO</span>
                     </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
 
-        <!-- Cabeçalho do Painel -->
-        <div class="panel-header">
-            <div>
-                <h1 class="panel-title">Seus Ingressos e Acessos</h1>
-                <p class="panel-subtitle">Apresente o QR Code diretamente na portaria do evento ou guarde-os no seu histórico.</p>
-            </div>
-            <a href="{{ url_for('index', _anchor='eventos') }}" class="btn-primary btn-explore">Explorar Novos Eventos</a>
-        </div>
+                    <div class="ingresso-body">
+                        <div class="ingresso-info">
+                            <p><strong>Titular:</strong> {{ pedido.nome_comprador }}</p>
+                            <p><strong>Lote / Setor:</strong> {{ pedido.lote_nome if pedido.lote_nome else 'Lote Promocional' }}</p>
+                            <p><strong>Quantidade:</strong> {{ pedido.quantidade }} ingresso(s)</p>
+                            <p><strong>Código de Validação:</strong> <code>{{ pedido.codigo_qr }}</code></p>
+                        </div>
 
-        <!-- Bloco de Ingressos Comprados -->
-        {% if vendas %}
-            {% for pedido in vendas %}
-            <div class="bloco-venda">
-                <div class="bloco-venda-header">
-                    <div>
-                        <h3 class="evento-titulo">{{ pedido.evento_nome if pedido.evento_nome else 'MaréVibes Halloween 2026' }}</h3>
-                        <p class="data-evento">📅 Compra em: <strong>{{ pedido.data_compra.strftime('%d/%m/%Y %H:%M') if pedido.data_compra else 'Data recente' }}</strong> | Ingresso #{{ pedido.id }}</p>
-                    </div>
-                    <span class="titular-tag">
-                        Titular: {{ session.get('usuario_email', 'seu e-mail') }}
-                    </span>
-                </div>
-
-                <div class="grid-ingressos">
-                    <div class="card-ingresso">
-                        <h4>Ingresso #{{ pedido.id }}</h4>
-                        
+                        <!-- QR Code Gerado Dinamicamente -->
                         <div class="qr-code-box">
-                            <svg width="110" height="110" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M2 2H10V10H2V2Z" stroke="#0f172a" stroke-width="2"/>
-                                <path d="M6 6H6.01" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
-                                <path d="M14 2H22V10H14V2Z" stroke="#0f172a" stroke-width="2"/>
-                                <path d="M18 6H18.01" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
-                                <path d="M2 14H10V22H2V14Z" stroke="#0f172a" stroke-width="2"/>
-                                <path d="M6 18H6.01" stroke="#0f172a" stroke-width="2" stroke-linecap="round"/>
-                                <path d="M14 14H16V16H14V14Z" fill="#0f172a"/>
-                                <path d="M18 18H22V22H18V18Z" stroke="#0f172a" stroke-width="2"/>
-                                <path d="M14 18H16V22H14V18Z" fill="#0f172a"/>
-                            </svg>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ pedido.codigo_qr }}" alt="QR Code Ingresso" class="qr-code-img">
+                            <small style="display:block; margin-top:8px; color:#94a3b8;">Apresente na portaria</small>
                         </div>
-
-                        <div>
-                            {% if pedido.status == 'valido' %}
-                                <span class="status-tag status-valido">VÁLIDO</span>
-                            {% else %}
-                                <span class="status-tag status-utilizado">UTILIZADO</span>
-                            {% endif %}
-                        </div>
-
-                        <span class="codigo-texto" title="{{ pedido.codigo_qr }}">{{ pedido.codigo_qr }}</span>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <!-- Estado Vazio -->
-            <div class="empty-state">
-                <h3 class="empty-state-title">Você ainda não possui ingressos</h3>
-                <p class="empty-state-text">Escolha um evento disponível e garanta sua experiência exclusiva.</p>
-                <a href="{{ url_for('index', _anchor='eventos') }}" class="btn-primary">Ver Eventos Disponíveis</a>
-            </div>
-        {% endif %}
-
+            {% else %}
+                <div class="alert alert-info" style="text-align: center; padding: 40px;">
+                    <p>Nenhum ingresso encontrado para a busca recente.</p>
+                    <a href="{{ url_for('index') }}" class="btn-comprar" style="margin-top:20px; display:inline-block;">Explorar Eventos</a>
+                </div>
+            {% endif %}
+        </div>
     </main>
 
-    <!-- Rodapé Padronizado -->
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-brand">
                 <h3>Dissonante Experiências</h3>
-                <p>Transformando eventos em memórias vivas.</p>
-            </div>
-            
-            <div class="footer-links">
-                <h4>Navegação</h4>
-                <ul>
-                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
-                    <li><a href="{{ url_for('index', _anchor='eventos') }}">Eventos</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-links" id="contato">
-                <h4>Contato</h4>
-                <ul>
-                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
-                    <li>Fortaleza - CE</li>
-                </ul>
-            </div>
-
-            <div class="footer-links">
-                <h4>Legal</h4>
-                <ul>
-                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
-                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
-                </ul>
+                <p>Plataforma de bilhetagem e gestão de eventos.</p>
             </div>
         </div>
-        
         <div class="footer-bottom">
             <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
         </div>
     </footer>
-
-    <!-- Banner de Cookies (LGPD) -->
-    <div id="cookieBanner" class="cookie-banner">
-        <p class="cookie-text">
-            Utilizamos cookies para melhorar sua experiência no site. Ao continuar navegando, você concorda com a nossa 
-            <a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a>.
-        </p>
-        <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
-    </div>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            const banner = document.getElementById("cookieBanner");
-            const btnAceitar = document.getElementById("aceitarCookies");
-
-            if (!localStorage.getItem("cookiesAceitos")) {
-                banner.style.display = "flex";
-            }
-
-            btnAceitar.addEventListener("click", function () {
-                localStorage.setItem("cookiesAceitos", "true");
-                banner.style.display = "none";
-            });
-        });
-    </script>
 
 </body>
 </html>
