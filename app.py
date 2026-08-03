@@ -3,6 +3,7 @@ import re
 import random
 import string
 import threading
+import socket  # Importado para controle de rede
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 from dotenv import load_dotenv
@@ -13,6 +14,11 @@ from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+
+# --------------------------------------------------------------------------
+# Ajuste de Conectividade de Rede (Fix para o Render / Errno 101 Network is unreachable)
+# --------------------------------------------------------------------------
+socket.has_ipv6 = False
 
 # Carrega as variáveis de ambiente
 load_dotenv()
@@ -27,10 +33,10 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
 # --- Configurações do Servidor SMTP (Google Workspace / Gmail) ---
 app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-mail_port = int(os.environ.get('MAIL_PORT', 587))
+mail_port = int(os.environ.get('MAIL_PORT', 465))
 app.config['MAIL_PORT'] = mail_port
 
-# Previne conflito entre SSL e TLS
+# Previne conflito entre SSL e TLS (Prioriza SSL para a porta 465)
 if mail_port == 465:
     app.config['MAIL_USE_SSL'] = True
     app.config['MAIL_USE_TLS'] = False
@@ -40,8 +46,11 @@ else:
 
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_TIMEOUT'] = 10
+
+# Define o remetente padrão com o nome do projeto
+mail_user = os.environ.get('MAIL_USERNAME', '')
+app.config['MAIL_DEFAULT_SENDER'] = ('Dissonante Experiências', mail_user)
+app.config['MAIL_TIMEOUT'] = 15
 
 mail = Mail(app)
 
@@ -213,7 +222,6 @@ Atenção: Este link expirará em 24 horas.
 Atenciosamente,
 Equipe Dissonante Experiências
 """
-        # Passa 'app' diretamente para a thread (CORRIGIDO)
         thread = threading.Thread(
             target=disparar_email_async, 
             args=(app, msg)
@@ -318,7 +326,6 @@ Mensagem:
 --------------------------------------------------
         """
 
-        # Passa 'app' diretamente para a thread (CORRIGIDO)
         thread = threading.Thread(
             target=disparar_email_async, 
             args=(app, msg)
@@ -378,7 +385,6 @@ def cadastro():
             db.session.commit()
 
             token = gerar_token_confirmacao(novo_usuario.email)
-            # Passando 'novo_usuario.nome' corretamente (CORRIGIDO)
             enviar_email_confirmacao(novo_usuario.email, novo_usuario.nome, token)
 
             flash('Cadastro realizado com sucesso! Enviamos um e-mail de ativação para você. Verifique sua caixa de entrada e spam.', 'success')
