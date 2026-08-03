@@ -193,14 +193,15 @@ def disparar_email_async(app_obj, msg):
             print(f"[ERRO DISPARO E-MAIL ASYNC]: {str(e)}")
 
 def enviar_email_confirmacao(usuario_email, usuario_nome, token):
-    link_validacao = url_for('validar_email', token=token, _external=True)
-    
-    msg = Message(
-        subject="[Dissonante Experiências] Validação do seu E-mail",
-        recipients=[usuario_email]
-    )
+    try:
+        link_validacao = url_for('validar_email', token=token, _external=True)
+        
+        msg = Message(
+            subject="[Dissonante Experiências] Validação do seu E-mail",
+            recipients=[usuario_email]
+        )
 
-    msg.body = f"""Olá, {usuario_nome}!
+        msg.body = f"""Olá, {usuario_nome}!
 
 Seja bem-vindo(a) à Dissonante Experiências.
 
@@ -212,12 +213,16 @@ Atenção: Este link expirará em 24 horas.
 Atenciosamente,
 Equipe Dissonante Experiências
 """
-    thread = threading.Thread(
-        target=disparar_email_async, 
-        args=(app._get_current_object(), msg)
-    )
-    thread.start()
-    return True
+        # Passa 'app' diretamente para a thread (CORRIGIDO)
+        thread = threading.Thread(
+            target=disparar_email_async, 
+            args=(app, msg)
+        )
+        thread.start()
+        return True
+    except Exception as e:
+        print(f"[ERRO PREPARAR E-MAIL]: {str(e)}")
+        return False
 
 def gerar_codigo_ingresso():
     hash_aleatorio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
@@ -313,9 +318,10 @@ Mensagem:
 --------------------------------------------------
         """
 
+        # Passa 'app' diretamente para a thread (CORRIGIDO)
         thread = threading.Thread(
             target=disparar_email_async, 
-            args=(app._get_current_object(), msg)
+            args=(app, msg)
         )
         thread.start()
 
@@ -336,8 +342,12 @@ def cadastro():
             email = request.form.get('email', '').strip().lower()
             cpf = re.sub(r'\D', '', request.form.get('cpf', ''))
             telefone = re.sub(r'\D', '', request.form.get('telefone', ''))
-            senha = request.form.get('senha')
-            confirmar = request.form.get('confirmar_senha')
+            senha = request.form.get('senha', '')
+            confirmar = request.form.get('confirmar_senha', '')
+
+            if not nome or not email or not senha:
+                flash('Preencha todos os campos obrigatórios.', 'warning')
+                return redirect(url_for('cadastro'))
 
             if senha != confirmar:
                 flash('As senhas digitadas não coincidem.', 'danger')
@@ -368,6 +378,7 @@ def cadastro():
             db.session.commit()
 
             token = gerar_token_confirmacao(novo_usuario.email)
+            # Passando 'novo_usuario.nome' corretamente (CORRIGIDO)
             enviar_email_confirmacao(novo_usuario.email, novo_usuario.nome, token)
 
             flash('Cadastro realizado com sucesso! Enviamos um e-mail de ativação para você. Verifique sua caixa de entrada e spam.', 'success')
@@ -403,7 +414,7 @@ def validar_email(token):
 def login():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
-        senha = request.form.get('senha')
+        senha = request.form.get('senha', '')
 
         usuario = Usuario.query.filter_by(email=email).first()
 
@@ -703,7 +714,6 @@ def admin_dashboard():
     vendidos = Ingresso.query.count()
     utilizados = Ingresso.query.filter_by(status='utilizado').count()
     
-    # Ingressos disponíveis no lote ativo
     total_disponiveis = 0
     if lote_ativo:
         ingressos_vendidos_lote_ativo = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
