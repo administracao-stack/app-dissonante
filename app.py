@@ -15,11 +15,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
-# --------------------------------------------------------------------------
-# Ajuste de Conectividade de Rede (Fix para o Render / Errno 101 Network is unreachable)
-# --------------------------------------------------------------------------
-socket.has_ipv6 = False
-
 # Carrega as variáveis de ambiente
 load_dotenv()
 
