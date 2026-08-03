@@ -3,7 +3,10 @@ import re
 import random
 import string
 import threading
-import socket  # Importado para controle de rede
+import smtplib
+import traceback
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone, timedelta
 from functools import wraps
 from dotenv import load_dotenv
@@ -12,7 +15,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
 # Carrega as variáveis de ambiente
@@ -21,33 +23,10 @@ load_dotenv()
 app = Flask(__name__)
 
 # --------------------------------------------------------------------------
-# Configurações do App, Banco de Dados e E-mail
+# Configurações do App e Banco de Dados
 # --------------------------------------------------------------------------
 app.secret_key = os.environ.get('SECRET_KEY', 'chave_secreta_para_desenvolvimento')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-
-# --- Configurações do Servidor SMTP (Google Workspace / Gmail) ---
-app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
-mail_port = int(os.environ.get('MAIL_PORT', 465))
-app.config['MAIL_PORT'] = mail_port
-
-# Previne conflito entre SSL e TLS (Prioriza SSL para a porta 465)
-if mail_port == 465:
-    app.config['MAIL_USE_SSL'] = True
-    app.config['MAIL_USE_TLS'] = False
-else:
-    app.config['MAIL_USE_SSL'] = False
-    app.config['MAIL_USE_TLS'] = True
-
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
-
-# Define o remetente padrão com o nome do projeto
-mail_user = os.environ.get('MAIL_USERNAME', '')
-app.config['MAIL_DEFAULT_SENDER'] = ('Dissonante Experiências', mail_user)
-app.config['MAIL_TIMEOUT'] = 15
-
-mail = Mail(app)
 
 # URL do Banco de Dados com ajuste para SSL no Render
 database_url = os.environ.get('DATABASE_URL')
@@ -155,7 +134,7 @@ def inicializar_banco():
             print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar banco: {str(e)}")
 
 # --------------------------------------------------------------------------
-# Decoradores e Funções Auxiliares
+# Decoradores e Funções Auxiliares de E-mail e Tokens
 # --------------------------------------------------------------------------
 
 def cliente_required(f):
@@ -188,24 +167,48 @@ def validar_token_confirmacao(token, max_age=86400):
     except (SignatureExpired, BadTimeSignature):
         return None
 
-def disparar_email_async(app_obj, msg):
-    with app_obj.app_context():
-        try:
-            mail.send(msg)
-            print(f"[E-MAIL ENVIADO COM SUCESSO]: Para {msg.recipients}")
-        except Exception as e:
-            print(f"[ERRO DISPARO E-MAIL ASYNC]: {str(e)}")
+# --- Sistema Nativo de Envio de E-mail via SMTPLIB ---
+def enviar_email_direto(destinatario, assunto, corpo_texto, reply_to=None):
+    mail_server = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    mail_port = int(os.environ.get('MAIL_PORT', 587))
+    mail_user = os.environ.get('MAIL_USERNAME', '')
+    mail_password = os.environ.get('MAIL_PASSWORD', '')
+
+    if not mail_user or not mail_password:
+        print("[ERRO E-MAIL]: MAIL_USERNAME OU MAIL_PASSWORD NÃO DEFINIDOS NAS VARIÁVEIS DO RENDER!")
+        return False
+
+    msg = MIMEMultipart()
+    msg['From'] = f"Dissonante Experiências <{mail_user}>"
+    msg['To'] = destinatario
+    msg['Subject'] = assunto
+    if reply_to:
+        msg['Reply-To'] = reply_to
+
+    msg.attach(MIMEText(corpo_texto, 'plain', 'utf-8'))
+
+    try:
+        if mail_port == 465:
+            server = smtplib.SMTP_SSL(mail_server, mail_port, timeout=15)
+        else:
+            server = smtplib.SMTP(mail_server, mail_port, timeout=15)
+            server.starttls()
+            
+        server.login(mail_user, mail_password)
+        server.send_message(msg)
+        server.quit()
+        print(f"[E-MAIL ENVIADO COM SUCESSO]: Para {destinatario}")
+        return True
+    except Exception as e:
+        print(f"[ERRO CRÍTICO NO ENVIO DE E-MAIL]: {str(e)}")
+        traceback.print_exc()
+        return False
 
 def enviar_email_confirmacao(usuario_email, usuario_nome, token):
     try:
         link_validacao = url_for('validar_email', token=token, _external=True)
-        
-        msg = Message(
-            subject="[Dissonante Experiências] Validação do seu E-mail",
-            recipients=[usuario_email]
-        )
-
-        msg.body = f"""Olá, {usuario_nome}!
+        assunto = "[Dissonante Experiências] Validação do seu E-mail"
+        corpo = f"""Olá, {usuario_nome}!
 
 Seja bem-vindo(a) à Dissonante Experiências.
 
@@ -218,13 +221,14 @@ Atenciosamente,
 Equipe Dissonante Experiências
 """
         thread = threading.Thread(
-            target=disparar_email_async, 
-            args=(app, msg)
+            target=enviar_email_direto, 
+            args=(usuario_email, assunto, corpo)
         )
         thread.start()
         return True
     except Exception as e:
         print(f"[ERRO PREPARAR E-MAIL]: {str(e)}")
+        traceback.print_exc()
         return False
 
 def gerar_codigo_ingresso():
@@ -263,7 +267,7 @@ def gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade):
     return False
 
 # --------------------------------------------------------------------------
-# Rotas Públicas
+# Rotas Públicas e Utilitários
 # --------------------------------------------------------------------------
 
 @app.route('/')
@@ -288,6 +292,16 @@ def termos_de_uso():
 def politica_privacidade():
     return render_template('politica_privacidade.html')
 
+# Rota de atalho para ativacao manual de emergência
+@app.route('/forcar-ativacao/<email>')
+def forcar_ativacao(email):
+    usuario = Usuario.query.filter_by(email=email.strip().lower()).first()
+    if usuario:
+        usuario.email_verificado = True
+        db.session.commit()
+        return f"Sucesso! A conta {email} foi ativada manualmente. Agora você já pode fazer login."
+    return "Usuário não encontrado.", 404
+
 @app.route('/contato', methods=['GET', 'POST'])
 def contato():
     if request.method == 'POST':
@@ -296,20 +310,13 @@ def contato():
         assunto = request.form.get('assunto', '').strip()
         mensagem = request.form.get('mensagem', '').strip()
 
-        email_empresa = app.config['MAIL_USERNAME']
+        email_empresa = os.environ.get('MAIL_USERNAME', '')
 
         if not email_empresa:
             flash('Serviço de e-mail indisponível no momento. Tente contato via WhatsApp.', 'warning')
             return redirect(url_for('contato'))
 
-        msg = Message(
-            subject=f"[Contato via Site] {assunto}",
-            recipients=[email_empresa],
-            reply_to=email_cliente
-        )
-
-        msg.body = f"""
-Nova mensagem de contato recebida pelo site:
+        corpo = f"""Nova mensagem de contato recebida pelo site:
 
 Nome: {nome}
 E-mail do Cliente: {email_cliente}
@@ -319,11 +326,11 @@ Mensagem:
 --------------------------------------------------
 {mensagem}
 --------------------------------------------------
-        """
+"""
 
         thread = threading.Thread(
-            target=disparar_email_async, 
-            args=(app, msg)
+            target=enviar_email_direto, 
+            args=(email_empresa, f"[Contato via Site] {assunto}", corpo, email_cliente)
         )
         thread.start()
 
@@ -388,6 +395,7 @@ def cadastro():
         except Exception as e:
             db.session.rollback()
             print(f"[ERRO NO CADASTRO]: {str(e)}")
+            traceback.print_exc()
             flash(f'Erro interno ao realizar cadastro: {str(e)}', 'danger')
             return redirect(url_for('cadastro'))
 
@@ -558,6 +566,7 @@ def checkout():
 
             except Exception as e:
                 print("Exceção fatal ao criar PIX:", str(e))
+                traceback.print_exc()
                 flash('Falha de conexão com o Mercado Pago. Tente novamente.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
@@ -626,6 +635,7 @@ def checkout():
 
             except Exception as e:
                 print("Exceção ao processar Cartão:", str(e))
+                traceback.print_exc()
                 flash('Falha na comunicação com a operadora do cartão.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
@@ -663,6 +673,7 @@ def checar_status_pagamento(payment_id):
         return jsonify({"status": status or "pending"})
     except Exception as e:
         print(f"[ERRO POLLING PAGAMENTO]: {str(e)}")
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/webhook/mercadopago', methods=['POST'])
@@ -693,6 +704,7 @@ def webhook_mercadopago():
         except Exception as e:
             db.session.rollback()
             print(f"[ERRO WEBHOOK MERCADO PAGO]: {str(e)}")
+            traceback.print_exc()
 
     return jsonify({"status": "ok"}), 200
 
