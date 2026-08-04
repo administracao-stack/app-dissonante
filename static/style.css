@@ -193,18 +193,19 @@ a {
 }
 
 /* ==========================================================================
-   Hero Section (Banner da Index - Ajuste de Overlay, Ações e Botão Neon)
+   Hero Section & Botão de Rolagem Suave
    ========================================================================== */
 .hero-banner {
     position: relative;
-    background: radial-gradient(circle at 50% 40%, var(--bg-night-light) 0%, var(--bg-night-dark) 75%);
+    background: radial-gradient(circle at 50% 40%, var(--bg-night-light) 0%, var(--bg-night-dark) 85%);
     color: #ffffff;
-    padding: 80px 0;
+    padding: 100px 0;
     min-height: 65vh;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border-bottom: 1px solid var(--border-dark);
 }
 
 .hero-overlay {
@@ -213,7 +214,7 @@ a {
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at 50% 50%, rgba(7, 10, 19, 0.2) 0%, rgba(7, 10, 19, 0.8) 100%);
+    background: radial-gradient(circle at 50% 50%, rgba(7, 10, 19, 0.2) 0%, rgba(7, 10, 19, 0.85) 100%);
     pointer-events: none;
     z-index: 1;
 }
@@ -229,35 +230,51 @@ a {
     margin: 0 auto;
 }
 
+.hero-content h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 20px;
+    color: #ffffff;
+    text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+.hero-content p {
+    font-size: 1.15rem;
+    color: var(--text-muted);
+    max-width: 650px;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
 .hero-actions {
-    margin-top: 25px;
+    margin-top: 10px;
     display: flex;
     justify-content: center;
-    gap: 15px;
 }
 
 .hero-actions .btn-comprar,
 .btn-comprar.btn-lg {
     background: linear-gradient(90deg, #a855f7 0%, #6366f1 100%) !important;
     color: #ffffff !important;
-    font-size: 1.25rem !important;
+    font-size: 1.1rem !important;
     font-weight: 800 !important;
-    padding: 18px 44px !important;
+    padding: 16px 36px !important;
     border-radius: 50px !important;
     display: inline-block !important;
     text-decoration: none !important;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 8px 25px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.5), 0 8px 20px rgba(0, 0, 0, 0.4);
     transition: all 0.3s ease;
 }
 
 .hero-actions .btn-comprar:hover,
 .btn-comprar.btn-lg:hover {
     filter: brightness(1.2);
-    transform: translateY(-3px) scale(1.03);
-    box-shadow: 0 0 45px rgba(168, 85, 247, 0.9), 0 12px 30px rgba(0, 0, 0, 0.7);
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 0 35px rgba(168, 85, 247, 0.8), 0 12px 25px rgba(0, 0, 0, 0.6);
     border-color: rgba(255, 255, 255, 0.5);
 }
 
