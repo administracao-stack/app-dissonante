@@ -48,34 +48,41 @@
                         {% endif %}
                     {% endwith %}
 
-                    <form action="{{ url_for('processar_pagamento') }}" method="POST" id="form-checkout">
+                    <form action="{{ url_for('checkout') }}" method="POST" id="form-checkout">
                         <input type="hidden" name="lote_id" value="{{ lote.id }}">
-                        <input type="hidden" id="card_token" name="card_token">
 
-                        <!-- Etapa 1: Dados do Comprador e Ingressos -->
+                        <!-- Etapa 1: Dados do Comprador -->
                         <div class="checkout-step">
                             <h2>1. Dados do Comprador</h2>
                             
                             <div class="form-group">
                                 <label for="nome">Nome Completo:</label>
-                                <input type="text" id="nome" name="nome" required class="form-control" placeholder="Seu nome completo">
+                                <input type="text" id="nome" name="nome" required class="form-control" 
+                                       placeholder="Seu nome completo" 
+                                       value="{{ usuario.nome if usuario and usuario.nome else '' }}">
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="email">E-mail para Recebimento:</label>
-                                    <input type="email" id="email" name="email" required class="form-control" placeholder="seuemail@exemplo.com">
+                                    <input type="email" id="email" name="email" required class="form-control" 
+                                           placeholder="seuemail@exemplo.com" 
+                                           value="{{ usuario.email if usuario and usuario.email else '' }}">
                                 </div>
                                 <div class="form-group">
                                     <label for="cpf">CPF (Titular da Compra):</label>
-                                    <input type="text" id="cpf" name="cpf" required class="form-control" placeholder="000.000.000-00">
+                                    <input type="text" id="cpf" name="cpf" required class="form-control" 
+                                           placeholder="000.000.000-00" 
+                                           value="{{ usuario.cpf if usuario and usuario.cpf else '' }}">
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="telefone">WhatsApp / Telefone:</label>
-                                    <input type="tel" id="telefone" name="telefone" required class="form-control" placeholder="(85) 90000-0000">
+                                    <input type="tel" id="telefone" name="telefone" required class="form-control" 
+                                           placeholder="(85) 90000-0000" 
+                                           value="{{ usuario.telefone if usuario and usuario.telefone else '' }}">
                                 </div>
                                 <div class="form-group">
                                     <label for="quantidade">Quantidade de Ingressos:</label>
@@ -102,43 +109,12 @@
                                 </label>
 
                                 <label class="metodo-card" id="label_cartao">
-                                    <input type="radio" name="metodo_pagamento" value="cartao" onclick="togglePagamento('cartao')">
+                                    <input type="radio" name="metodo_pagamento" value="credit_card" onclick="togglePagamento('credit_card')">
                                     <div class="metodo-info">
                                         <strong>Cartão de Crédito</strong>
-                                        <span>Parcelamento disponível no checkout</span>
+                                        <span>Aprovação na hora</span>
                                     </div>
                                 </label>
-                            </div>
-
-                            <!-- Campos Dinâmicos do Cartão de Crédito -->
-                            <div id="dados_cartao" class="card-fields-container step-hidden">
-                                <div class="form-group">
-                                    <label for="numero_cartao">Número do Cartão:</label>
-                                    <input type="text" id="numero_cartao" class="form-control" placeholder="0000 0000 0000 0000">
-                                </div>
-
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="validade_cartao">Validade (MM/AA):</label>
-                                        <input type="text" id="validade_cartao" class="form-control" placeholder="MM/AA">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cvv_cartao">Código de Segurança (CVV):</label>
-                                        <input type="text" id="cvv_cartao" class="form-control" placeholder="123">
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="nome_cartao">Nome Impresso no Cartão:</label>
-                                    <input type="text" id="nome_cartao" class="form-control" placeholder="Como no cartão">
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="parcelas">Parcelamento:</label>
-                                    <select name="parcelas" id="parcelas" class="form-control">
-                                        <!-- Atualizado dinamicamente via JavaScript -->
-                                    </select>
-                                </div>
                             </div>
                         </div>
 
@@ -149,7 +125,7 @@
                             </label>
                         </div>
 
-                        <button type="submit" class="btn-comprar btn-finalizar">CONCLUIR PEDIDO</button>
+                        <button type="submit" class="btn-comprar btn-finalizar">GERAR PAGAMENTO</button>
                     </form>
                 </div>
 
@@ -210,14 +186,16 @@
             const labelPix = document.getElementById('label_pix');
             const labelCartao = document.getElementById('label_cartao');
 
-            if (metodo === 'cartao') {
-                containerCartao.classList.remove('step-hidden');
-                labelCartao.classList.add('active');
-                labelPix.classList.remove('active');
-            } else {
-                containerCartao.classList.add('step-hidden');
-                labelPix.classList.add('active');
-                labelCartao.classList.remove('active');
+            if (containerCartao) {
+                if (metodo === 'credit_card') {
+                    containerCartao.classList.remove('step-hidden');
+                    labelCartao.classList.add('active');
+                    labelPix.classList.remove('active');
+                } else {
+                    containerCartao.classList.add('step-hidden');
+                    labelPix.classList.add('active');
+                    labelCartao.classList.remove('active');
+                }
             }
         }
 
@@ -228,16 +206,17 @@
             // Atualiza resumo visual
             document.getElementById('total-display').innerText = 'R$ ' + valorTotal.toFixed(2).replace('.', ',');
 
-            // Atualiza opções de parcelamento
+            // Atualiza opções de parcelamento caso exista o elemento
             const selectParcelas = document.getElementById('parcelas');
-            selectParcelas.innerHTML = '';
-
-            for (let i = 1; i <= 6; i++) {
-                const valorParcela = (valorTotal / i).toFixed(2).replace('.', ',');
-                const option = document.createElement('option');
-                option.value = i;
-                option.text = `${i}x de R$ ${valorParcela}${i === 1 ? ' (À vista)' : ''}`;
-                selectParcelas.appendChild(option);
+            if (selectParcelas) {
+                selectParcelas.innerHTML = '';
+                for (let i = 1; i <= 6; i++) {
+                    const valorParcela = (valorTotal / i).toFixed(2).replace('.', ',');
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.text = `${i}x de R$ ${valorParcela}${i === 1 ? ' (À vista)' : ''}`;
+                    selectParcelas.appendChild(option);
+                }
             }
         }
 
