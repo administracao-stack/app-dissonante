@@ -46,7 +46,7 @@
         <div class="container hero-content">
             <span class="badge-destaque">PRÓXIMO GRANDE EVENTO</span>
             <h1 class="hero-title">MAREVIBES HALLOWEEN 2026</h1>
-            <p class="hero-subtitle">A festa mais aguardada do ano à beira-mar. Viva uma experiência musical inesquecível.</p>
+            <p class="hero-subtitle">A festa mais aguardada do ano. Viva uma experiência musical inesquecível.</p>
             
             <div class="hero-actions">
                 <a href="{{ url_for('evento_marevibes') }}" class="btn-comprar btn-lg">Garantir Meu Ingresso</a>
@@ -54,25 +54,30 @@
         </div>
     </section>
 
-    <section id="eventos" class="section-eventos">
+    <!-- Seção Eventos em Andamento -->
+    <section id="eventos" class="services">
         <div class="container">
-            <h2 class="section-title">Eventos em Destaque</h2>
-            <div class="grid-eventos">
-                <div class="card-evento">
-                    <div class="card-thumb">
-                        <img src="{{ url_for('static', filename='event-banner.jpg') }}" alt="Marevibes Halloween 2026">
-                        <span class="card-tag">Ingressos Abertos</span>
+            <h2>Eventos em Andamento</h2>
+            
+            <div class="event-grid">
+                
+                <!-- Card do Evento 1 -->
+                <div class="event-card">
+                    <span class="badge badge-open">Ingressos Disponiveis</span>
+                    <h3 class="event-title">MaréVibes Halloween 2026</h3>
+                    
+                    <div class="event-details">
+                        <div class="detail-item">📅 31 de Outubro, às 17:00h</div>
+                        <div class="detail-item">📍 Rua Fagundes Varela, 690, Itaperi</div>
                     </div>
-                    <div class="card-body">
-                        <h3>Marevibes Halloween 2026</h3>
-                        <p class="evento-data">📅 31 de Outubro de 2026 • 22h00</p>
-                        <p class="evento-local">📍 Barraca Marevibes, Praia do Futuro - Fortaleza/CE</p>
-                        <div class="card-footer">
-                            <span class="preco-a-partir">A partir de <strong>R$ 160,00</strong></span>
-                            <a href="{{ url_for('evento_marevibes') }}" class="btn-card">Ver Ingressos</a>
-                        </div>
-                    </div>
+                    
+                    <p class="event-description">
+                        Prepare-se para a noite mais misteriosa do ano. O MaréVibes Halloween chega com uma proposta imersiva, unindo cenografia temática exclusiva, os melhores DJs da cena de Fortaleza e ativações assustadoramente inesquecíveis. Vista seu melhor disfarce e venha viver o inesperado.
+                    </p>
+                    
+                    <a href="{{ url_for('evento_marevibes') }}" class="ticket-btn">Saiba Mais / Garantir Ingresso</a>
                 </div>
+
             </div>
         </div>
     </section>
