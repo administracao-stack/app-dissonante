@@ -33,31 +33,34 @@
         <div class="container">
             <h1 class="ingressos-titulo">Seus Ingressos Confirmados</h1>
 
-            {% if pedido %}
-                <div class="card-ingresso">
-                    <div class="ingresso-header">
-                        <h2>{{ pedido.evento_nome if pedido.evento_nome else 'Marevibes Halloween 2026' }}</h2>
-                        <span class="ingresso-status status-pago">CONFIRMADO</span>
-                    </div>
-
-                    <div class="ingresso-body">
-                        <div class="ingresso-info">
-                            <p><strong>Titular:</strong> {{ pedido.nome_comprador }}</p>
-                            <p><strong>Lote / Setor:</strong> {{ pedido.lote_nome if pedido.lote_nome else 'Lote Promocional' }}</p>
-                            <p><strong>Quantidade:</strong> {{ pedido.quantidade }} ingresso(s)</p>
-                            <p><strong>Código de Validação:</strong> <code>{{ pedido.codigo_qr }}</code></p>
+            {% if vendas %}
+                {% for ingresso in vendas %}
+                    <div class="card-ingresso" style="margin-bottom: 25px;">
+                        <div class="ingresso-header">
+                            <h2>{{ ingresso.evento_nome }}</h2>
+                            <span class="ingresso-status status-pago">{{ ingresso.status | upper }}</span>
                         </div>
 
-                        <!-- QR Code Gerado Dinamicamente -->
-                        <div class="qr-code-box">
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ pedido.codigo_qr }}" alt="QR Code Ingresso" class="qr-code-img">
-                            <small style="display:block; margin-top:8px; color:#94a3b8;">Apresente na portaria</small>
+                        <div class="ingresso-body">
+                            <div class="ingresso-info">
+                                <p><strong>Titular:</strong> {{ ingresso.comprador.nome }}</p>
+                                <p><strong>E-mail:</strong> {{ ingresso.comprador.email }}</p>
+                                <p><strong>Setor / Lote:</strong> {{ ingresso.lote_origem.nome if ingresso.lote_origem else 'Ingresso Geral' }}</p>
+                                <p><strong>Código de Validação:</strong> <code>{{ ingresso.codigo_qr }}</code></p>
+                                <p><strong>Data da Compra:</strong> {{ ingresso.data_compra.strftime('%d/%m/%Y às %H:%M') }}</p>
+                            </div>
+
+                            <!-- QR Code Gerado Dinamicamente -->
+                            <div class="qr-code-box">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ ingresso.codigo_qr }}" alt="QR Code Ingresso" class="qr-code-img">
+                                <small style="display:block; margin-top:8px; color:#94a3b8;">Apresente na portaria</small>
+                            </div>
                         </div>
                     </div>
-                </div>
+                {% endfor %}
             {% else %}
                 <div class="alert alert-info" style="text-align: center; padding: 40px;">
-                    <p>Nenhum ingresso encontrado para a busca recente.</p>
+                    <p>Nenhum ingresso encontrado para a sua conta.</p>
                     <a href="{{ url_for('index') }}" class="btn-comprar" style="margin-top:20px; display:inline-block;">Explorar Eventos</a>
                 </div>
             {% endif %}
