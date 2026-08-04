@@ -11,6 +11,7 @@
 </head>
 <body class="bg-dark">
 
+    <!-- CABEÇALHO PADRÃO -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
@@ -18,60 +19,94 @@
                     <img src="{{ url_for('static', filename='logo-icon.png') }}" alt="Dissonante" class="navbar-logo-icon">
                     <div class="logo-text">
                         <span class="brand-name">DISSONANTE</span>
-                        <span class="brand-sub">MEUS INGRESSOS</span>
+                        <span class="brand-sub">EXPERIÊNCIAS</span>
                     </div>
                 </a>
                 <nav class="nav-menu">
-                    <a href="{{ url_for('index') }}">Início</a>
-                    <a href="https://wa.me/558592636062?text=Olá!%20Preciso%20de%20suporte%20com%20meus%20ingressos." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">Suporte</a>
+                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
+                    <a href="{{ url_for('index') }}#eventos">Eventos</a>
+                    <a href="{{ url_for('contato') }}">Contato</a>
+                    <a href="https://wa.me/558592636062?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+                        Fale Conosco
+                    </a>
                 </nav>
+                <div class="header-cta">
+                    <a href="{{ url_for('logout') }}" class="btn-logout">Sair</a>
+                </div>
             </div>
         </div>
     </header>
 
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="ingressos-main">
         <div class="container">
-            <h1 class="ingressos-titulo">Seus Ingressos Confirmados</h1>
+            <div class="panel-header">
+                <div>
+                    <h1 class="panel-title">Seus Ingressos Confirmados</h1>
+                    <p class="panel-subtitle">Gerencie seus acessos e apresente o QR Code na portaria.</p>
+                </div>
+            </div>
 
             {% if vendas %}
-                {% for ingresso in vendas %}
-                    <div class="card-ingresso" style="margin-bottom: 25px;">
-                        <div class="ingresso-header">
-                            <h2>{{ ingresso.evento_nome }}</h2>
-                            <span class="ingresso-status status-pago">{{ ingresso.status | upper }}</span>
-                        </div>
-
-                        <div class="ingresso-body">
-                            <div class="ingresso-info">
-                                <p><strong>Titular:</strong> {{ ingresso.comprador.nome }}</p>
-                                <p><strong>E-mail:</strong> {{ ingresso.comprador.email }}</p>
-                                <p><strong>Setor / Lote:</strong> {{ ingresso.lote_origem.nome if ingresso.lote_origem else 'Ingresso Geral' }}</p>
-                                <p><strong>Código de Validação:</strong> <code>{{ ingresso.codigo_qr }}</code></p>
-                                <p><strong>Data da Compra:</strong> {{ ingresso.data_compra.strftime('%d/%m/%Y às %H:%M') }}</p>
+                <div class="grid-ingressos">
+                    {% for ingresso in vendas %}
+                        <div class="card-ingresso">
+                            <div class="ingresso-header">
+                                <h4 class="evento-titulo">{{ ingresso.evento_nome }}</h4>
+                                <span class="status-tag {% if ingresso.status == 'valido' %}status-valido{% else %}status-utilizado{% endif %}">
+                                    {{ ingresso.status | upper }}
+                                </span>
                             </div>
-
-                            <!-- QR Code Gerado Dinamicamente -->
-                            <div class="qr-code-box">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ ingresso.codigo_qr }}" alt="QR Code Ingresso" class="qr-code-img">
-                                <small style="display:block; margin-top:8px; color:#94a3b8;">Apresente na portaria</small>
+                            <div class="ingresso-body">
+                                <p class="user-info text-gold" style="margin-top: 10px;">{{ ingresso.comprador.nome }}</p>
+                                <p class="user-info text-muted" style="font-size: 0.8rem; margin-bottom: 15px;">{{ ingresso.lote_origem.nome if ingresso.lote_origem else 'Ingresso Geral' }}</p>
+                                
+                                <div class="qr-code-box">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ ingresso.codigo_qr }}" alt="QR Code" class="qr-code-img">
+                                </div>
+                                <span class="codigo-texto">{{ ingresso.codigo_qr }}</span>
+                                <small style="display:block; margin-top:15px; color:#64748b; font-size: 0.75rem;">Adquirido em: {{ ingresso.data_compra.strftime('%d/%m/%Y') }}</small>
                             </div>
                         </div>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             {% else %}
-                <div class="alert alert-info" style="text-align: center; padding: 40px;">
-                    <p>Nenhum ingresso encontrado para a sua conta.</p>
-                    <a href="{{ url_for('index') }}" class="btn-comprar" style="margin-top:20px; display:inline-block;">Explorar Eventos</a>
+                <div class="empty-state">
+                    <h2 class="empty-state-title">Nenhum ingresso encontrado</h2>
+                    <p class="empty-state-text">Você ainda não possui ingressos confirmados em sua conta.</p>
+                    <a href="{{ url_for('index') }}#eventos" class="btn-primary">Explorar Eventos</a>
                 </div>
             {% endif %}
         </div>
     </main>
 
+    <!-- Rodapé Padrão -->
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-brand">
                 <h3>Dissonante Experiências</h3>
-                <p>Plataforma de bilhetagem e gestão de eventos.</p>
+                <p>Transformando eventos em memórias vivas.</p>
+            </div>
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <ul>
+                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
+                    <li><a href="{{ url_for('index') }}#eventos">Eventos</a></li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Contato</h4>
+                <ul>
+                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
+                    <li>Fortaleza - CE</li>
+                </ul>
+            </div>
+            <div class="footer-links">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                    <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+                </ul>
             </div>
         </div>
         <div class="footer-bottom">
@@ -79,5 +114,30 @@
         </div>
     </footer>
 
+    <!-- Banner de Cookies (LGPD) -->
+    <div id="cookieBanner" class="cookie-banner">
+        <p class="cookie-text">
+            Utilizamos cookies para melhorar sua experiência no site. Ao continuar navegando, você concorda com a nossa 
+            <a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a>.
+        </p>
+        <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
+    </div>
+
+    <!-- Script de Validação de Cookies (localStorage) -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const banner = document.getElementById("cookieBanner");
+            const btnAceitar = document.getElementById("aceitarCookies");
+
+            if (!localStorage.getItem("cookiesAceitos")) {
+                banner.style.display = "flex";
+            }
+
+            btnAceitar.addEventListener("click", function () {
+                localStorage.setItem("cookiesAceitos", "true");
+                banner.style.display = "none";
+            });
+        });
+</script>
 </body>
 </html>
