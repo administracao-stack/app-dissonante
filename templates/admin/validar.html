@@ -91,5 +91,28 @@
         </div>
     </footer>
 
+    <!-- Banner de Cookies (LGPD) Adicionado ao Admin -->
+    <div id="cookieBanner" class="cookie-banner">
+        <p class="cookie-text">
+            Utilizamos cookies para manter sua sessão administrativa ativa e segura.
+        </p>
+        <button id="aceitarCookies" class="btn-cookie">Entendi</button>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const banner = document.getElementById("cookieBanner");
+            const btnAceitar = document.getElementById("aceitarCookies");
+            if (!localStorage.getItem("cookiesAceitos")) {
+                banner.style.display = "flex";
+            }
+            btnAceitar.addEventListener("click", function () {
+                localStorage.setItem("cookiesAceitos", "true");
+                banner.style.display = "none";
+            });
+        });
+    </script>
+</body>
+</html>
+
 </body>
 </html>
