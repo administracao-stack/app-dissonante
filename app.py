@@ -17,7 +17,7 @@ from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
-# Carrega as variáveis de ambiente
+# Carrega as variáveis de ambiente local (.env)
 load_dotenv()
 
 app = Flask(__name__)
@@ -168,17 +168,19 @@ def validar_token_confirmacao(token, max_age=86400):
         return None
 
 def enviar_email_direto(destinatario, assunto, corpo_texto, reply_to=None):
-    mail_server = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    mail_server = os.environ.get('MAIL_SERVER', 'smtp-relay.brevo.com')
     mail_port = int(os.environ.get('MAIL_PORT', 587))
+    mail_use_tls = os.environ.get('MAIL_USE_TLS', 'True').lower() in ['true', '1', 't']
     mail_user = os.environ.get('MAIL_USERNAME', '')
     mail_password = os.environ.get('MAIL_PASSWORD', '')
+    default_sender = os.environ.get('MAIL_DEFAULT_SENDER', 'nao-responda@dissonanteexperiencias.com')
 
     if not mail_user or not mail_password:
         print("[ERRO E-MAIL]: MAIL_USERNAME OU MAIL_PASSWORD NÃO DEFINIDOS NAS VARIÁVEIS DO RENDER!")
         return False
 
     msg = MIMEMultipart()
-    msg['From'] = f"Dissonante Experiências <{mail_user}>"
+    msg['From'] = f"Dissonante Experiências <{default_sender}>"
     msg['To'] = destinatario
     msg['Subject'] = assunto
     if reply_to:
@@ -187,11 +189,12 @@ def enviar_email_direto(destinatario, assunto, corpo_texto, reply_to=None):
     msg.attach(MIMEText(corpo_texto, 'plain', 'utf-8'))
 
     try:
-        if mail_port == 465:
+        if mail_port == 465 and not mail_use_tls:
             server = smtplib.SMTP_SSL(mail_server, mail_port, timeout=15)
         else:
             server = smtplib.SMTP(mail_server, mail_port, timeout=15)
-            server.starttls()
+            if mail_use_tls:
+                server.starttls()
             
         server.login(mail_user, mail_password)
         server.send_message(msg)
@@ -308,7 +311,7 @@ def contato():
         assunto = request.form.get('assunto', '').strip()
         mensagem = request.form.get('mensagem', '').strip()
 
-        email_empresa = os.environ.get('MAIL_USERNAME', '')
+        email_empresa = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME', ''))
 
         if not email_empresa:
             flash('Serviço de e-mail indisponível no momento. Tente contato via WhatsApp.', 'warning')
