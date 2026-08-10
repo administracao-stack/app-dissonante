@@ -753,6 +753,19 @@ a {
 /* ==========================================================================
    Formulários & Alertas Compartilhados
    ========================================================================== */
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.field-margin-sm {
+    margin-bottom: 15px;
+}
+
+.field-margin-lg {
+    margin-bottom: 25px;
+}
+
 .form-label {
     font-weight: 600;
     margin-bottom: 8px;
@@ -760,7 +773,8 @@ a {
     color: #cbd5e1;
 }
 
-.form-control {
+.form-control,
+.form-input {
     width: 100%;
     padding: 12px 15px;
     background-color: rgba(255, 255, 255, 0.05);
@@ -773,7 +787,12 @@ a {
     transition: var(--transition-fast);
 }
 
-.form-control:focus {
+.form-input {
+    margin-bottom: 0;
+}
+
+.form-control:focus,
+.form-input:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
@@ -1103,7 +1122,7 @@ a {
 }
 
 /* ==========================================================================
-   Área de Login / Cadastro Dupla Coluna
+   Área de Login / Cadastro Dupla Coluna & Edição de Perfil
    ========================================================================== */
 .auth-wrapper {
     min-height: 80vh;
@@ -1123,6 +1142,11 @@ a {
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
     overflow: hidden;
+}
+
+.auth-container.edit-profile-container {
+    grid-template-columns: 1fr;
+    max-width: 550px;
 }
 
 .auth-benefits {
@@ -1173,7 +1197,7 @@ a {
 .auth-form-side h3 {
     color: #ffffff;
     font-size: 1.3rem;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 .auth-form-side p.form-sub {
@@ -1955,7 +1979,8 @@ a {
 }
 
 /* Botões de Ação do Perfil */
-.btn-profile-edit {
+.btn-profile-edit,
+.btn-submit {
     display: block;
     width: 100%;
     background: linear-gradient(90deg, var(--gold) 0%, var(--accent-purple) 100%);
@@ -1966,18 +1991,22 @@ a {
     font-size: 0.95rem;
     padding: 12px 14px;
     border-radius: 8px;
+    border: none;
+    cursor: pointer;
     margin-bottom: 12px;
     transition: var(--transition-fast);
     box-shadow: 0 4px 15px rgba(197, 160, 89, 0.25);
 }
 
-.btn-profile-edit:hover {
+.btn-profile-edit:hover,
+.btn-submit:hover {
     filter: brightness(1.15);
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
 }
 
-.btn-profile-danger {
+.btn-profile-danger,
+.btn-cancel {
     display: block;
     width: 100%;
     background-color: rgba(220, 38, 38, 0.2);
@@ -1992,7 +2021,8 @@ a {
     transition: var(--transition-fast);
 }
 
-.btn-profile-danger:hover {
+.btn-profile-danger:hover,
+.btn-cancel:hover {
     background-color: #dc2626;
     border-color: #dc2626;
     color: #ffffff !important;
