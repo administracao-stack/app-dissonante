@@ -11,7 +11,6 @@
 </head>
 <body class="bg-dark">
 
-    <!-- Cabeçalho (Header) Completo com base na Index -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
@@ -42,7 +41,6 @@
         </div>
     </header>
 
-    <!-- Conteúdo Principal Sem Inline Styles -->
     <main class="auth-wrapper">
         <div class="auth-container edit-profile-container">
             <form method="POST" action="{{ url_for('editar_perfil') }}" class="auth-form-side edit-profile-form">
@@ -50,17 +48,17 @@
 
                 <div class="form-group field-margin-sm">
                     <label for="nome" class="form-label">Nome Completo</label>
-                    <input type="text" id="nome" name="nome" value="{{ usuario.nome }}" required class="form-input">
+                    <input type="text" id="nome" name="nome" value="{{ usuario.nome if usuario else '' }}" required class="form-input">
                 </div>
 
                 <div class="form-group field-margin-sm">
                     <label for="cpf" class="form-label">CPF</label>
-                    <input type="text" id="cpf" name="cpf" value="{{ usuario.cpf or '' }}" class="form-input">
+                    <input type="text" id="cpf" name="cpf" value="{{ usuario.cpf if usuario and usuario.cpf else '' }}" class="form-input">
                 </div>
 
                 <div class="form-group field-margin-lg">
                     <label for="telefone" class="form-label">Telefone / WhatsApp</label>
-                    <input type="text" id="telefone" name="telefone" value="{{ usuario.telefone or '' }}" class="form-input">
+                    <input type="text" id="telefone" name="telefone" value="{{ usuario.telefone if usuario and usuario.telefone else '' }}" class="form-input">
                 </div>
 
                 <button type="submit" class="btn-profile-edit btn-submit">
@@ -74,7 +72,6 @@
         </div>
     </main>
 
-    <!-- Rodapé (Footer) Completo com base na Index -->
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-brand">
@@ -102,7 +99,6 @@
         </div>
     </footer>
 
-    <!-- Banner LGPD -->
     <div id="cookieBanner" class="cookie-banner">
         <p class="cookie-text">
             Utilizamos cookies para otimizar sua experiência no site. Ao continuar, você concorda com nossa <a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a>.
