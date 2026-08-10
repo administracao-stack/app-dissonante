@@ -1910,6 +1910,95 @@ a {
 }
 
 /* ==========================================================================
+   Página de Perfil & Edição de Perfil
+   ========================================================================== */
+.profile-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 35px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.profile-info-group {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.profile-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.profile-info-item:last-child {
+    border-bottom: none;
+}
+
+.profile-info-label {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.profile-info-value {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* Botões de Ação do Perfil */
+.btn-profile-edit {
+    display: block;
+    width: 100%;
+    background: linear-gradient(90deg, var(--gold) 0%, var(--accent-purple) 100%);
+    color: #ffffff !important;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    transition: var(--transition-fast);
+    box-shadow: 0 4px 15px rgba(197, 160, 89, 0.25);
+}
+
+.btn-profile-edit:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+}
+
+.btn-profile-danger {
+    display: block;
+    width: 100%;
+    background-color: rgba(220, 38, 38, 0.2);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    color: #f87171 !important;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 12px 14px;
+    border-radius: 8px;
+    transition: var(--transition-fast);
+}
+
+.btn-profile-danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
    Responsividade (Media Queries)
    ========================================================================== */
 @media (max-width: 992px) {
