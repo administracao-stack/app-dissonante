@@ -461,6 +461,32 @@ def logout():
     flash('Sessão encerrada com sucesso.', 'info')
     return redirect(url_for('login'))
 
+@app.route('/editar-perfil', methods=['GET', 'POST'])
+@cliente_required
+def editar_perfil():
+    usuario = Usuario.query.get(session['usuario_id'])
+    
+    if request.method == 'POST':
+        nome = request.form.get('nome', '').strip()
+        cpf = re.sub(r'\D', '', request.form.get('cpf', ''))
+        telefone = re.sub(r'\D', '', request.form.get('telefone', ''))
+        
+        if not nome:
+            flash('O campo Nome é obrigatório.', 'warning')
+            return redirect(url_for('editar_perfil'))
+
+        usuario.nome = nome
+        usuario.cpf = cpf
+        usuario.telefone = telefone
+        
+        db.session.commit()
+        session['usuario_nome'] = usuario.nome
+        
+        flash('Perfil atualizado com sucesso!', 'success')
+        return redirect(url_for('perfil'))
+
+    return render_template('editar_perfil.html', usuario=usuario)
+
 # --------------------------------------------------------------------------
 # Checkout e Ingressos (Checkout sem login ativado)
 # --------------------------------------------------------------------------
