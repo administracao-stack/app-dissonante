@@ -115,10 +115,10 @@ def inicializar_banco():
             db.create_all()
             lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
             if not lote_promo:
-                lote_promo = Lote(nome='Lote Promocional', preco=160.00, quantidade_total=15, ativo=True)
+                lote_promo = Lote(nome='Lote Promocional', preco=1.00, quantidade_total=15, ativo=True)
                 db.session.add(lote_promo)
             else:
-                lote_promo.preco = 160.00
+                lote_promo.preco = 1.00
                 lote_promo.quantidade_total = 15
 
             lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
