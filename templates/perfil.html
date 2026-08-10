@@ -47,6 +47,11 @@
                     <p><strong>Telefone:</strong> {{ usuario.telefone }}</p>
                 </div>
 
+                <!-- Botão Editar Perfil -->
+                <a href="{{ url_for('editar_perfil') }}" class="btn-auth-submit" style="display: block; text-align: center; text-decoration: none; margin-bottom: 1rem; background: linear-gradient(90deg, #c5a059 0%, #a855f7 100%);">
+                    Editar Perfil
+                </a>
+
                 <!-- Botão linkando para Meus Ingressos -->
                 <a href="{{ url_for('meus_ingressos') }}" class="btn-auth-submit" style="display: block; text-align: center; text-decoration: none; margin-bottom: 1rem;">
                     Ver Meus Ingressos
