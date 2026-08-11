@@ -787,6 +787,7 @@ def webhook_mercadopago():
             payment_info = sdk.payment().get(payment_id).get("response", {})
             status = payment_info.get("status")
 
+            # CASO 1: Pagamento Aprovado -> Gerar Ingressos
             if status == "approved":
                 ext_ref = payment_info.get("external_reference", "")
                 user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
@@ -806,7 +807,7 @@ def webhook_mercadopago():
                     if comprador and lote:
                         gerar_ingressos_para_pagamento(payment_id, comprador.id, lote.id, 1)
 
-                # 3. Disparo de e-mails em threads paralelas (Sem travar o retorno do webhook)
+                # Disparo de e-mails em threads paralelas (Sem travar o retorno do webhook)
                 if comprador:
                     ingressos = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
                     codigos_str = "\n".join([f"- Código: {ing.codigo_qr}" for ing in ingressos])
@@ -847,6 +848,36 @@ Valor Total: R$ {payment_info.get('transaction_amount', 0.0):.2f}
 ID do Pagamento: {payment_id}
 """
                         threading.Thread(target=enviar_email_direto, args=(email_admin, assunto_admin, corpo_admin)).start()
+
+            # CASO 2: Pagamento Estornado, Cancelado ou Contestado -> Remover Ingressos
+            elif status in ["refunded", "charged_back", "cancelled"]:
+                ingressos_para_remover = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
+                
+                if ingressos_para_remover:
+                    comprador_id = ingressos_para_remover[0].usuario_id
+                    comprador = Usuario.query.get(comprador_id)
+
+                    # Remove os ingressos do banco de dados
+                    for ing in ingressos_para_remover:
+                        db.session.delete(ing)
+                    
+                    db.session.commit()
+                    print(f"[ESTORNO PROCESSADO]: Ingressos do pagamento {payment_id} removidos com sucesso.")
+
+                    # Notifica o cliente sobre o cancelamento por e-mail
+                    if comprador:
+                        assunto_cancelamento = "[Dissonante Experiências] Cancelamento de Ingresso / Estorno de Pagamento"
+                        corpo_cancelamento = f"""Olá, {comprador.nome}.
+
+Identificamos a devolução/estorno do pagamento (ID: {payment_id}).
+Os ingressos vinculados a esta compra foram cancelados e removidos da sua conta.
+
+Se você acredita que isso foi um engano ou não solicitou o estorno, entre em contato conosco.
+
+Atenciosamente,
+Equipe Dissonante Experiências
+"""
+                        threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cancelamento, corpo_cancelamento)).start()
 
         except Exception as e:
             db.session.rollback()
