@@ -524,7 +524,16 @@ def editar_perfil():
 # --------------------------------------------------------------------------
 
 @app.route('/checkout', methods=['GET', 'POST'])
+@cliente_required  # Bloqueia o acesso direto de usuários não autenticados
 def checkout():
+    # Garante que o usuário logado existe no banco
+    usuario_id = session.get('usuario_id')
+    usuario_atual = Usuario.query.get(usuario_id)
+
+    if not usuario_atual:
+        flash('Sua sessão expirou. Faça login novamente.', 'warning')
+        return redirect(url_for('login'))
+
     lote_id_req = request.form.get('lote_id', type=int) or request.args.get('lote_id', type=int)
     
     if lote_id_req:
@@ -536,9 +545,6 @@ def checkout():
         flash('Nenhum lote de ingressos disponível no momento.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
-    usuario_id = session.get('usuario_id')
-    usuario_atual = Usuario.query.get(usuario_id) if usuario_id else None
-
     if request.method == 'POST':
         try:
             quantidade = max(1, int(request.form.get('quantidade', 1)))
@@ -547,44 +553,7 @@ def checkout():
 
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
 
-        if not usuario_atual:
-            nome_form = request.form.get('nome', '').strip()
-            email_form = request.form.get('email', '').strip().lower()
-            cpf_form = re.sub(r'\D', '', request.form.get('cpf', ''))
-            telefone_form = re.sub(r'\D', '', request.form.get('telefone', ''))
-
-            if not nome_form or not email_form or not cpf_form:
-                flash('Por favor, informe seu Nome, E-mail e CPF para concluir a compra.', 'warning')
-                return redirect(url_for('checkout', lote_id=lote_ativo.id))
-
-            if len(cpf_form) != 11:
-                flash('O CPF informado deve conter 11 dígitos.', 'danger')
-                return redirect(url_for('checkout', lote_id=lote_ativo.id))
-
-            usuario_atual = Usuario.query.filter_by(email=email_form).first()
-            if not usuario_atual:
-                senha_temp = generate_password_hash("Dissonante2026!")
-                usuario_atual = Usuario(
-                    nome=nome_form,
-                    email=email_form,
-                    cpf=cpf_form,
-                    telefone=telefone_form,
-                    senha_hash=senha_temp,
-                    email_verificado=True
-                )
-                db.session.add(usuario_atual)
-                db.session.commit()
-            else:
-                if not usuario_atual.cpf:
-                    usuario_atual.cpf = cpf_form
-                if not usuario_atual.telefone:
-                    usuario_atual.telefone = telefone_form
-                db.session.commit()
-
-            session['usuario_id'] = usuario_atual.id
-            session['usuario_nome'] = usuario_atual.nome
-            session['usuario_email'] = usuario_atual.email
-
+        # Valida disponibilidade no lote
         ingressos_vendidos_lote = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
         disponiveis_lote = lote_ativo.quantidade_total - ingressos_vendidos_lote
 
@@ -594,6 +563,7 @@ def checkout():
 
         total = quantidade * lote_ativo.preco
 
+        # Formatação dos dados do pagador usando o perfil autenticado
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
@@ -619,6 +589,7 @@ def checkout():
             flash('Ambiente de demonstração: Configure MP_ACCESS_TOKEN no .env para integrar ao Mercado Pago.', 'info')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
+        # Pagamento via PIX
         if metodo_pagamento == 'pix':
             payment_data = {
                 "transaction_amount": float(total),
@@ -657,6 +628,7 @@ def checkout():
                 flash('Falha de conexão com o Mercado Pago. Tente novamente.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
+        # Pagamento via Cartão de Crédito
         elif metodo_pagamento == 'credit_card':
             token = request.form.get('token')
             installments = int(request.form.get('installments', 1))
@@ -727,39 +699,6 @@ def checkout():
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
     return render_template('checkout.html', lote=lote_ativo, usuario=usuario_atual)
-
-@app.route('/pagamento')
-def pagamento():
-    compra = session.get('compra_atual')
-    if not compra:
-        flash('Nenhuma transação ativa encontrada.', 'info')
-        return redirect(url_for('checkout'))
-    return render_template('pagamento.html', compra=compra)
-
-@app.route('/api/checar-status-pagamento/<payment_id>')
-def checar_status_pagamento(payment_id):
-    if not sdk:
-        return jsonify({"status": "pending"})
-
-    try:
-        payment_response = sdk.payment().get(payment_id)
-        payment_info = payment_response.get("response", {})
-        status = payment_info.get("status")
-
-        if status == "approved":
-            ext_ref = payment_info.get("external_reference", "")
-            user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
-            if user_id and lote_id and qtd:
-                gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
-
-            session.pop('compra_atual', None)
-            return jsonify({"status": "approved", "redirect_url": url_for('meus_ingressos')})
-
-        return jsonify({"status": status or "pending"})
-    except Exception as e:
-        print(f"[ERRO POLLING PAGAMENTO]: {str(e)}")
-        traceback.print_exc()
-        return jsonify({"status": "error", "message": str(e)}), 500
 
 # --------------------------------------------------------------------------
 # ROTA WEBHOOK ATUALIZADA (MERCADO PAGO)
