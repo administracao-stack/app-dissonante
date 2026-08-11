@@ -16,6 +16,7 @@ import mercadopago
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
@@ -858,7 +859,11 @@ ID do Pagamento: {payment_id}
 @app.route('/meus-ingressos')
 @cliente_required
 def meus_ingressos():
-    ingressos_db = Ingresso.query.filter_by(usuario_id=session['usuario_id']).order_by(Ingresso.data_compra.desc()).all()
+    ingressos_db = Ingresso.query.options(
+        joinedload(Ingresso.comprador),
+        joinedload(Ingresso.lote_origem)
+    ).filter_by(usuario_id=session['usuario_id']).order_by(Ingresso.data_compra.desc()).all()
+    
     return render_template('meus_ingressos.html', vendas=ingressos_db)
 
 # --------------------------------------------------------------------------
