@@ -117,6 +117,30 @@ def inicializar_banco():
     with app.app_context():
         try:
             db.create_all()
+
+            # Configura/Garante o usuário Administrador Principal
+            email_admin = "administracao@dissonanteexperiencias.com"
+            admin_user = Usuario.query.filter_by(email=email_admin).first()
+
+            if not admin_user:
+                admin_user = Usuario(
+                    nome="Administrador",
+                    email=email_admin,
+                    cpf="00000000000",
+                    telefone="85999999999",
+                    senha_hash=generate_password_hash("DissonanteAdmin2026!"),
+                    is_admin=True,
+                    email_verificado=True
+                )
+                db.session.add(admin_user)
+                print(f"[INICIALIZAÇÃO BANCO]: Conta {email_admin} criada como Administrador.")
+            else:
+                if not admin_user.is_admin or not admin_user.email_verificado:
+                    admin_user.is_admin = True
+                    admin_user.email_verificado = True
+                    print(f"[INICIALIZAÇÃO BANCO]: Permissões de Administrador atualizadas para {email_admin}.")
+
+            # Inicialização de lotes padrão
             lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
             if not lote_promo:
                 lote_promo = Lote(nome='Lote Promocional', preco=1.00, quantidade_total=15, ativo=True)
@@ -701,7 +725,7 @@ def checkout():
     return render_template('checkout.html', lote=lote_ativo, usuario=usuario_atual)
 
 # --------------------------------------------------------------------------
-# ROTA WEBHOOK ATUALIZADA (MERCADO PAGO)
+# Webhook do Mercado Pago
 # --------------------------------------------------------------------------
 
 @app.route('/webhook/mercadopago', methods=['POST'])
@@ -709,24 +733,19 @@ def webhook_mercadopago():
     if not sdk:
         return jsonify({"status": "sdk_not_configured"}), 200
 
-    # 1. Validação do Header de Segurança HMAC
     if not validar_assinatura_mercadopago(request):
         print("[ERRO WEBHOOK]: Assinatura HMAC inválida. Requisição não autorizada.")
         return jsonify({"status": "unauthorized"}), 401
 
     data = request.get_json() or {}
-    
-    # Identifica o tipo de evento recebido
     topic = data.get("type") or request.args.get("topic") or request.args.get("type")
     payment_id = data.get("data", {}).get("id") or request.args.get("id") or request.args.get("data.id")
 
     if topic in ["payment", "merchant_order"] and payment_id:
         try:
-            # 2. Busca informações completas do pagamento via API
             payment_info = sdk.payment().get(payment_id).get("response", {})
             status = payment_info.get("status")
 
-            # CASO 1: Pagamento Aprovado -> Gerar Ingressos
             if status == "approved":
                 ext_ref = payment_info.get("external_reference", "")
                 user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
@@ -746,12 +765,10 @@ def webhook_mercadopago():
                     if comprador and lote:
                         gerar_ingressos_para_pagamento(payment_id, comprador.id, lote.id, 1)
 
-                # Disparo de e-mails em threads paralelas (Sem travar o retorno do webhook)
                 if comprador:
                     ingressos = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
                     codigos_str = "\n".join([f"- Código: {ing.codigo_qr}" for ing in ingressos])
 
-                    # E-mail para o cliente
                     assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
                     corpo_cliente = f"""Olá, {comprador.nome}!
 
@@ -774,7 +791,6 @@ Equipe Dissonante Experiências
 """
                     threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cliente, corpo_cliente)).start()
 
-                    # E-mail de notificação de venda para o Administrador
                     email_admin = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME', ''))
                     if email_admin:
                         assunto_admin = f"[NOVA VENDA APROVADA] ID {payment_id}"
@@ -788,7 +804,6 @@ ID do Pagamento: {payment_id}
 """
                         threading.Thread(target=enviar_email_direto, args=(email_admin, assunto_admin, corpo_admin)).start()
 
-            # CASO 2: Pagamento Estornado, Cancelado ou Contestado -> Remover Ingressos
             elif status in ["refunded", "charged_back", "cancelled"]:
                 ingressos_para_remover = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
                 
@@ -796,14 +811,12 @@ ID do Pagamento: {payment_id}
                     comprador_id = ingressos_para_remover[0].usuario_id
                     comprador = Usuario.query.get(comprador_id)
 
-                    # Remove os ingressos do banco de dados
                     for ing in ingressos_para_remover:
                         db.session.delete(ing)
                     
                     db.session.commit()
                     print(f"[ESTORNO PROCESSADO]: Ingressos do pagamento {payment_id} removidos com sucesso.")
 
-                    # Notifica o cliente sobre o cancelamento por e-mail
                     if comprador:
                         assunto_cancelamento = "[Dissonante Experiências] Cancelamento de Ingresso / Estorno de Pagamento"
                         corpo_cancelamento = f"""Olá, {comprador.nome}.
@@ -823,7 +836,6 @@ Equipe Dissonante Experiências
             print(f"[ERRO CRÍTICO NO WEBHOOK]: {str(e)}")
             traceback.print_exc()
 
-    # Confirmação HTTP 200 obrigatória para o Mercado Pago
     return jsonify({"status": "ok"}), 200
 
 @app.route('/meus-ingressos')
