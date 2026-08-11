@@ -4,6 +4,8 @@ import random
 import string
 import threading
 import smtplib
+import hmac
+import hashlib
 import traceback
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -45,6 +47,7 @@ db = SQLAlchemy(app)
 # Configuração do Mercado Pago
 # --------------------------------------------------------------------------
 MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN', '')
+MP_WEBHOOK_SECRET = os.getenv('MP_WEBHOOK_SECRET', '')
 sdk = mercadopago.SDK(MERCADOPAGO_TOKEN) if MERCADOPAGO_TOKEN else None
 
 # --------------------------------------------------------------------------
@@ -268,6 +271,34 @@ def gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade):
         return True
     return False
 
+def validar_assinatura_mercadopago(req):
+    """ Valida a assinatura HMAC enviada pelo Mercado Pago para prevenir falsificação """
+    x_signature = req.headers.get('x-signature')
+    x_request_id = req.headers.get('x-request-id')
+    
+    if not x_signature or not MP_WEBHOOK_SECRET:
+        return True # Se a Secret não for configurada no .env, releva a verificação
+        
+    parts = {}
+    for item in x_signature.split(','):
+        if '=' in item:
+            key, val = item.strip().split('=', 1)
+            parts[key] = val
+
+    ts = parts.get('ts')
+    v1 = parts.get('v1')
+
+    if not ts or not v1:
+        return False
+
+    data_id = req.args.get('data.id') or (req.get_json() or {}).get('data', {}).get('id')
+    manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
+
+    hmac_obj = hmac.new(MP_WEBHOOK_SECRET.encode('utf-8'), manifest.encode('utf-8'), hashlib.sha256)
+    sha256_hash = hmac_obj.hexdigest()
+
+    return sha256_hash == v1
+
 # --------------------------------------------------------------------------
 # Rotas Públicas e Utilitários
 # --------------------------------------------------------------------------
@@ -488,7 +519,7 @@ def editar_perfil():
     return render_template('editar_perfil.html', usuario=usuario)
 
 # --------------------------------------------------------------------------
-# Checkout e Ingressos (Checkout sem login ativado)
+# Checkout e Ingressos
 # --------------------------------------------------------------------------
 
 @app.route('/checkout', methods=['GET', 'POST'])
@@ -504,7 +535,6 @@ def checkout():
         flash('Nenhum lote de ingressos disponível no momento.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
-    # Se estiver logado, recupera os dados do usuário
     usuario_id = session.get('usuario_id')
     usuario_atual = Usuario.query.get(usuario_id) if usuario_id else None
 
@@ -516,7 +546,6 @@ def checkout():
 
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
 
-        # Se o comprador não está logado, pega os dados do formulário
         if not usuario_atual:
             nome_form = request.form.get('nome', '').strip()
             email_form = request.form.get('email', '').strip().lower()
@@ -531,10 +560,8 @@ def checkout():
                 flash('O CPF informado deve conter 11 dígitos.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
-            # Verifica se o usuário já existe pelo e-mail
             usuario_atual = Usuario.query.filter_by(email=email_form).first()
             if not usuario_atual:
-                # Cria a conta de comprador automaticamente em segundo plano
                 senha_temp = generate_password_hash("Dissonante2026!")
                 usuario_atual = Usuario(
                     nome=nome_form,
@@ -547,14 +574,12 @@ def checkout():
                 db.session.add(usuario_atual)
                 db.session.commit()
             else:
-                # Atualiza CPF e Telefone caso não estejam preenchidos
                 if not usuario_atual.cpf:
                     usuario_atual.cpf = cpf_form
                 if not usuario_atual.telefone:
                     usuario_atual.telefone = telefone_form
                 db.session.commit()
 
-            # Atribui o ID do comprador na sessão temporária
             session['usuario_id'] = usuario_atual.id
             session['usuario_nome'] = usuario_atual.nome
             session['usuario_email'] = usuario_atual.email
@@ -735,36 +760,99 @@ def checar_status_pagamento(payment_id):
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
+# --------------------------------------------------------------------------
+# ROTA WEBHOOK ATUALIZADA (MERCADO PAGO)
+# --------------------------------------------------------------------------
+
 @app.route('/webhook/mercadopago', methods=['POST'])
 def webhook_mercadopago():
     if not sdk:
-        return jsonify({"status": "ok"}), 200
+        return jsonify({"status": "sdk_not_configured"}), 200
+
+    # 1. Validação do Header de Segurança HMAC
+    if not validar_assinatura_mercadopago(request):
+        print("[ERRO WEBHOOK]: Assinatura HMAC inválida. Requisição não autorizada.")
+        return jsonify({"status": "unauthorized"}), 401
 
     data = request.get_json() or {}
-    if data.get("type") == "payment":
-        payment_id = data.get("data", {}).get("id")
-        
+    
+    # Identifica o tipo de evento recebido
+    topic = data.get("type") or request.args.get("topic") or request.args.get("type")
+    payment_id = data.get("data", {}).get("id") or request.args.get("id") or request.args.get("data.id")
+
+    if topic in ["payment", "merchant_order"] and payment_id:
         try:
+            # 2. Busca informações completas do pagamento via API
             payment_info = sdk.payment().get(payment_id).get("response", {})
-            
-            if payment_info.get("status") == "approved":
+            status = payment_info.get("status")
+
+            if status == "approved":
                 ext_ref = payment_info.get("external_reference", "")
                 user_id, lote_id, qtd = extrair_ref_externa(ext_ref)
                 
+                comprador = None
+                lote = None
+
                 if user_id and lote_id and qtd:
+                    comprador = Usuario.query.get(user_id)
+                    lote = Lote.query.get(lote_id)
                     gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, qtd)
                 else:
                     payer_email = payment_info.get("payer", {}).get("email")
-                    usuario = Usuario.query.filter_by(email=payer_email).first()
+                    comprador = Usuario.query.filter_by(email=payer_email).first()
                     lote = Lote.query.filter_by(ativo=True).first()
-                    if usuario and lote:
-                        gerar_ingressos_para_pagamento(payment_id, usuario.id, lote.id, 1)
+                    qtd = 1
+                    if comprador and lote:
+                        gerar_ingressos_para_pagamento(payment_id, comprador.id, lote.id, 1)
+
+                # 3. Disparo de e-mails em threads paralelas (Sem travar o retorno do webhook)
+                if comprador:
+                    ingressos = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
+                    codigos_str = "\n".join([f"- Código: {ing.codigo_qr}" for ing in ingressos])
+
+                    # E-mail para o cliente
+                    assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
+                    corpo_cliente = f"""Olá, {comprador.nome}!
+
+Seu pagamento foi confirmado com sucesso! 🎉
+
+Detalhes do Pedido:
+--------------------------------------------------
+Evento: MaréVibes Halloween 2026
+Lote: {lote.nome if lote else 'Geral'}
+Quantidade: {qtd}
+ID Transação: {payment_id}
+
+Seus Ingressos:
+{codigos_str}
+
+Apresente os códigos acima na portaria do evento. Você também pode consultar seus ingressos a qualquer momento acessando sua conta em nosso site.
+
+Atenciosamente,
+Equipe Dissonante Experiências
+"""
+                    threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cliente, corpo_cliente)).start()
+
+                    # E-mail de notificação de venda para o Administrador
+                    email_admin = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME', ''))
+                    if email_admin:
+                        assunto_admin = f"[NOVA VENDA APROVADA] ID {payment_id}"
+                        corpo_admin = f"""Nova venda confirmada via Webhook!
+
+Cliente: {comprador.nome} ({comprador.email})
+Lote: {lote.nome if lote else 'Desconhecido'}
+Quantidade: {qtd}
+Valor Total: R$ {payment_info.get('transaction_amount', 0.0):.2f}
+ID do Pagamento: {payment_id}
+"""
+                        threading.Thread(target=enviar_email_direto, args=(email_admin, assunto_admin, corpo_admin)).start()
 
         except Exception as e:
             db.session.rollback()
-            print(f"[ERRO WEBHOOK MERCADO PAGO]: {str(e)}")
+            print(f"[ERRO CRÍTICO NO WEBHOOK]: {str(e)}")
             traceback.print_exc()
 
+    # Confirmação HTTP 200 obrigatória para o Mercado Pago
     return jsonify({"status": "ok"}), 200
 
 @app.route('/meus-ingressos')
