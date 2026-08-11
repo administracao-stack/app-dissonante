@@ -11,7 +11,6 @@
 </head>
 <body class="bg-dark">
 
-    <!-- CABEÇALHO PADRÃO -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
@@ -37,7 +36,6 @@
         </div>
     </header>
 
-    <!-- CONTEÚDO PRINCIPAL -->
     <main class="ingressos-main">
         <div class="container">
             <div class="panel-header">
@@ -61,9 +59,11 @@
                                 <p class="user-info text-gold" style="margin-top: 10px;">{{ ingresso.comprador.nome }}</p>
                                 <p class="user-info text-muted" style="font-size: 0.8rem; margin-bottom: 15px;">{{ ingresso.lote_origem.nome if ingresso.lote_origem else 'Ingresso Geral' }}</p>
                                 
-                                <div class="qr-code-box">
-                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ ingresso.codigo_qr }}" alt="QR Code" class="qr-code-img">
-                                </div>
+                                <button type="button" class="btn-open-qr" onclick="abrirModalQR('{{ ingresso.evento_nome }}', '{{ ingresso.comprador.nome }}', '{{ ingresso.codigo_qr }}', '{{ ingresso.status }}')">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                    Ver QR Code
+                                </button>
+
                                 <span class="codigo-texto">{{ ingresso.codigo_qr }}</span>
                                 <small style="display:block; margin-top:15px; color:#64748b; font-size: 0.75rem;">Adquirido em: {{ ingresso.data_compra.strftime('%d/%m/%Y') }}</small>
                             </div>
@@ -80,7 +80,23 @@
         </div>
     </main>
 
-    <!-- Rodapé Padrão -->
+    <!-- MODAL / POPUP DE EXIBIÇÃO DO QR CODE -->
+    <div id="qrModal" class="modal-overlay" onclick="fecharModalQR(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <button class="btn-close-modal" onclick="fecharModalQR()">&times;</button>
+            <h3 id="modalEvento" class="modal-title">Evento</h3>
+            <p id="modalTitular" class="modal-subtitle">Titular</p>
+
+            <div class="modal-qr-container">
+                <img id="modalQRImg" src="" alt="QR Code Ingresso" class="modal-qr-img">
+            </div>
+
+            <p id="modalCodeText" class="modal-code"></p>
+            <span id="modalStatus" class="status-tag">VALIDO</span>
+            <p class="modal-instruction">Apresente este código na portaria para leitura individual.</p>
+        </div>
+    </div>
+
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-brand">
@@ -114,7 +130,6 @@
         </div>
     </footer>
 
-    <!-- Banner de Cookies (LGPD) -->
     <div id="cookieBanner" class="cookie-banner">
         <p class="cookie-text">
             Utilizamos cookies para melhorar sua experiência no site. Ao continuar navegando, você concorda com a nossa 
@@ -123,7 +138,6 @@
         <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
     </div>
 
-    <!-- Script de Validação de Cookies (localStorage) -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const banner = document.getElementById("cookieBanner");
@@ -138,6 +152,28 @@
                 banner.style.display = "none";
             });
         });
-</script>
+
+        // Funções para Controle do Popup Modal do QR Code
+        function abrirModalQR(evento, titular, codigo, status) {
+            document.getElementById('modalEvento').innerText = evento;
+            document.getElementById('modalTitular').innerText = titular;
+            document.getElementById('modalCodeText').innerText = codigo;
+            document.getElementById('modalQRImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${codigo}`;
+            
+            const statusTag = document.getElementById('modalStatus');
+            statusTag.innerText = status.toUpperCase();
+            if (status.toLowerCase() === 'valido') {
+                statusTag.className = 'status-tag status-valido';
+            } else {
+                statusTag.className = 'status-tag status-utilizado';
+            }
+
+            document.getElementById('qrModal').classList.add('active');
+        }
+
+        function fecharModalQR(event) {
+            document.getElementById('qrModal').classList.remove('active');
+        }
+    </script>
 </body>
 </html>
