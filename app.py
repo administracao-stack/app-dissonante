@@ -7,6 +7,7 @@ import smtplib
 import hmac
 import hashlib
 import traceback
+import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone, timedelta
@@ -63,7 +64,12 @@ def inject_globals():
         'descricao': 'A maior festa de Halloween à beira-mar de Fortaleza!'
     }
     ambiente_teste = not MERCADOPAGO_TOKEN or MERCADOPAGO_TOKEN.startswith('TEST-')
-    return dict(evento=evento_default, ambiente_teste=ambiente_teste)
+    recaptcha_site_key = os.environ.get('RECAPTCHA_SITE_KEY', '')
+    return dict(
+        evento=evento_default, 
+        ambiente_teste=ambiente_teste, 
+        recaptcha_site_key=recaptcha_site_key
+    )
 
 # --------------------------------------------------------------------------
 # Modelos do Banco de Dados (ORM SQLAlchemy)
@@ -164,6 +170,27 @@ def inicializar_banco():
 # --------------------------------------------------------------------------
 # Decoradores e Funções Auxiliares
 # --------------------------------------------------------------------------
+
+def validar_recaptcha(token_recaptcha):
+    secret_key = os.environ.get('RECAPTCHA_SECRET_KEY', '')
+    if not secret_key:
+        return True 
+
+    url = 'https://www.google.com/recaptcha/api/siteverify'
+    payload = {
+        'secret': secret_key,
+        'response': token_recaptcha
+    }
+
+    try:
+        response = requests.post(url, data=payload, timeout=5)
+        resultado = response.json()
+        if resultado.get('success') and resultado.get('score', 0) >= 0.5:
+            return True
+        return False
+    except Exception as e:
+        print(f"[ERRO RECAPTCHA]: {str(e)}")
+        return True
 
 def cliente_required(f):
     @wraps(f)
@@ -362,6 +389,11 @@ def forcar_ativacao(email):
 @app.route('/contato', methods=['GET', 'POST'])
 def contato():
     if request.method == 'POST':
+        recaptcha_token = request.form.get('g-recaptcha-response')
+        if not validar_recaptcha(recaptcha_token):
+            flash('Sua mensagem foi identificada como spam e não pôde ser enviada.', 'danger')
+            return redirect(url_for('contato'))
+
         nome = request.form.get('nome', '').strip()
         email_cliente = request.form.get('email', '').strip()
         assunto = request.form.get('assunto', '').strip()
@@ -404,6 +436,11 @@ Mensagem:
 def cadastro():
     if request.method == 'POST':
         try:
+            recaptcha_token = request.form.get('g-recaptcha-response')
+            if not validar_recaptcha(recaptcha_token):
+                flash('Cadastro bloqueado por suspeita de automação (Bot/Spam). Tente novamente.', 'danger')
+                return redirect(url_for('cadastro'))
+
             nome = request.form.get('nome', '').strip()
             email = request.form.get('email', '').strip().lower()
             cpf = re.sub(r'\D', '', request.form.get('cpf', ''))
