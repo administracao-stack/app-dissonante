@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Script da API do Google reCAPTCHA v3 -->
+    {% if recaptcha_site_key %}
+    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+    {% endif %}
 </head>
 <body class="bg-dark">
 
@@ -70,7 +75,7 @@
                     {% endif %}
                 {% endwith %}
 
-                <form action="{{ url_for('cadastro') }}" method="POST">
+                <form id="form-cadastro" action="{{ url_for('cadastro') }}" method="POST">
                     <div class="auth-group">
                         <label for="nome">Nome Completo</label>
                         <input type="text" id="nome" name="nome" placeholder="Seu nome completo" required>
@@ -198,6 +203,30 @@
             v = v.replace(/^(\d{2})(\d)/g, '($1) $2');
             v = v.replace(/(\d{5})(\d)/, '$1-$2');
             e.target.value = v;
+        });
+
+        // Intercepta o envio do formulário para gerar o token reCAPTCHA
+        document.getElementById('form-cadastro').addEventListener('submit', function(e) {
+            const siteKey = "{{ recaptcha_site_key }}";
+            
+            if (siteKey && typeof grecaptcha !== 'undefined') {
+                e.preventDefault(); // Impede o envio imediato
+                
+                grecaptcha.ready(function() {
+                    grecaptcha.execute(siteKey, {action: 'cadastro'}).then(function(token) {
+                        let inputToken = document.getElementById('g-recaptcha-response');
+                        if (!inputToken) {
+                            inputToken = document.createElement('input');
+                            inputToken.type = 'hidden';
+                            inputToken.id = 'g-recaptcha-response';
+                            inputToken.name = 'g-recaptcha-response';
+                            document.getElementById('form-cadastro').appendChild(inputToken);
+                        }
+                        inputToken.value = token;
+                        document.getElementById('form-cadastro').submit();
+                    });
+                });
+            }
         });
     </script>
 
