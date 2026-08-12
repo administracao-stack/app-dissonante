@@ -8,6 +8,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Script da API do Google reCAPTCHA v3 -->
+    {% if recaptcha_site_key %}
+    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+    {% endif %}
 </head>
 <body class="bg-dark">
 
@@ -73,7 +78,7 @@
                             {% endif %}
                         {% endwith %}
 
-                        <form method="POST" action="{{ url_for('contato') }}">
+                        <form id="form-contato" method="POST" action="{{ url_for('contato') }}">
                             <div class="auth-group">
                                 <label for="nome" class="form-label">Nome Completo</label>
                                 <input type="text" id="nome" name="nome" class="form-control" placeholder="Seu nome completo" required>
@@ -177,9 +182,10 @@
         <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
     </div>
 
-    <!-- Script de Validação de Cookies (localStorage) -->
+    <!-- Scripts -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Controle de Cookies
             const banner = document.getElementById("cookieBanner");
             const btnAceitar = document.getElementById("aceitarCookies");
 
@@ -191,6 +197,33 @@
                 localStorage.setItem("cookiesAceitos", "true");
                 banner.style.display = "none";
             });
+
+            // Intercepta o envio do formulário para gerar o token reCAPTCHA
+            const formContato = document.getElementById('form-contato');
+            if (formContato) {
+                formContato.addEventListener('submit', function(e) {
+                    const siteKey = "{{ recaptcha_site_key }}";
+                    
+                    if (siteKey && typeof grecaptcha !== 'undefined') {
+                        e.preventDefault(); // Impede o envio imediato
+                        
+                        grecaptcha.ready(function() {
+                            grecaptcha.execute(siteKey, {action: 'contato'}).then(function(token) {
+                                let inputToken = document.getElementById('g-recaptcha-response');
+                                if (!inputToken) {
+                                    inputToken = document.createElement('input');
+                                    inputToken.type = 'hidden';
+                                    inputToken.id = 'g-recaptcha-response';
+                                    inputToken.name = 'g-recaptcha-response';
+                                    formContato.appendChild(inputToken);
+                                }
+                                inputToken.value = token;
+                                formContato.submit();
+                            });
+                        });
+                    }
+                });
+            }
         });
     </script>
 
