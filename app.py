@@ -7,7 +7,6 @@ import smtplib
 import hmac
 import hashlib
 import traceback
-import requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone, timedelta
@@ -64,11 +63,14 @@ def inject_globals():
         'descricao': 'A maior festa de Halloween à beira-mar de Fortaleza!'
     }
     ambiente_teste = not MERCADOPAGO_TOKEN or MERCADOPAGO_TOKEN.startswith('TEST-')
-    recaptcha_site_key = os.environ.get('RECAPTCHA_SITE_KEY', '')
+    
+    # Injeta a Public Key informada
+    mp_public_key = os.getenv('MP_PUBLIC_KEY', 'APP_USR-051ebaf7-2fbf-4699-866d-19f57d6617c2')
+
     return dict(
         evento=evento_default, 
-        ambiente_teste=ambiente_teste, 
-        recaptcha_site_key=recaptcha_site_key
+        ambiente_teste=ambiente_teste,
+        MP_PUBLIC_KEY=mp_public_key
     )
 
 # --------------------------------------------------------------------------
@@ -170,27 +172,6 @@ def inicializar_banco():
 # --------------------------------------------------------------------------
 # Decoradores e Funções Auxiliares
 # --------------------------------------------------------------------------
-
-def validar_recaptcha(token_recaptcha):
-    secret_key = os.environ.get('RECAPTCHA_SECRET_KEY', '')
-    if not secret_key:
-        return True 
-
-    url = 'https://www.google.com/recaptcha/api/siteverify'
-    payload = {
-        'secret': secret_key,
-        'response': token_recaptcha
-    }
-
-    try:
-        response = requests.post(url, data=payload, timeout=5)
-        resultado = response.json()
-        if resultado.get('success') and resultado.get('score', 0) >= 0.5:
-            return True
-        return False
-    except Exception as e:
-        print(f"[ERRO RECAPTCHA]: {str(e)}")
-        return True
 
 def cliente_required(f):
     @wraps(f)
@@ -329,7 +310,9 @@ def validar_assinatura_mercadopago(req):
     x_request_id = req.headers.get('x-request-id')
     
     if not x_signature or not MP_WEBHOOK_SECRET:
-        return True # Se a Secret não for configurada no .env, releva a verificação
+        if os.environ.get('FLASK_ENV') == 'production':
+            return False
+        return True
         
     parts = {}
     for item in x_signature.split(','):
@@ -359,9 +342,9 @@ def validar_assinatura_mercadopago(req):
 def index():
     return render_template('index.html')
 
-@app.route('/quem-somos')
-def quem_somos():
-    return render_template('quem_somos.html')
+@app.route('/servicos')
+def servicos():
+    return render_template('servicos.html')
 
 @app.route('/evento/marevibes-halloween')
 def evento_marevibes():
@@ -389,11 +372,6 @@ def forcar_ativacao(email):
 @app.route('/contato', methods=['GET', 'POST'])
 def contato():
     if request.method == 'POST':
-        recaptcha_token = request.form.get('g-recaptcha-response')
-        if not validar_recaptcha(recaptcha_token):
-            flash('Sua mensagem foi identificada como spam e não pôde ser enviada.', 'danger')
-            return redirect(url_for('contato'))
-
         nome = request.form.get('nome', '').strip()
         email_cliente = request.form.get('email', '').strip()
         assunto = request.form.get('assunto', '').strip()
@@ -428,6 +406,10 @@ Mensagem:
 
     return render_template('contato.html')
 
+@app.route('/quem-somos')
+def quem_somos():
+    return render_template('quem_somos.html')
+
 # --------------------------------------------------------------------------
 # Autenticação, Cadastro e Perfil
 # --------------------------------------------------------------------------
@@ -436,11 +418,6 @@ Mensagem:
 def cadastro():
     if request.method == 'POST':
         try:
-            recaptcha_token = request.form.get('g-recaptcha-response')
-            if not validar_recaptcha(recaptcha_token):
-                flash('Cadastro bloqueado por suspeita de automação (Bot/Spam). Tente novamente.', 'danger')
-                return redirect(url_for('cadastro'))
-
             nome = request.form.get('nome', '').strip()
             email = request.form.get('email', '').strip().lower()
             cpf = re.sub(r'\D', '', request.form.get('cpf', ''))
@@ -585,9 +562,8 @@ def editar_perfil():
 # --------------------------------------------------------------------------
 
 @app.route('/checkout', methods=['GET', 'POST'])
-@cliente_required  # Bloqueia o acesso direto de usuários não autenticados
+@cliente_required
 def checkout():
-    # Garante que o usuário logado existe no banco
     usuario_id = session.get('usuario_id')
     usuario_atual = Usuario.query.get(usuario_id)
 
@@ -614,6 +590,13 @@ def checkout():
 
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
 
+        # Atualiza dados de contato/documento caso atualizados durante a compra
+        cpf_form = re.sub(r'\D', '', request.form.get('cpf', ''))
+        tel_form = re.sub(r'\D', '', request.form.get('telefone', ''))
+        if cpf_form: usuario_atual.cpf = cpf_form
+        if tel_form: usuario_atual.telefone = tel_form
+        db.session.commit()
+
         # Valida disponibilidade no lote
         ingressos_vendidos_lote = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
         disponiveis_lote = lote_ativo.quantidade_total - ingressos_vendidos_lote
@@ -624,7 +607,7 @@ def checkout():
 
         total = quantidade * lote_ativo.preco
 
-        # Formatação dos dados do pagador usando o perfil autenticado
+        # Formatação dos dados do pagador
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
@@ -760,6 +743,49 @@ def checkout():
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
     return render_template('checkout.html', lote=lote_ativo, usuario=usuario_atual)
+
+
+@app.route('/pagamento')
+@cliente_required
+def pagamento():
+    compra = session.get('compra_atual')
+    
+    if not compra:
+        flash('Nenhuma transação pendente encontrada.', 'warning')
+        return redirect(url_for('index'))
+        
+    return render_template('pagamento.html', compra=compra)
+
+
+@app.route('/api/checar-status-pagamento/<payment_id>')
+@cliente_required
+def checar_status_pagamento(payment_id):
+    if not sdk:
+        return jsonify({'status': 'error', 'message': 'Mercado Pago não configurado'}), 500
+
+    try:
+        payment_info = sdk.payment().get(payment_id).get("response", {})
+        status = payment_info.get("status")
+
+        if status == 'approved':
+            compra = session.get('compra_atual', {})
+            user_id = session.get('usuario_id')
+            lote_id = compra.get('lote_id')
+            quantidade = compra.get('quantidade', 1)
+
+            if user_id and lote_id:
+                gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade)
+
+            if 'compra_atual' in session:
+                session['compra_atual']['status'] = 'approved'
+
+            return jsonify({'status': 'approved', 'redirect_url': url_for('meus_ingressos')})
+
+        return jsonify({'status': status})
+
+    except Exception as e:
+        print(f"[ERRO POLLING PAGAMENTO]: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 400
 
 # --------------------------------------------------------------------------
 # Webhook do Mercado Pago
