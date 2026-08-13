@@ -346,7 +346,7 @@ def index():
 def servicos():
     return render_template('servicos.html')
 
-@app.route('/evento/marevibes-halloween')
+@app.route('/evento/evento_marevibes_halloween')
 def evento_marevibes():
     lotes = Lote.query.order_by(Lote.id.asc()).all()
     lote_ativo = Lote.query.filter_by(ativo=True).first()
