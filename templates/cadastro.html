@@ -44,7 +44,7 @@
                 <!-- Botão Dinâmico para Área do Cliente -->
                 <div class="header-cta">
                     {% if session.get('usuario_id') %}
-                        <a href="{{ url_for('meus_ingressos') }}" class="btn-cliente">Meus Ingressos</a>
+                        <a href="{{ url_for('perfil') }}" class="btn-cliente">Área do Cliente</a>
                     {% else %}
                         <a href="{{ url_for('login') }}" class="btn-cliente">Área do Cliente</a>
                     {% endif %}
@@ -84,26 +84,29 @@
                 {% endwith %}
 
                 <form id="form-cadastro" action="{{ url_for('cadastro') }}" method="POST">
+                    <!-- Campo Oculto para o Token do reCAPTCHA -->
+                    <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response">
+
                     <div class="auth-group">
                         <label for="nome">Nome Completo</label>
-                        <input type="text" id="nome" name="nome" placeholder="Seu nome completo" required>
+                        <input type="text" id="nome" name="nome" value="{{ request.form.get('nome', '') }}" placeholder="Seu nome completo" required>
                     </div>
 
                     <div class="auth-group">
                         <label for="email">E-mail</label>
-                        <input type="email" id="email" name="email" placeholder="seu-melhor-email@exemplo.com" required>
+                        <input type="email" id="email" name="email" value="{{ request.form.get('email', '') }}" placeholder="seu-melhor-email@exemplo.com" required>
                         <small class="input-helper-text">* Enviaremos um e-mail de ativação para este endereço.</small>
                     </div>
 
                     <div class="auth-row">
                         <div class="auth-group">
                             <label for="cpf">CPF</label>
-                            <input type="text" id="cpf" name="cpf" placeholder="000.000.000-00" maxlength="14" required>
+                            <input type="text" id="cpf" name="cpf" value="{{ request.form.get('cpf', '') }}" placeholder="000.000.000-00" maxlength="14" required>
                         </div>
 
                         <div class="auth-group">
                             <label for="telefone">WhatsApp / Telefone</label>
-                            <input type="text" id="telefone" name="telefone" placeholder="(85) 99999-9999" maxlength="15" required>
+                            <input type="text" id="telefone" name="telefone" value="{{ request.form.get('telefone', '') }}" placeholder="(85) 99999-9999" maxlength="15" required>
                         </div>
                     </div>
 
@@ -115,7 +118,7 @@
                                 <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle class="eye-open" cx="12" cy="12" r="3"></circle>
-                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23"></line>
+                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
                                 </svg>
                             </button>
                         </div>
@@ -129,13 +132,13 @@
                                 <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle class="eye-open" cx="12" cy="12" r="3"></circle>
-                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23"></line>
+                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
                                 </svg>
                             </button>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-auth-submit">Criar Conta</button>
+                    <button type="submit" class="btn-auth-submit" id="btn-submit">Criar Conta</button>
                 </form>
 
                 <p class="auth-footer-text">
@@ -213,25 +216,27 @@
             e.target.value = v;
         });
 
-        // Intercepta o envio do formulário para gerar o token reCAPTCHA
+        // Intercepta e dispara a validação reCAPTCHA v3 de forma segura
         document.getElementById('form-cadastro').addEventListener('submit', function(e) {
             const siteKey = "{{ recaptcha_site_key }}";
+            const form = this;
             
             if (siteKey && typeof grecaptcha !== 'undefined') {
-                e.preventDefault(); // Impede o envio imediato
+                e.preventDefault(); // Pausa o envio padrão
+
+                const btnSubmit = document.getElementById('btn-submit');
+                if (btnSubmit) {
+                    btnSubmit.disabled = true;
+                    btnSubmit.innerText = 'Processando...';
+                }
                 
                 grecaptcha.ready(function() {
                     grecaptcha.execute(siteKey, {action: 'cadastro'}).then(function(token) {
-                        let inputToken = document.getElementById('g-recaptcha-response');
-                        if (!inputToken) {
-                            inputToken = document.createElement('input');
-                            inputToken.type = 'hidden';
-                            inputToken.id = 'g-recaptcha-response';
-                            inputToken.name = 'g-recaptcha-response';
-                            document.getElementById('form-cadastro').appendChild(inputToken);
-                        }
-                        inputToken.value = token;
-                        document.getElementById('form-cadastro').submit();
+                        document.getElementById('g-recaptcha-response').value = token;
+                        form.submit(); // Envia o formulário com o token preenchido
+                    }).catch(function(error) {
+                        console.error('Erro reCAPTCHA:', error);
+                        form.submit(); // Fallback de envio caso haja falha de conexão na API Google
                     });
                 });
             }
