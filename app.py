@@ -346,11 +346,11 @@ def index():
 def servicos():
     return render_template('servicos.html')
 
-@app.route('/evento/evento_marevibes_halloween')
+@app.route('/evento/evento_marevibes_halloween.html')
 def evento_marevibes():
     lotes = Lote.query.order_by(Lote.id.asc()).all()
     lote_ativo = Lote.query.filter_by(ativo=True).first()
-    return render_template('evento_marevibes_halloween.html', lote=lote_ativo, lotes=lotes)
+    return render_template('eventos/evento_marevibes_halloween.html', lote=lote_ativo, lotes=lotes)
 
 @app.route('/termos-de-uso')
 def termos_de_uso():
