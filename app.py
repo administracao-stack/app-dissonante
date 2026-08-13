@@ -7,6 +7,9 @@ import smtplib
 import hmac
 import hashlib
 import traceback
+import json
+import urllib.request
+import urllib.parse
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone, timedelta
@@ -58,19 +61,19 @@ sdk = mercadopago.SDK(MERCADOPAGO_TOKEN) if MERCADOPAGO_TOKEN else None
 def inject_globals():
     evento_default = {
         'titulo': 'MaréVibes Halloween 2026',
-        'data_hora': datetime(2026, 10, 31, 22, 0, tzinfo=timezone.utc),
-        'local': 'Barraca MaréVibes, Praia do Futuro',
-        'descricao': 'A maior festa de Halloween à beira-mar de Fortaleza!'
+        'data_hora': datetime(2026, 10, 31, 17, 0, tzinfo=timezone.utc),
+        'local': 'Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE',
+        'descricao': 'Prepare-se para a noite mais misteriosa do ano. O MaréVibes Halloween chega com uma proposta imersiva e exclusiva em Fortaleza, unindo cenografia temática de arrepiar e os melhores DJs da cena local.'
     }
     ambiente_teste = not MERCADOPAGO_TOKEN or MERCADOPAGO_TOKEN.startswith('TEST-')
     
-    # Injeta a Public Key informada
-    mp_public_key = os.getenv('MP_PUBLIC_KEY', 'APP_USR-051ebaf7-2fbf-4699-866d-19f57d6617c2')
-
+    # Injeta a chave pública do reCAPTCHA v3 para os templates HTML
+    recaptcha_site_key = os.getenv('RECAPTCHA_SITE_KEY', '')
+    
     return dict(
         evento=evento_default, 
         ambiente_teste=ambiente_teste,
-        MP_PUBLIC_KEY=mp_public_key
+        recaptcha_site_key=recaptcha_site_key
     )
 
 # --------------------------------------------------------------------------
@@ -172,6 +175,39 @@ def inicializar_banco():
 # --------------------------------------------------------------------------
 # Decoradores e Funções Auxiliares
 # --------------------------------------------------------------------------
+
+def validar_recaptcha(token, action_esperada=None):
+    """ Valida o token do Google reCAPTCHA v3 enviado pelo formulário """
+    secret_key = os.getenv('RECAPTCHA_SECRET_KEY', '')
+    if not secret_key:
+        return True  # Se a chave secreta não estiver configurada no backend, releva a verificação
+
+    if not token:
+        return False
+
+    url = 'https://www.google.com/recaptcha/api/siteverify'
+    data = urllib.parse.urlencode({
+        'secret': secret_key,
+        'response': token
+    }).encode('utf-8')
+
+    try:
+        req = urllib.request.Request(url, data=data)
+        with urllib.request.urlopen(req) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            
+            success = res_data.get('success', False)
+            score = res_data.get('score', 0.0)
+            action = res_data.get('action', '')
+
+            if action_esperada and action != action_esperada:
+                return False
+
+            # reCAPTCHA v3 atribui nota de 0.0 (bot) a 1.0 (humano). 0.5 costuma ser o limiar ideal.
+            return success and score >= 0.5
+    except Exception as e:
+        print(f"[ERRO RECAPTCHA]: Falha na comunicação com a API do Google: {str(e)}")
+        return False
 
 def cliente_required(f):
     @wraps(f)
@@ -310,9 +346,7 @@ def validar_assinatura_mercadopago(req):
     x_request_id = req.headers.get('x-request-id')
     
     if not x_signature or not MP_WEBHOOK_SECRET:
-        if os.environ.get('FLASK_ENV') == 'production':
-            return False
-        return True
+        return True # Se a Secret não for configurada no .env, releva a verificação
         
     parts = {}
     for item in x_signature.split(','):
@@ -372,6 +406,12 @@ def forcar_ativacao(email):
 @app.route('/contato', methods=['GET', 'POST'])
 def contato():
     if request.method == 'POST':
+        # Validação do reCAPTCHA
+        recaptcha_token = request.form.get('g-recaptcha-response')
+        if not validar_recaptcha(recaptcha_token, action_esperada='contato'):
+            flash('Falha na verificação anti-spam (reCAPTCHA). Tente novamente.', 'danger')
+            return redirect(url_for('contato'))
+
         nome = request.form.get('nome', '').strip()
         email_cliente = request.form.get('email', '').strip()
         assunto = request.form.get('assunto', '').strip()
@@ -417,6 +457,12 @@ def quem_somos():
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
+        # Validação do reCAPTCHA
+        recaptcha_token = request.form.get('g-recaptcha-response')
+        if not validar_recaptcha(recaptcha_token, action_esperada='cadastro'):
+            flash('Falha na validação de segurança (reCAPTCHA). Tente novamente.', 'danger')
+            return redirect(url_for('cadastro'))
+
         try:
             nome = request.form.get('nome', '').strip()
             email = request.form.get('email', '').strip().lower()
@@ -562,8 +608,9 @@ def editar_perfil():
 # --------------------------------------------------------------------------
 
 @app.route('/checkout', methods=['GET', 'POST'])
-@cliente_required
+@cliente_required  # Bloqueia o acesso direto de usuários não autenticados
 def checkout():
+    # Garante que o usuário logado existe no banco
     usuario_id = session.get('usuario_id')
     usuario_atual = Usuario.query.get(usuario_id)
 
@@ -590,13 +637,6 @@ def checkout():
 
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
 
-        # Atualiza dados de contato/documento caso atualizados durante a compra
-        cpf_form = re.sub(r'\D', '', request.form.get('cpf', ''))
-        tel_form = re.sub(r'\D', '', request.form.get('telefone', ''))
-        if cpf_form: usuario_atual.cpf = cpf_form
-        if tel_form: usuario_atual.telefone = tel_form
-        db.session.commit()
-
         # Valida disponibilidade no lote
         ingressos_vendidos_lote = Ingresso.query.filter_by(lote_id=lote_ativo.id).count()
         disponiveis_lote = lote_ativo.quantidade_total - ingressos_vendidos_lote
@@ -607,7 +647,7 @@ def checkout():
 
         total = quantidade * lote_ativo.preco
 
-        # Formatação dos dados do pagador
+        # Formatação dos dados do pagador usando o perfil autenticado
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
@@ -773,6 +813,7 @@ def checar_status_pagamento(payment_id):
             lote_id = compra.get('lote_id')
             quantidade = compra.get('quantidade', 1)
 
+            # Garante que os ingressos sejam gerados ao confirmar o pagamento via Pix
             if user_id and lote_id:
                 gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade)
 
