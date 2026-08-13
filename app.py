@@ -350,7 +350,7 @@ def servicos():
 def evento_marevibes():
     lotes = Lote.query.order_by(Lote.id.asc()).all()
     lote_ativo = Lote.query.filter_by(ativo=True).first()
-    return render_template('evento_marevibes.html', lote=lote_ativo, lotes=lotes)
+    return render_template('evento_marevibes_halloween.html', lote=lote_ativo, lotes=lotes)
 
 @app.route('/termos-de-uso')
 def termos_de_uso():
