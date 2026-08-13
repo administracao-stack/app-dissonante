@@ -24,7 +24,8 @@
                         <span class="brand-sub">EXPERIÊNCIAS</span>
                     </div>
                 </a>
-
+                
+                <!-- Menu Central -->
                 <nav class="nav-menu">
                     <a href="{{ url_for('index') }}#eventos">Eventos</a>
                     <a href="{{ url_for('servicos') }}">Serviços</a>                    
@@ -35,6 +36,18 @@
                         Fale Conosco
                     </a>
                 </nav>
+
+                <!-- Botão Dinâmico para Área do Cliente -->
+                <div class="header-cta">
+                    {% if session.get('usuario_id') %}
+                        <a href="{{ url_for('perfil') }}" class="btn-cliente">Área do Cliente</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn-cliente">Área do Cliente</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
 
     <!-- Conteúdo Institucional -->
     <main class="container">
