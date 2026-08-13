@@ -41,6 +41,7 @@ body {
     color: var(--text-dark);
     line-height: 1.6;
     background-color: #ffffff;
+    overflow-x: hidden;
 }
 
 body.bg-dark {
@@ -2121,7 +2122,7 @@ a {
 }
 
 /* ==========================================================================
-   Responsividade (Media Queries)
+   Responsividade & Mobile (Media Queries Atualizadas)
    ========================================================================== */
 @media (max-width: 992px) {
     .checkout-layout {
@@ -2136,9 +2137,49 @@ a {
 @media (max-width: 768px) {
     .container {
         width: 95%;
-        padding: 40px 0;
+        padding: 30px 0;
     }
 
+    /* Ajuste da Navbar */
+    .navbar-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .nav-menu {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .header-cta {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Responsividade Completa da Área de Login / Auth */
+    .auth-wrapper {
+        padding: 20px 10px;
+    }
+
+    .auth-container {
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .auth-benefits, 
+    .auth-form-side {
+        padding: 25px 18px !important;
+        border-right: none;
+    }
+
+    .auth-benefits {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Outros Ajustes de Grid para Telas Pequenas */
     .checkout-steps {
         gap: 15px;
     }
@@ -2155,7 +2196,12 @@ a {
         grid-template-columns: 1fr;
     }
 
-    .card-row-dual, .auth-row {
+    .card-row-dual, 
+    .auth-row {
         grid-template-columns: 1fr;
+    }
+
+    .card-ingresso {
+        width: 100%;
     }
 }
