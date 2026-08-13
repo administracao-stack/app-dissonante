@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento | Dissonante Experiências</title>
+    <title>Status do Pagamento | Dissonante Experiências</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
 </head>
 <body class="bg-dark">
 
-    <!-- Header Padrão do Site -->
+    <!-- Header Padrão -->
     <header class="site-header">
         <div class="container">
             <div class="navbar-content">
@@ -24,9 +24,9 @@
                 </a>
 
                 <nav class="nav-menu">
-                    <a href="{{ url_for('quem_somos') }}">Quem Somos</a>
                     <a href="{{ url_for('index') }}#eventos">Eventos</a>
-                    <a href="https://wa.me/558592636062?text=Olá!%20Gostaria%20de%20mais%20informações." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
+                    <a href="{{ url_for('servicos') }}">Serviços</a>                    
+                    <a href="https://wa.me/558592636062?text=Olá!%20Gostaria%20de%20mais%20informações%20sobre%20o%20Halloween." target="_blank" rel="noopener noreferrer" class="btn-whatsapp">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3 18.6-68.1-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
                         </svg>
@@ -45,10 +45,8 @@
         </div>
     </header>
 
-    <!-- Conteúdo Principal de Pagamento -->
     <main class="container payment-container">
 
-        <!-- Bloco de Mensagens Alerta (Flash) -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-messages-container" style="margin-bottom: 20px;">
@@ -61,65 +59,65 @@
             {% endif %}
         {% endwith %}
 
-        <div class="card-admin card-payment">
+        <div class="checkout-card card-payment">
 
             {% if compra and compra.metodo_pagamento == 'credit_card' %}
-                <!-- ================= CASO 1: CARTÃO DE CRÉDITO ================= -->
+                <!-- Cartão de Crédito -->
                 {% if compra.status == 'approved' %}
                     <div class="status-icon">✅</div>
-                    <h3 class="checkout-title status-title">Pagamento Aprovado!</h3>
+                    <h3 class="status-title" style="color: #4ade80;">Pagamento Aprovado!</h3>
                     <p class="status-desc">
-                        Seu pagamento via cartão de crédito foi processado com sucesso.
+                        Seu pagamento via cartão de crédito foi confirmado com sucesso.
                     </p>
                 {% else %}
                     <div class="status-icon">⏳</div>
-                    <h3 class="checkout-title status-title">Processando Pagamento</h3>
+                    <h3 class="status-title" style="color: #facc15;">Processando Pagamento</h3>
                     <p class="status-desc">
                         O pagamento está em análise pela operadora do cartão. Atualizaremos o status em instantes.
                     </p>
                 {% endif %}
 
             {% else %}
-                <!-- ================= CASO 2: PAGAMENTO VIA PIX ================= -->
-                <h3 class="checkout-title status-title">
+                <!-- Pagamento via PIX -->
+                <h3 class="status-title" style="color: #ffffff;">
                     Aguardando Pagamento PIX
                 </h3>
                 <p class="status-desc-sm">
-                    Escaneie o QR Code abaixo com o app do seu banco ou utilize a opção Pix Copia e Cola.
+                    Escaneie o QR Code abaixo com o app do seu banco ou utilize o Pix Copia e Cola.
                 </p>
 
-                <!-- Status em tempo real do Pix -->
                 <div id="status-pix-badge" class="status-pix-badge">
                     ⏳ Checando pagamento automaticamente...
                 </div>
 
-                <!-- Renderização do QR Code em Base64 -->
-                <div class="qr-code-box">
+                <div class="pix-qr-container" style="margin-bottom: 25px;">
                     {% if compra and compra.qr_code_base64 %}
-                        <img src="data:image/png;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix Mercado Pago" class="qr-code-img" />
+                        <img src="data:image/png;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix" class="pix-qr-image" />
                     {% else %}
-                        <p class="qr-code-error">QR Code indisponível ou em processamento.</p>
+                        <p class="qr-code-error" style="color: #f87171;">QR Code indisponível no momento.</p>
                     {% endif %}
                 </div>
 
-                <!-- Pix Copia e Cola -->
                 {% if compra and compra.qr_code %}
                 <div class="copia-cola-wrapper">
-                    <label class="form-label copia-cola-label">Código Pix Copia e Cola:</label>
-                    <div class="copia-cola-group">
-                        <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly class="form-control copia-cola-input">
-                        <button type="button" onclick="copiarPix()" id="btn-copiar" class="btn-cookie btn-copiar">Copiar</button>
+                    <label class="form-label copia-cola-label" style="color: var(--text-muted);">Código Pix Copia e Cola:</label>
+                    <div class="pix-copy-box" style="margin: 0 auto;">
+                        <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly class="pix-code-input">
+                        <button type="button" onclick="copiarPix()" id="btn-copiar" class="btn-copy-pix">Copiar</button>
                     </div>
                 </div>
                 {% endif %}
             {% endif %}
 
             <!-- Resumo do Pedido -->
-            <div class="order-summary-card">
+            <div class="order-summary-card" style="margin-top: 25px;">
                 <p class="order-summary-label">Resumo do Pedido</p>
-                <h2 class="checkout-title order-summary-title">
-                    <span class="event-title-highlight">{{ evento.titulo if evento else 'MaréVibes Halloween 2026' }}</span>
+                <h2 class="order-summary-title">
+                    <span style="color: #ffffff;">MaréVibes Halloween 2026</span>
                 </h2>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                    📍 Rua Fagundes Varela, 690 - Itaperi | 📅 31/10 às 17h
+                </div>
                 <strong class="order-summary-price">
                     {% if compra %}
                         {{ compra.quantidade | default(1) }}x Ingresso(s) — R$ {{ "%.2f"|format(compra.total | default(0.0))|replace('.', ',') }}
@@ -130,41 +128,23 @@
             </div>
 
             <p class="payment-notice">
-                Assim que a transação for confirmada pelo sistema, seus ingressos estarão disponíveis na sua conta.
+                Assim que a transação for confirmada pelo sistema, seus ingressos estarão disponíveis no painel da sua conta.
             </p>
 
-            <!-- Ações -->
-            <a href="{{ url_for('meus_ingressos') }}" class="ticket-btn ticket-btn-link">
+            <a href="{{ url_for('meus_ingressos') }}" class="btn-finish-checkout" style="display: inline-block; text-align: center; text-decoration: none;">
                 Ir para Meus Ingressos
             </a>
 
         </div>
     </main>
 
-    <!-- Footer Padrão do Site -->
+    <!-- Rodapé -->
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-brand">
                 <h3>Dissonante Experiências</h3>
                 <p>Transformando eventos em memórias vivas.</p>
             </div>
-            
-            <div class="footer-links">
-                <h4>Navegação</h4>
-                <ul>
-                    <li><a href="{{ url_for('quem_somos') }}">Quem Somos</a></li>
-                    <li><a href="{{ url_for('index') }}#eventos">Eventos</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-links">
-                <h4>Contato</h4>
-                <ul>
-                    <li><a href="{{ url_for('contato') }}">Contato</a></li>
-                    <li>Fortaleza - CE</li>
-                </ul>
-            </div>
-
             <div class="footer-links">
                 <h4>Legal</h4>
                 <ul>
@@ -173,7 +153,6 @@
                 </ul>
             </div>
         </div>
-        
         <div class="footer-bottom">
             <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
         </div>
@@ -190,11 +169,11 @@
             const btnCopiar = document.getElementById("btn-copiar");
             if (btnCopiar) {
                 btnCopiar.innerText = "Copiado! ✓";
-                btnCopiar.classList.add("btn-success");
+                btnCopiar.style.backgroundColor = "#22c55e";
                 
                 setTimeout(() => {
                     btnCopiar.innerText = "Copiar";
-                    btnCopiar.classList.remove("btn-success");
+                    btnCopiar.style.backgroundColor = "var(--gold)";
                 }, 3000);
             }
         }
@@ -218,7 +197,7 @@
                         }, 1000);
                     }
                 })
-                .catch(err => console.error("Erro ao verificar status do pagamento:", err));
+                .catch(err => console.error("Erro ao verificar status:", err));
         }
 
         setInterval(checarStatusPix, 3000);
