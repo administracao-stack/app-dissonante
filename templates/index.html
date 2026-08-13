@@ -39,7 +39,7 @@
                 <!-- Botão Dinâmico para Área do Cliente -->
                 <div class="header-cta">
                     {% if session.get('usuario_id') %}
-                        <a href="{{ url_for('meus_ingressos') }}" class="btn-cliente">Meus Ingressos</a>
+                        <a href="{{ url_for('perfil') }}" class="btn-cliente">Área do Cliente</a>
                     {% else %}
                         <a href="{{ url_for('login') }}" class="btn-cliente">Área do Cliente</a>
                     {% endif %}
