@@ -368,6 +368,18 @@ def validar_assinatura_mercadopago(req):
 
     return sha256_hash == v1
 
+def gerar_token_recuperacao(email):
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    return serializer.dumps(email, salt='password-reset-salt')
+
+def validar_token_recuperacao(token, max_age=3600): # Expirará em 1 hora (3600 seg)
+    serializer = URLSafeTimedSerializer(app.secret_key)
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=max_age)
+        return email
+    except (SignatureExpired, BadTimeSignature):
+        return None
+
 # --------------------------------------------------------------------------
 # Rotas Públicas e Utilitários
 # --------------------------------------------------------------------------
@@ -602,6 +614,82 @@ def editar_perfil():
         return redirect(url_for('perfil'))
 
     return render_template('editar_perfil.html', usuario=usuario)
+
+# --------------------------------------------------------------------------
+# Recuperação e Redefinição de Senha
+# --------------------------------------------------------------------------
+
+@app.route('/esqueci-senha', methods=['GET', 'POST'])
+def esqueci_senha():
+    if request.method == 'POST':
+        recaptcha_token = request.form.get('g-recaptcha-response')
+        if not validar_recaptcha(recaptcha_token, action_esperada='esqueci_senha'):
+            flash('Falha na validação de segurança (reCAPTCHA). Tente novamente.', 'danger')
+            return redirect(url_for('esqueci_senha'))
+
+        email = request.form.get('email', '').strip().lower()
+        usuario = Usuario.query.filter_by(email=email).first()
+
+        if usuario:
+            token = gerar_token_recuperacao(usuario.email)
+            link_redefinicao = url_for('redefinir_senha', token=token, _external=True)
+
+            assunto = "[Dissonante Experiências] Instruções para redefinir sua senha"
+            corpo = f"""Olá, {usuario.nome}!
+
+Recebemos uma solicitação para redefinir a senha da sua conta na Dissonante Experiências.
+
+Para criar uma nova senha, clique no link abaixo:
+{link_redefinicao}
+
+Atenção: Este link é válido por apenas 1 hora.
+
+Atenciosamente,
+Equipe Dissonante Experiências
+"""
+            threading.Thread(target=enviar_email_direto, args=(usuario.email, assunto, corpo)).start()
+
+        flash(f'Enviamos as instruções de redefinição para o e-mail {email}, caso ele esteja cadastrado.', 'info')
+        return redirect(url_for('esqueci_senha', email=email, enviado='1'))
+
+    # Pega o e-mail enviado via GET
+    email_preenchido = request.args.get('email', '').strip()
+    enviado = request.args.get('enviado') == '1'
+
+    return render_template('esqueci_senha.html', email=email_preenchido, enviado=enviado)
+
+@app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
+def redefinir_senha(token):
+    email = validar_token_recuperacao(token)
+    if not email:
+        flash('O link de redefinição de senha é inválido ou expirou. Solicite um novo link.', 'danger')
+        return redirect(url_for('esqueci_senha'))
+
+    usuario = Usuario.query.filter_by(email=email).first()
+    if not usuario:
+        flash('Usuário não encontrado.', 'danger')
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        senha = request.form.get('senha', '')
+        confirmar = request.form.get('confirmar_senha', '')
+
+        if not senha or len(senha) < 6:
+            flash('A senha deve ter no mínimo 6 caracteres.', 'warning')
+            return render_template('redefinir_senha.html', token=token)
+
+        if senha != confirmar:
+            flash('As senhas digitadas não coincidem.', 'danger')
+            return render_template('redefinir_senha.html', token=token)
+
+        # Atualiza a hash da senha
+        usuario.senha_hash = generate_password_hash(senha)
+        db.session.commit()
+
+        flash('Sua senha foi redefinida com sucesso! Faça login com a nova senha.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('redefinir_senha.html', token=token)
 
 # --------------------------------------------------------------------------
 # Checkout e Ingressos
