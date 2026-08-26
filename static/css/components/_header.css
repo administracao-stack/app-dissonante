@@ -159,10 +159,10 @@
 }
 
 /* Logout */
-.btn-logout, 
-.nav-link-logout {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.4);
+.btn-logout-header,
+.btn-logout {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border: 1px solid rgba(239, 68, 68, 0.35) !important;
     color: #f87171 !important;
     padding: 8px 18px;
     border-radius: 20px;
@@ -170,25 +170,20 @@
     font-weight: 600;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    text-decoration: none;
+    transition: all 0.25s ease-in-out;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
 }
 
-.btn-logout-header {
-    background-color: #ef4444 !important;
-    border-color: #ef4444 !important;
-    color: var(--text-light) !important;
-}
-
-.btn-logout-header:hover {
-    background-color: var(--danger-color) !important;
-    border-color: var(--danger-color) !important;
-}
-
-.btn-logout:hover, 
-.nav-link-logout:hover {
-    background: rgba(239, 68, 68, 0.3);
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
-    color: var(--text-light) !important;
+.btn-logout-header:hover,
+.btn-logout:hover {
+    background: rgba(239, 68, 68, 0.25) !important;
+    border-color: rgba(239, 68, 68, 0.6) !important;
+    color: #fca5a5 !important;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+    transform: translateY(-1px);
 }
 
 /* Ajustes Responsivos do Header */
