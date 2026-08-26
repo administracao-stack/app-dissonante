@@ -18,16 +18,19 @@
 
 .carousel-card {
     position: relative;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
     width: 100%;
-    max-width: 400px;
-    height: 540px;
+    max-width: 380px;
+    height: 520px;
     border-radius: 20px;
     overflow: hidden;
     text-decoration: none;
     border: 1px solid var(--border-dark);
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: var(--bg-card);
 }
 
 .carousel-card:hover {
@@ -35,35 +38,38 @@
     box-shadow: 0 20px 40px rgba(168, 85, 247, 0.3);
 }
 
+/* Imagem de Fundo Absoluta */
 .card-img-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
-    display: block;
+    z-index: 1;
 }
 
+/* Gradiente de Leitura */
 .card-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 40%, rgba(10, 10, 15, 0.85) 80%, rgba(10, 10, 15, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 30%, rgba(10, 10, 15, 0.85) 75%, rgba(10, 10, 15, 0.98) 100%);
+    z-index: 2;
 }
 
+/* Conteúdo sobre a Imagem */
 .card-content {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    z-index: 3;
     padding: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    z-index: 2;
 }
 
 .btn-favorite {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.4);
+    top: -380px; /* Posiciona o coração no topo do card */
+    right: 0px;
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(6px);
     padding: 10px;
     border-radius: 50%;
@@ -81,7 +87,7 @@
 }
 
 .btn-favorite:hover {
-    background: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.4);
     transform: scale(1.1);
 }
 
@@ -90,6 +96,7 @@
     font-weight: 800;
     color: var(--text-light);
     margin-bottom: 8px;
+    line-height: 1.2;
 }
 
 .card-meta {
@@ -99,6 +106,7 @@
     font-size: 0.85rem;
     color: var(--gold);
     margin-bottom: 20px;
+    font-weight: 600;
 }
 
 .btn-comprar-ingresso {
@@ -118,7 +126,6 @@
 .carousel-card:hover .btn-comprar-ingresso {
     filter: brightness(1.2);
 }
-
 /* ==========================================================================
    Eventos, Checkout, Status de Pagamento & Meus Ingressos
    ========================================================================== */
