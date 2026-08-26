@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Criar Conta | Dissonante Experiências{% endblock %}
+
+{% block extra_head %}
+    <!-- Script da API do Google reCAPTCHA v3 exclusivo para a tela de cadastro -->
+    {% if recaptcha_site_key %}
+    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<main class="auth-wrapper">
+    <div class="auth-container">
+        
+        <div class="auth-benefits">
+            <h2>Crie sua conta gratuita</h2>
+            <p>Tenha controle total sobre seus ingressos e garanta entradas exclusivas.</p>
+            
+            <ul class="benefits-list">
+                <li>📧 <strong>E-mail Verificado:</strong> Validação em 1 clique para ativar sua conta.</li>
+                <li>🎟️ <strong>Ingressos na palma da mão:</strong> Histórico completo de eventos.</li>
+                <li>⚡ <strong>Acesso Rápido:</strong> Validação ágil direto na portaria.</li>
+                <li>🔒 <strong>Total Segurança:</strong> Senha criptografada e dados protegidos.</li>
+            </ul>
+        </div>
+
+        <div class="auth-form-side">
+            <h3>Cadastre-se</h3>
+            <p class="form-sub">Preencha os dados abaixo. Um link de ativação será enviado ao seu e-mail.</p>
+
+            <form id="form-cadastro" action="{{ url_for('cadastro') }}" method="POST">
+                <!-- Campo Oculto para o Token do reCAPTCHA -->
+                <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response">
+
+                <div class="auth-group">
+                    <label for="nome">Nome Completo</label>
+                    <input type="text" id="nome" name="nome" value="{{ request.form.get('nome', '') }}" placeholder="Seu nome completo" required>
+                </div>
+
+                <div class="auth-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" value="{{ request.form.get('email', '') }}" placeholder="seu-melhor-email@exemplo.com" required>
+                    <small class="input-helper-text">* Enviaremos um e-mail de ativação para este endereço.</small>
+                </div>
+
+                <div class="auth-row">
+                    <div class="auth-group">
+                        <label for="cpf">CPF</label>
+                        <input type="text" id="cpf" name="cpf" value="{{ request.form.get('cpf', '') }}" placeholder="000.000.000-00" maxlength="14" required>
+                    </div>
+
+                    <div class="auth-group">
+                        <label for="telefone">WhatsApp / Telefone</label>
+                        <input type="text" id="telefone" name="telefone" value="{{ request.form.get('telefone', '') }}" placeholder="(85) 99999-9999" maxlength="15" required>
+                    </div>
+                </div>
+
+                <div class="auth-group">
+                    <label for="senha">Senha</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="senha" name="senha" placeholder="Crie uma senha forte" required>
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('senha', this)" aria-label="Alternar visibilidade da senha">
+                            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                                <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="auth-group">
+                    <label for="confirmar_senha">Confirmar Senha</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Repita a senha" required>
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('confirmar_senha', this)" aria-label="Alternar visibilidade da senha">
+                            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                                <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-auth-submit" id="btn-submit">Criar Conta</button>
+            </form>
+
+            <p class="auth-footer-text">
+                Já tem uma conta? <a href="{{ url_for('login') }}">Faça login</a>
+            </p>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const slashLine = btn.querySelector('.eye-slash');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            slashLine.style.display = 'block';
+        } else {
+            input.type = 'password';
+            slashLine.style.display = 'none';
+        }
+    }
+
+    document.getElementById('form-cadastro').addEventListener('submit', function(e) {
+        const siteKey = "{{ recaptcha_site_key }}";
+        const form = this;
+        
+        if (siteKey && typeof grecaptcha !== 'undefined') {
+            e.preventDefault();
+
+            const btnSubmit = document.getElementById('btn-submit');
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = 'Processando...';
+            }
+            
+            grecaptcha.ready(function() {
+                grecaptcha.execute(siteKey, {action: 'cadastro'}).then(function(token) {
+                    document.getElementById('g-recaptcha-response').value = token;
+                    form.submit();
+                }).catch(function(error) {
+                    console.error('Erro reCAPTCHA:', error);
+                    form.submit();
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

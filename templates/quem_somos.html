@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Quem Somos | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="bloco-venda about-card">
+        <h1 class="about-title">Sobre a Dissonante</h1>
+        
+        <p class="about-text-highlight">
+            Nascida em Fortaleza, a <strong>Dissonante Experiências</strong> é especialista em planejar, produzir e executar eventos que fogem do óbvio.
+        </p>
+        
+        <p class="about-text">
+            Nosso objetivo é criar conexões autênticas e impactos reais, cuidando de cada detalhe com precisão, tecnologia e criatividade. Acreditamos que um evento não é apenas uma data no calendário, mas uma oportunidade de marcar histórias.
+        </p>
+
+        <a href="{{ url_for('index') }}#eventos" class="btn-cliente">Ver Próximos Eventos</a>
+    </div>
+</div>
+{% endblock %}

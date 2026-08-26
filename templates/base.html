@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    {# Include da tag <head> base (meta, fontes, style.css) #}
+    {% include 'includes/head.html' %}
+</head>
+<body>
+
+    {# Include do Header/Navbar principal #}
+    {% include 'includes/header.html' %}
+
+    {# Include do componente global de Notificações Flash #}
+    {% include 'includes/scripts/notificacoes_flask.html' %}
+
+    {# Conteúdo principal injetado dinamicamente pelas páginas filhas #}
+    <main class="main-content">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    {# Include do Footer/Rodapé e Banner LGPD #}
+    {% include 'includes/footer.html' %}
+
+    {# --- SCRIPTS GLOBAIS --- #}
+
+    {# 1. Utilitário de Máscaras em formulários (CPF, Telefone, Cartão, CVV, etc) #}
+    <script src="{{ url_for('static', filename='js/mascaras.js') }}"></script>
+
+    {# 2. Lógica para Favoritar Eventos #}
+    <script src="{{ url_for('static', filename='js/favoritos.js') }}"></script>
+
+    {# 3. Aceite do Banner de Cookies/LGPD #}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const cookieBanner = document.getElementById("cookieBanner");
+            const btnAceitar = document.getElementById("aceitarCookies");
+
+            if (cookieBanner && btnAceitar) {
+                if (!localStorage.getItem("lgpd_consent")) {
+                    cookieBanner.style.display = "flex";
+                }
+
+                btnAceitar.addEventListener("click", function () {
+                    localStorage.setItem("lgpd_consent", "true");
+                    cookieBanner.style.display = "none";
+                });
+            }
+        });
+    </script>
+
+    {# --- INCLUDES CONDICIONAIS DE SCRIPTS (Para telas específicas) --- #}
+
+    {# Script para telas que contêm reCAPTCHA v3 #}
+    {% include 'includes/scripts/recaptcha.html' %}
+
+    {# Script para a tela de Checkout (Aplicações no formulário de pagamento) #}
+    {% if request.endpoint == 'checkout' %}
+        {% include 'includes/scripts/checkout_script.html' %}
+    {% endif %}
+
+    {# Script para verificação de status de pagamento PIX em tempo real #}
+    {% if request.endpoint == 'status_pagamento' or request.endpoint == 'confirmacao' %}
+        {% include 'includes/scripts/status_pagamento.html' %}
+    {% endif %}
+
+    {# Script e dependência da câmera para validação de ingressos (Portaria/QR Code) #}
+    {% if request.endpoint == 'validar_ingresso' %}
+        <script src="https://unpkg.com/html5-qrcode"></script>
+        <script src="{{ url_for('static', filename='js/validar_ingresso.js') }}"></script>
+    {% endif %}
+
+    {# Bloco para scripts JS extras específicos de qualquer template estendido #}
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

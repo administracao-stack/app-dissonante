@@ -1,0 +1,64 @@
+<!-- Rodapé Administrativo -->
+<footer class="footer">
+    <div class="container footer-content">
+        <div class="footer-brand">
+            <h3>Dissonante Experiências</h3>
+            <p>Sistema de Gestão e Controle de Acesso.</p>
+        </div>
+        
+        <div class="footer-links">
+            <h4>Navegação</h4>
+            <ul>
+                <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('painel_validacao') }}">Portaria</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-links" id="contato">
+            <h4>Contato</h4>
+            <ul>
+                <li><a href="{{ url_for('contato') }}">Contato</a></li>
+                <li>Fortaleza - CE</li>
+            </ul>
+        </div>
+
+        <div class="footer-links">
+            <h4>Legal</h4>
+            <ul>
+                <li><a href="{{ url_for('termos_de_uso') }}">Termos de Uso</a></li>
+                <li><a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="footer-bottom">
+        <p>&copy; 2026 Dissonante Experiências. Todos os direitos reservados.</p>
+    </div>
+</footer>
+
+<!-- Banner de Cookies (LGPD) Admin -->
+<div id="cookieBanner" class="cookie-banner">
+    <p class="cookie-text">
+        Utilizamos cookies para melhorar sua experiência no site. Ao continuar navegando, você concorda com a nossa 
+        <a href="{{ url_for('politica_privacidade') }}">Política de Privacidade</a>.
+    </p>
+    <button id="aceitarCookies" class="btn-cookie">Aceitar Cookies</button>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const banner = document.getElementById("cookieBanner");
+        const btnAceitar = document.getElementById("aceitarCookies");
+
+        if (banner && btnAceitar) {
+            if (!localStorage.getItem("cookiesAceitos")) {
+                banner.style.display = "flex";
+            }
+
+            btnAceitar.addEventListener("click", function () {
+                localStorage.setItem("cookiesAceitos", "true");
+                banner.style.display = "none";
+            });
+        }
+    });
+</script>

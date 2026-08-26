@@ -1,0 +1,37 @@
+{% extends 'base_admin.html' %}
+
+{% block content %}
+<div class="container">
+    <h1 class="admin-titulo-pagina">Visão Geral do Evento</h1>
+
+    <!-- Grid de Métricas em Tempo Real -->
+    <div class="grid-stats">
+        <div class="card-stat">
+            <h3>Ingressos Vendidos</h3>
+            <div class="valor">{{ stats.ingressos_vendidos }}</div>
+        </div>
+
+        <div class="card-stat">
+            <h3>Disponíveis no Lote</h3>
+            <div class="valor">{{ stats.total_disponiveis }}</div>
+        </div>
+
+        <div class="card-stat">
+            <h3>Check-ins na Portaria</h3>
+            <div class="valor valor-sucesso">{{ stats.ingressos_utilizados }}</div>
+        </div>
+
+        <div class="card-stat">
+            <h3>Receita Estimada</h3>
+            <div class="valor valor-receita">R$ {{ "%.2f"|format(stats.receita_total) }}</div>
+        </div>
+    </div>
+
+    <!-- Atalho para Portaria -->
+    <div class="portaria-wrapper">
+        <a href="{{ url_for('painel_validacao') }}" class="btn-portaria">
+            Acessar Validador de Portaria &rarr;
+        </a>
+    </div>
+</div>
+{% endblock %}

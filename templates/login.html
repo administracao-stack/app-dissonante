@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Área do Cliente | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<main class="auth-wrapper">
+    <div class="auth-container">
+        
+        <!-- Coluna Esquerda: Vantagens -->
+        <div class="auth-benefits">
+            <h2>Vantagens de ter sua conta</h2>
+            <p>Gerencie seus acessos com segurança e viva experiências inesquecíveis.</p>
+                    
+            <ul class="benefits-list">
+                <li>🎟️ <strong>Ingressos na palma da mão:</strong> Seus QR Codes salvos em um só lugar.</li>
+                <li>⚡ <strong>Acesso Rápido na Portaria:</strong> Sem filas e sem papel.</li>
+                <li>🔒 <strong>Segurança Avançada:</strong> Proteção total para o seu histórico de compras.</li>
+                <li>🎁 <strong>Benefícios Exclusivos:</strong> Acesso antecipado a lotes promocionais.</li>
+            </ul>
+        </div>
+
+        <!-- Coluna Direita: Formulário de Login/Senha -->
+        <div class="auth-form-side">
+            <h3>Acesse sua Conta</h3>
+            <p class="form-sub">Entre com seu e-mail e senha cadastrados.</p>
+
+            <form action="{{ url_for('login') }}" method="POST">
+                <div class="auth-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="seu-melhor-email@exemplo.com" required>
+                </div>
+
+                <!-- Campo de Senha com Ícone de Exibir/Ocultar -->
+                <div class="auth-group">
+                    <div class="auth-label-row">
+                        <label for="senha">Senha:</label>
+                        <a href="#" id="link-esqueci-senha" onclick="redirecionarEsqueciSenha(event)" class="link-esqueci-senha">
+                            Esqueceu sua senha?
+                        </a>
+                    </div>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="senha" name="senha" required class="form-control" placeholder="Sua senha">
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('senha', this)" aria-label="Alternar visibilidade da senha">
+                            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                                <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-auth-submit">Entrar</button>
+            </form>
+
+            <p class="auth-footer-text">
+                Ainda não tem uma conta? <a href="{{ url_for('cadastro') }}" class="link-highlight">Cadastre-se aqui</a>
+            </p>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const slashLine = btn.querySelector('.eye-slash');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            slashLine.style.display = 'block';
+        } else {
+            input.type = 'password';
+            slashLine.style.display = 'none';
+        }
+    }
+
+    function redirecionarEsqueciSenha(event) {
+        event.preventDefault();
+        const emailInput = document.getElementById('email');
+        const emailVal = emailInput ? encodeURIComponent(emailInput.value.trim()) : '';
+        
+        if (emailVal) {
+            window.location.href = "{{ url_for('esqueci_senha') }}?email=" + emailVal;
+        } else {
+            window.location.href = "{{ url_for('esqueci_senha') }}";
+        }
+    }
+</script>
+{% endblock %}

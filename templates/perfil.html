@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Perfil | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<main class="profile-container">
+    <div class="profile-card">
+
+        <div class="profile-header">
+            <h2>Olá, {{ usuario.nome }}!</h2>
+            <p class="profile-sub">Bem-vindo ao seu painel de controle.</p>
+        </div>
+
+        <!-- Dados do Usuário -->
+        <div class="profile-info-grid">
+            <div class="info-group">
+                <span class="info-label">E-mail</span>
+                <span class="info-value">{{ usuario.email }}</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">CPF</span>
+                <span class="info-value">{{ usuario.cpf }}</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Telefone / WhatsApp</span>
+                <span class="info-value">{{ usuario.telefone }}</span>
+            </div>
+        </div>
+
+        <!-- Ações do Perfil -->
+        <div class="profile-actions">
+            <a href="{{ url_for('configuracoes') }}" class="btn-profile-settings">
+                ⚙️ Configurações da Conta
+            </a>
+        </div>
+
+        <hr class="profile-divider">
+
+        <!-- Atalho de Acesso Rápido aos Ingressos -->
+        <div class="profile-section">
+            <h3>Seus Acessos</h3>
+            <p class="profile-sub">Gerencie suas compras e visualize os QR Codes de acesso aos eventos.</p>
+            
+            <div class="profile-actions-tickets">
+                <a href="{{ url_for('meus_ingressos') }}" class="btn-primary">
+                    🎟️ Ver Meus Ingressos Confirmados
+                </a>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}

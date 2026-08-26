@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Footer Institucional & Banner LGPD
+   ========================================================================== */
+.footer {
+    background-color: var(--bg-night-dark);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer .container {
+    padding: 60px 0 40px 0;
+}
+
+.footer-top {
+    margin-bottom: 30px;
+}
+
+.brand-slogan {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+.footer-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 30px 0;
+}
+
+/* Grid de Links */
+.footer-grid, 
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 40px;
+}
+
+.footer-col h4, 
+.footer-links h4 {
+    color: var(--text-light);
+    font-size: 1rem;
+    margin-bottom: 16px;
+    font-weight: 600;
+}
+
+.footer-col ul, 
+.footer-links ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.footer-col a, 
+.footer-links a {
+    color: var(--text-muted);
+    font-size: 0.88rem;
+}
+
+.footer-col a:hover, 
+.footer-links a:hover {
+    color: var(--text-light);
+}
+
+/* Parte Inferior & Redes */
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding-top: 20px;
+}
+
+.company-legal {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
+.copyright {
+    font-size: 0.85rem;
+}
+
+.footer-social a {
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    transition: var(--transition-fast);
+}
+
+.footer-social a:hover {
+    color: var(--text-light);
+    background: var(--accent-purple);
+    transform: translateY(-2px);
+}
+
+/* Banner LGPD (Cookies) */
+.cookie-banner {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 900px;
+    background-color: var(--bg-card);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 16px 24px;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    z-index: 9999;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.cookie-text {
+    font-size: 0.88rem;
+    color: #cbd5e1;
+    margin: 0;
+}
+
+.cookie-text a {
+    color: var(--text-light);
+    text-decoration: underline;
+}
+
+.btn-cookie {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
+    transition: var(--transition-fast);
+}
+
+.btn-cookie:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+/* Mobile Footer */
+@media (max-width: 768px) {
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .cookie-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+}

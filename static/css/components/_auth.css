@@ -1,0 +1,503 @@
+/* ==========================================================================
+   Autenticação, Perfil, Configurações & Modais
+   ========================================================================== */
+
+/* Wrapper Principal (Layout Split: Vantagens + Formulário) */
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 20px;
+    min-height: calc(100vh - 160px);
+}
+
+.auth-container {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    max-width: 960px;
+    width: 100%;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+/* Coluna de Vantagens (Esquerda) */
+.auth-benefits {
+    background: linear-gradient(135deg, var(--bg-night-light) 0%, var(--bg-card) 100%);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-right: 1px solid var(--border-dark);
+}
+
+.auth-benefits h2 {
+    font-size: 1.6rem;
+    color: var(--gold);
+    margin-bottom: 12px;
+}
+
+.auth-benefits p {
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+}
+
+.benefits-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.benefits-list li {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    line-height: 1.4;
+}
+
+/* Coluna do Formulário (Direita) */
+.auth-form-side {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.auth-form-side h3 {
+    font-size: 1.5rem;
+    margin-bottom: 6px;
+}
+
+.form-sub {
+    font-size: 0.88rem;
+    margin-bottom: 24px;
+}
+
+/* Grupos & Campos de Entrada */
+.auth-group, .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 18px;
+}
+
+.auth-group label, .form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.auth-group input, .form-control {
+    width: 100%;
+    padding: 12px 14px;
+    background-color: var(--bg-night-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 8px;
+    color: var(--text-light);
+    font-size: 0.95rem;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.auth-group input:focus, .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.auth-group input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.auth-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.auth-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.link-esqueci-senha, .link-highlight {
+    font-size: 0.8rem;
+    color: var(--gold);
+}
+
+.link-esqueci-senha:hover, .link-highlight:hover {
+    text-decoration: underline;
+}
+
+/* Input de Senha com Botão de Revelar */
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper input {
+    padding-right: 44px;
+}
+
+.btn-toggle-password {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+}
+
+.btn-toggle-password:hover {
+    color: var(--text-light);
+}
+
+.input-helper-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Botões de Submissão de Autenticação */
+.btn-auth-submit, .btn-primary {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-auth-submit:hover, .btn-primary:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.btn-auth-submit:disabled, .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: grayscale(0.8);
+}
+
+.btn-block {
+    display: block;
+    width: 100%;
+}
+
+.auth-footer-text, .auth-footer-link {
+    text-align: center;
+    font-size: 0.88rem;
+    margin-top: 20px;
+}
+
+.auth-footer-link a {
+    color: var(--text-muted);
+}
+
+.auth-footer-link a:hover {
+    color: var(--text-light);
+}
+
+/* Card isolado de Autenticação (Esqueci/Redefinir Senha) */
+.container-auth {
+    max-width: 480px;
+    margin: 60px auto;
+}
+
+.auth-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.auth-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+}
+
+.auth-subtext, .auth-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
+.auth-email-highlight {
+    color: var(--gold);
+    word-break: break-all;
+}
+
+/* Painel de Perfil & Configurações */
+.profile-container, .settings-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.profile-card, .settings-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 32px;
+}
+
+.profile-header, .settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.profile-sub, .profile-header p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.profile-divider, .settings-divider {
+    border: none;
+    border-top: 1px solid var(--border-dark);
+    margin: 28px 0;
+}
+
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.info-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.btn-profile-settings, .btn-back {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    background-color: var(--bg-night-light);
+    border: 1px solid var(--border-dark);
+    border-radius: 8px;
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+
+.btn-profile-settings:hover, .btn-back:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.btn-save-settings {
+    background-color: var(--success-color);
+    color: var(--text-light);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-save-settings:hover {
+    background-color: #15803d;
+}
+
+/* Zona de Perigo & Modais */
+.danger-zone {
+    background-color: rgba(220, 38, 38, 0.08);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.danger-zone h3 {
+    color: #f87171;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.danger-zone p {
+    font-size: 0.88rem;
+    margin-bottom: 16px;
+}
+
+.btn-delete-account {
+    background-color: var(--danger-color);
+    color: var(--text-light);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.btn-delete-account:hover {
+    background-color: #b91c1c;
+}
+
+/* Estrutura do Modal Overlay */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+
+.modal-content h3 {
+    font-size: 1.25rem;
+    margin-bottom: 10px;
+}
+
+.modal-content p {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-dark);
+    color: var(--text-light);
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.btn-confirm-delete {
+    background-color: var(--danger-color);
+    color: var(--text-light);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Validação de E-mail Tela Dedicada */
+.email-confirm-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 80px 20px;
+}
+
+.email-confirm-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 500px;
+    text-align: center;
+}
+
+.email-confirm-title-success { color: #4ade80; font-size: 1.6rem; }
+.email-confirm-title-error { color: #f87171; font-size: 1.6rem; }
+
+.email-confirm-message {
+    margin: 16px 0 24px 0;
+    font-size: 0.95rem;
+}
+
+.btn-email-confirm {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.btn-email-confirm-primary {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: var(--text-light);
+}
+
+/* Alertas de Notificação (Flash) */
+.alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    margin-bottom: 20px;
+}
+
+.alert-danger {
+    background-color: rgba(220, 38, 38, 0.15);
+    border: 1px solid rgba(220, 38, 38, 0.4);
+    color: #f87171;
+}
+
+.alert-success {
+    background-color: rgba(22, 163, 74, 0.15);
+    border: 1px solid rgba(22, 163, 74, 0.4);
+    color: #4ade80;
+}
+
+/* Responsividade de Autenticação */
+@media (max-width: 768px) {
+    .auth-container {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-benefits {
+        border-right: none;
+        border-bottom: 1px solid var(--border-dark);
+        padding: 28px;
+    }
+
+    .auth-form-side {
+        padding: 28px;
+    }
+
+    .auth-row {
+        grid-template-columns: 1fr;
+    }
+}

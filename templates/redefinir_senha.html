@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Redefinir Senha | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<div class="container container-auth">
+    <div class="auth-card">
+        <h2>Crie sua Nova Senha</h2>
+        <p class="auth-subtext">
+            Digite e confirme sua nova senha de acesso.
+        </p>
+
+        <form action="{{ url_for('redefinir_senha', token=token) }}" method="POST">
+            <div class="form-group auth-group">
+                <label for="senha">Nova Senha:</label>
+                <div class="password-input-wrapper">
+                    <input type="password" id="senha" name="senha" required minlength="6" class="form-control" placeholder="Mínimo 6 caracteres">
+                    <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('senha', this)" aria-label="Alternar visibilidade da senha">
+                        <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                            <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display: none;"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-group auth-group">
+                <label for="confirmar_senha">Confirme a Nova Senha:</label>
+                <div class="password-input-wrapper">
+                    <input type="password" id="confirmar_senha" name="confirmar_senha" required class="form-control" placeholder="Repita a senha">
+                    <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('confirmar_senha', this)" aria-label="Alternar visibilidade da senha">
+                        <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                            <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display: none;"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary btn-block">Salvar Nova Senha</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const slashLine = btn.querySelector('.eye-slash');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (slashLine) slashLine.style.display = 'block';
+        } else {
+            input.type = 'password';
+            if (slashLine) slashLine.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

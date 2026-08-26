@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Status do Pagamento | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<main class="container payment-container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="checkout-card card-payment">
+
+        {% if compra and compra.metodo_pagamento == 'credit_card' %}
+            <!-- Cartão de Crédito -->
+            {% if compra.status == 'approved' %}
+                <div class="status-icon">✅</div>
+                <h3 class="status-title status-approved">Pagamento Aprovado!</h3>
+                <p class="status-desc">
+                    Seu pagamento via cartão de crédito foi confirmado com sucesso.
+                </p>
+            {% else %}
+                <div class="status-icon">⏳</div>
+                <h3 class="status-title status-pending">Processando Pagamento</h3>
+                <p class="status-desc">
+                    O pagamento está em análise pela operadora do cartão. Atualizaremos o status em instantes.
+                </p>
+            {% endif %}
+
+        {% else %}
+            <!-- Pagamento via PIX -->
+            <h3 class="status-title status-white">
+                Aguardando Pagamento PIX
+            </h3>
+            <p class="status-desc-sm">
+                Escaneie o QR Code abaixo com o app do seu banco ou utilize o Pix Copia e Cola.
+            </p>
+
+            <div id="status-pix-badge" class="status-pix-badge">
+                ⏳ Checando pagamento automaticamente...
+            </div>
+
+            <div class="pix-qr-container">
+                {% if compra and compra.qr_code_base64 %}
+                    <img src="data:image/png;base64,{{ compra.qr_code_base64 }}" alt="QR Code Pix" class="pix-qr-image" />
+                {% else %}
+                    <p class="qr-code-error">QR Code indisponível no momento.</p>
+                {% endif %}
+            </div>
+
+            {% if compra and compra.qr_code %}
+            <div class="copia-cola-wrapper">
+                <label class="form-label copia-cola-label">Código Pix Copia e Cola:</label>
+                <div class="pix-copy-box">
+                    <input type="text" id="pix-copia-cola" value="{{ compra.qr_code }}" readonly class="pix-code-input">
+                    <button type="button" onclick="copiarPix()" id="btn-copiar" class="btn-copy-pix">Copiar</button>
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Resumo do Pedido -->
+        <div class="order-summary-card">
+            <p class="order-summary-label">Resumo do Pedido</p>
+            <h2 class="order-summary-title">
+                <span>MaréVibes Halloween 2026</span>
+            </h2>
+            <div class="order-summary-info">
+                📍 Rua Fagundes Varela, 690 - Itaperi | 📅 31/10 às 17h
+            </div>
+            <strong class="order-summary-price">
+                {% if compra %}
+                    {{ compra.quantidade | default(1) }}x Ingresso(s) — R$ {{ "%.2f"|format(compra.total | default(0.0))|replace('.', ',') }}
+                {% else %}
+                    1x Ingresso
+                {% endif %}
+            </strong>
+        </div>
+
+        <p class="payment-notice">
+            Assim que a transação for confirmada pelo sistema, seus ingressos estarão disponíveis no painel da sua conta.
+        </p>
+
+        <a href="{{ url_for('meus_ingressos') }}" class="btn-finish-checkout btn-block text-center">
+            Ir para Meus Ingressos
+        </a>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copiarPix() {
+        const inputPix = document.getElementById("pix-copia-cola");
+        if (!inputPix) return;
+        inputPix.select();
+        inputPix.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(inputPix.value);
+        
+        const btnCopiar = document.getElementById("btn-copiar");
+        if (btnCopiar) {
+            btnCopiar.innerText = "Copiado! ✓";
+            btnCopiar.classList.add("copied");
+            
+            setTimeout(() => {
+                btnCopiar.innerText = "Copiar";
+                btnCopiar.classList.remove("copied");
+            }, 3000);
+        }
+    }
+
+    {% if compra and compra.metodo_pagamento == 'pix' and compra.payment_id %}
+    const paymentId = "{{ compra.payment_id }}";
+    
+    function checarStatusPix() {
+        if (!paymentId) return;
+        fetch(`/api/checar-status-pagamento/${paymentId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'approved' && data.redirect_url) {
+                    const badge = document.getElementById('status-pix-badge');
+                    if (badge) {
+                        badge.classList.add('approved');
+                        badge.innerText = '✅ Pagamento Aprovado! Redirecionando...';
+                    }
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1000);
+                }
+            })
+            .catch(err => console.error("Erro ao verificar status:", err));
+    }
+
+    setInterval(checarStatusPix, 3000);
+    {% endif %}
+</script>
+{% endblock %}

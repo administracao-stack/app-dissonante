@@ -1,0 +1,255 @@
+/* ==========================================================================
+   Páginas Institucionais (Contato, Termos, Privacidade, Quem Somos, Serviços,
+   Transparência, Central de Ajuda & Meia-Entrada)
+   ========================================================================== */
+
+/* Hero Banner Institucional / Serviços */
+.hero-contato, .hero-banner {
+    position: relative;
+    padding: 60px 20px;
+    text-align: center;
+    background: linear-gradient(180deg, var(--bg-night-light) 0%, var(--bg-night-dark) 100%);
+    border-bottom: 1px solid var(--border-dark);
+    margin-bottom: 40px;
+}
+
+.hero-contato-titulo, .hero-content h1 {
+    font-size: 2.2rem;
+    color: var(--text-light);
+    margin-bottom: 12px;
+}
+
+.hero-contato-subtitulo, .hero-content p {
+    font-size: 1rem;
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Grid da Página de Contato */
+.contato-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 32px;
+    margin-bottom: 60px;
+}
+
+.card-contato {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 32px;
+    height: 100%;
+}
+
+.card-contato-titulo, .info-box-titulo {
+    font-size: 1.4rem;
+    margin-bottom: 24px;
+}
+
+.contato-col-form textarea.form-control {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.btn-enviar {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-enviar:hover {
+    filter: brightness(1.15);
+}
+
+/* Painéis de Informações de Contato & WhatsApp */
+.info-box {
+    background-color: var(--bg-night-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.info-box-label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.info-box-texto {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.info-box-email {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.btn-whatsapp-corpo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 12px;
+    background-color: #25d366;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.btn-whatsapp-corpo:hover {
+    background-color: #1da851;
+}
+
+/* Páginas Legais (Termos de Uso & Política de Privacidade) */
+.legal-card {
+    max-width: 900px;
+    margin: 40px auto;
+}
+
+.legal-title {
+    font-size: 2rem;
+    color: var(--text-light);
+    margin-bottom: 6px;
+}
+
+.data-evento {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+}
+
+.legal-content section {
+    margin-bottom: 24px;
+}
+
+.legal-content h2 {
+    font-size: 1.25rem;
+    color: var(--text-light);
+    margin-bottom: 10px;
+}
+
+.legal-content p, .legal-content li {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+}
+
+.legal-content ul {
+    margin-left: 20px;
+    margin-top: 8px;
+}
+
+/* Página Quem Somos */
+.btn-cliente {
+    display: inline-block;
+    padding: 12px 28px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: var(--text-light);
+    border-radius: 30px;
+    font-weight: 700;
+    text-decoration: none;
+    margin-top: 12px;
+    transition: var(--transition-fast);
+}
+
+.btn-cliente:hover {
+    filter: brightness(1.15);
+}
+
+/* Grid de Serviços, FAQ, Meia-Entrada e Transparência */
+.services {
+    padding: 20px 0 60px 0;
+}
+
+.services h2 {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.section-subtitle {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    max-width: 650px;
+    margin: 0 auto 36px auto;
+    line-height: 1.6;
+}
+
+.event-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.event-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 28px;
+    transition: var(--transition-fast);
+}
+
+.event-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-2px);
+}
+
+/* Modificadores de Espaçamento Vertical entre Cards */
+.event-card-spaced {
+    margin-bottom: 24px;
+}
+
+.event-card-spaced-sm {
+    margin-bottom: 16px;
+}
+
+.event-title {
+    font-size: 1.15rem;
+    color: var(--gold);
+    margin-bottom: 12px;
+}
+
+.event-description {
+    font-size: 0.92rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+/* Hiperlinks estilizados dentro das respostas institucionais */
+.link-underline {
+    color: var(--gold);
+    text-decoration: underline;
+    transition: var(--transition-fast);
+}
+
+.link-underline:hover {
+    color: var(--text-light);
+}
+
+/* Responsividade Institucional */
+@media (max-width: 768px) {
+    .contato-grid {
+        grid-template-columns: 1fr;
+    }
+}

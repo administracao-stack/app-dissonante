@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Carrinho | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<main class="profile-container">
+    <div class="profile-card">
+        
+        <div class="profile-header">
+            <h2>Meu Carrinho</h2>
+            <p class="profile-sub">Revise seus ingressos antes de finalizar a compra.</p>
+        </div>
+
+        <hr class="profile-divider">
+
+        {% if session.get('carrinho') %}
+            <div class="cart-items-list">
+                {% for item in session.get('carrinho') %}
+                    <div class="cart-item-row" style="display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div>
+                            <h4 style="margin: 0;">{{ item.nome }}</h4>
+                            <small style="opacity: 0.7;">Qtd: {{ item.quantidade|default(1) }}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>R$ {{ item.preco }}</strong>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <div class="cart-summary" style="margin-top: 25px; text-align: right;">
+                    <a href="{{ url_for('checkout') }}" class="btn-ticket" style="display: inline-block; padding: 12px 24px; text-decoration: none;">
+                        Ir para o Checkout →
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-state-wrapper" style="text-align: center; padding: 40px 0;">
+                <p class="empty-state">Seu carrinho está vazio.</p>
+                <a href="{{ url_for('index') }}#eventos" class="btn-ticket" style="display: inline-block; margin-top: 15px;">
+                    Ver Eventos Disponíveis
+                </a>
+            </div>
+        {% endif %}
+
+    </div>
+</main>
+{% endblock %}

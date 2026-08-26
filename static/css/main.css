@@ -1,0 +1,20 @@
+/* ==========================================================================
+   MANIFESTO PRINCIPAL - DISSONANTE EXPERIÊNCIAS
+   ========================================================================== */
+
+/* 1. Base & Tokens Globais */
+@import url('./base/_variables.css');
+@import url('./base/_reset.css');
+@import url('./base/_typography.css');
+@import url('./base/_utilities.css');
+
+/* 2. Componentes Globais da Interface */
+@import url('./components/_header.css');
+@import url('./components/_footer.css');
+@import url('./components/_admin.css');
+@import url('./components/_auth.css');
+@import url('./components/_store.css');
+
+/* 3. Eventos, Checkout & Institucional */
+@import url('./components/_events_checkout.css');
+@import url('./components/_institutional.css');

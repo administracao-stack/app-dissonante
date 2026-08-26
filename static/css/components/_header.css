@@ -1,0 +1,206 @@
+/* ==========================================================================
+   Header & Navegação (Público e Admin)
+   ========================================================================== */
+.site-header {
+    background-color: var(--bg-night-dark);
+    color: var(--text-light);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.site-header .container {
+    padding: 16px 0;
+}
+
+.navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+/* Brand / Logo */
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.navbar-logo-icon {
+    height: 42px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(197, 160, 89, 0.25));
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.15;
+}
+
+.brand-name {
+    color: var(--text-light);
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 2px;
+}
+
+.brand-sub {
+    color: var(--gold);
+    font-weight: 400;
+    font-size: 0.62rem;
+    letter-spacing: 3.8px;
+    text-transform: uppercase;
+}
+
+/* Menu Central */
+.nav-menu {
+    display: flex;
+    gap: 28px;
+    align-items: center;
+}
+
+.nav-menu a {
+    color: #b3b3b3;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.nav-menu a:hover {
+    color: var(--text-light);
+}
+
+/* Botão WhatsApp */
+.nav-menu .btn-whatsapp {
+    background-color: var(--whatsapp-green) !important;
+    color: var(--text-light) !important;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 0 10px rgba(37, 211, 102, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.nav-menu .btn-whatsapp:hover {
+    background-color: var(--whatsapp-hover) !important;
+    box-shadow: 0 0 18px rgba(37, 211, 102, 0.65);
+    transform: translateY(-1px);
+}
+
+.nav-menu .btn-whatsapp svg {
+    width: 16px !important;
+    height: 16px !important;
+    fill: var(--text-light) !important;
+}
+
+/* Ações do Usuário & Atalhos */
+.header-cta {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.btn-icon-header {
+    position: relative;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.btn-icon-header:hover {
+    color: var(--accent-purple);
+}
+
+.btn-icon-header .badge {
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    background-color: var(--danger-color);
+    color: var(--text-light);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 50%;
+    padding: 2px 6px;
+    line-height: 1;
+}
+
+.btn-icon-header .badge-accent {
+    background-color: var(--success-color);
+}
+
+.btn-cliente {
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: var(--text-light) !important;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.btn-cliente:hover {
+    filter: brightness(1.15);
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.6);
+    transform: translateY(-1px);
+}
+
+/* Logout */
+.btn-logout, 
+.nav-link-logout {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #f87171 !important;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-logout-header {
+    background-color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    color: var(--text-light) !important;
+}
+
+.btn-logout-header:hover {
+    background-color: var(--danger-color) !important;
+    border-color: var(--danger-color) !important;
+}
+
+.btn-logout:hover, 
+.nav-link-logout:hover {
+    background: rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+    color: var(--text-light) !important;
+}
+
+/* Ajustes Responsivos do Header */
+@media (max-width: 768px) {
+    .navbar-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .nav-menu {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 12px;
+    }
+}

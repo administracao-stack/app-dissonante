@@ -1,0 +1,55 @@
+{% if recaptcha_site_key %}
+  <!-- 1. Carrega a API do Google reCAPTCHA v3 -->
+  <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+
+  <!-- 2. Lógica genérica para interceptar o envio de qualquer formulário -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const siteKey = "{{ recaptcha_site_key }}";
+        
+        // Seleciona formulários que possuem o campo oculto do reCAPTCHA
+        const formsWithRecaptcha = document.querySelectorAll('form:has(input[name="g-recaptcha-response"])');
+
+        formsWithRecaptcha.forEach(form => {
+            form.addEventListener('submit', function (e) {
+                if (siteKey && typeof grecaptcha !== 'undefined') {
+                    e.preventDefault();
+
+                    const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.dataset.originalText = submitBtn.innerText || submitBtn.value;
+                        if (submitBtn.tagName === 'INPUT') {
+                            submitBtn.value = 'Aguarde...';
+                        } else {
+                            submitBtn.innerText = 'Aguarde...';
+                        }
+                    }
+
+                    // Identifica a ação do formulário com base na rota do app (ex: 'cadastro', 'contato', 'esqueci_senha')
+                    // Se não houver data-recaptcha-action, pega o final da URL
+                    let actionName = form.getAttribute('data-recaptcha-action');
+                    if (!actionName) {
+                        const actionUrl = form.getAttribute('action') || window.location.pathname;
+                        actionName = actionUrl.split('/').filter(Boolean).pop() || 'submit';
+                        actionName = actionName.replace(/[^a-zA-Z0-9_]/g, '_'); // Sanitiza o nome da ação para o Google
+                    }
+
+                    grecaptcha.ready(function () {
+                        grecaptcha.execute(siteKey, { action: actionName }).then(function (token) {
+                            const inputResponse = form.querySelector('input[name="g-recaptcha-response"]');
+                            if (inputResponse) {
+                                inputResponse.value = token;
+                            }
+                            form.submit();
+                        }).catch(function (error) {
+                            console.error('Erro reCAPTCHA:', error);
+                            form.submit(); // Fallback
+                        });
+                    });
+                }
+            });
+        });
+    });
+  </script>
+{% endif %}

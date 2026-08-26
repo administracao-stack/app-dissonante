@@ -1,0 +1,38 @@
+{% include 'includes/scripts/recaptcha.html' %}
+
+<script>
+    // Alterna visualmente entre PIX e Cartão de Crédito
+    function togglePagamento(metodo) {
+        const creditCardContainer = document.getElementById('credit-card-container');
+        const labelPix = document.getElementById('label_pix');
+        const labelCartao = document.getElementById('label_cartao');
+
+        if (metodo === 'credit_card') {
+            if (creditCardContainer) creditCardContainer.classList.remove('is-hidden');
+            if (labelCartao) labelCartao.classList.add('active');
+            if (labelPix) labelPix.classList.remove('active');
+        } else {
+            if (creditCardContainer) creditCardContainer.classList.add('is-hidden');
+            if (labelPix) labelPix.classList.add('active');
+            if (labelCartao) labelCartao.classList.remove('active');
+        }
+    }
+
+    // Recalcula o valor total ao alterar a quantidade de ingressos
+    document.addEventListener("DOMContentLoaded", function () {
+        const selectQuantidade = document.getElementById('quantidade');
+        const precoUnitarioElem = document.getElementById('preco-unitario-display');
+        const totalDisplayElem = document.getElementById('total-display');
+
+        if (selectQuantidade && precoUnitarioElem && totalDisplayElem) {
+            const precoTexto = precoUnitarioElem.innerText.replace('R$', '').replace('.', '').replace(',', '.').trim();
+            const precoUnitario = parseFloat(precoTexto) || 0;
+
+            selectQuantidade.addEventListener('change', function () {
+                const qtd = parseInt(this.value) || 1;
+                const total = precoUnitario * qtd;
+                totalDisplayElem.innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+            });
+        }
+    });
+</script>

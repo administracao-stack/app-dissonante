@@ -1,0 +1,14 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container-notificacoes" style="margin: 15px auto; max-width: 1200px; padding: 0 15px;">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category in ['error', 'danger'] else category }}" 
+                     style="padding: 12px 20px; margin-bottom: 10px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-weight: 500;"
+                     role="alert">
+                    <span class="alert-message">{{ message }}</span>
+                    <button type="button" class="alert-close" onclick="this.parentElement.remove();" style="background: none; border: none; font-size: 20px; cursor: pointer; line-height: 1; color: inherit; opacity: 0.7;">&times;</button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}

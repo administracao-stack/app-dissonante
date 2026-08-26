@@ -1,0 +1,601 @@
+/* ==========================================================================
+   Eventos, Checkout, Status de Pagamento & Meus Ingressos
+   ========================================================================== */
+
+/* Banner Alerta de Homologação / Testes */
+.demo-alert {
+    background-color: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    color: #fde047;
+    padding: 14px 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
+/* Landing Page do Evento (MaréVibes Halloween) */
+.bloco-venda {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 36px;
+    margin-bottom: 40px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+}
+
+.badge-open {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.about-title {
+    font-size: 2.2rem;
+    color: var(--text-light);
+    margin-bottom: 12px;
+}
+
+.event-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    font-size: 0.95rem;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 24px;
+}
+
+.about-text-highlight {
+    font-size: 1.05rem;
+    color: var(--text-light);
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+.about-text {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 28px;
+}
+
+.event-perks {
+    background-color: var(--bg-night-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+}
+
+.event-perks h3 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: var(--text-light);
+}
+
+.event-perks ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.event-perks li {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Structural Checkout Grid */
+.checkout-main {
+    padding: 40px 0;
+}
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 32px;
+    align-items: start;
+}
+
+.checkout-form-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 32px;
+}
+
+.checkout-titulo {
+    font-size: 1.75rem;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border-dark);
+    padding-bottom: 16px;
+}
+
+.checkout-step, .checkout-step-block {
+    margin-bottom: 28px;
+}
+
+.checkout-step h2, .checkout-step-heading {
+    font-size: 1.2rem;
+    color: var(--gold);
+    margin-bottom: 20px;
+}
+
+.form-row, .card-row-dual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+/* Seleção de Métodos de Pagamento */
+.payment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.payment-option-card {
+    border: 1px solid var(--border-dark);
+    border-radius: 12px;
+    padding: 16px;
+    background-color: var(--bg-night-dark);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.payment-option-card:hover, .payment-option-card.active {
+    border-color: var(--primary);
+    background-color: rgba(99, 102, 241, 0.08);
+}
+
+.payment-option-card input[type="radio"] {
+    margin-top: 3px;
+}
+
+.payment-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.payment-icon {
+    font-size: 1.3rem;
+}
+
+.payment-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.credit-card-fields {
+    background-color: var(--bg-night-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.is-hidden {
+    display: none;
+}
+
+.checkout-termos {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin: 20px 0;
+}
+
+.checkout-termos a {
+    color: var(--gold);
+    text-decoration: underline;
+}
+
+.btn-comprar, .btn-finalizar {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
+    color: var(--text-light);
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.btn-comprar:hover {
+    filter: brightness(1.15);
+}
+
+/* Card Resumo Lateral */
+.resumo-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 24px;
+    position: sticky;
+    top: 100px;
+}
+
+.resumo-card h3 {
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-dark);
+    padding-bottom: 12px;
+}
+
+.resumo-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.88rem;
+    margin-bottom: 12px;
+}
+
+.resumo-item span {
+    color: var(--text-muted);
+}
+
+.resumo-card hr {
+    border: none;
+    border-top: 1px solid var(--border-dark);
+    margin: 16px 0;
+}
+
+.resumo-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+}
+
+.valor-destaque {
+    color: var(--gold);
+    font-size: 1.3rem;
+}
+
+/* Painel Status de Pagamento & PIX */
+.payment-container {
+    max-width: 600px;
+    margin: 50px auto;
+}
+
+.card-payment {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 36px;
+    text-align: center;
+}
+
+.status-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.status-title {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.status-approved { color: #4ade80; }
+.status-pending { color: #fde047; }
+.status-white { color: var(--text-light); }
+
+.status-desc, .status-desc-sm {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+}
+
+.status-pix-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    color: #fde047;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    margin-bottom: 20px;
+}
+
+.status-pix-badge.approved {
+    background-color: rgba(34, 197, 94, 0.15);
+    border-color: rgba(34, 197, 94, 0.3);
+    color: #4ade80;
+}
+
+.pix-qr-container {
+    background-color: #ffffff;
+    padding: 16px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.pix-qr-image {
+    width: 200px;
+    height: 200px;
+    display: block;
+}
+
+.copia-cola-wrapper {
+    margin-bottom: 28px;
+    text-align: left;
+}
+
+.copia-cola-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+}
+
+.pix-copy-box {
+    display: flex;
+    gap: 8px;
+}
+
+.pix-code-input {
+    flex: 1;
+    background-color: var(--bg-night-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 8px;
+    padding: 10px;
+    color: var(--text-light);
+    font-size: 0.82rem;
+}
+
+.btn-copy-pix {
+    background-color: var(--primary);
+    color: var(--text-light);
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-copy-pix.copied {
+    background-color: var(--success-color);
+}
+
+.order-summary-card {
+    background-color: var(--bg-night-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: left;
+    margin-bottom: 24px;
+}
+
+.order-summary-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.order-summary-title {
+    font-size: 1.1rem;
+    margin: 4px 0;
+}
+
+.order-summary-info {
+    font-size: 0.82rem;
+    color: var(--gold);
+    margin-bottom: 8px;
+}
+
+.order-summary-price {
+    font-size: 0.95rem;
+    color: var(--text-light);
+}
+
+.payment-notice {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+}
+
+.btn-finish-checkout {
+    display: block;
+    padding: 12px;
+    background-color: var(--primary);
+    color: var(--text-light);
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Painel Meus Ingressos & Modal QR Code */
+.ingressos-main {
+    padding: 40px 0;
+}
+
+.panel-header {
+    margin-bottom: 32px;
+}
+
+.panel-title {
+    font-size: 1.8rem;
+}
+
+.panel-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.grid-ingressos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+}
+
+.card-ingresso {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.ingresso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.evento-titulo {
+    font-size: 1.1rem;
+}
+
+.status-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.status-valido {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-utilizado {
+    background-color: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.user-info {
+    font-size: 0.88rem;
+}
+
+.text-gold { color: var(--gold); }
+
+.ticket-sector { margin-bottom: 16px; }
+
+.btn-open-qr {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    background-color: var(--bg-night-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: 8px;
+    color: var(--text-light);
+    font-size: 0.88rem;
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+
+.btn-open-qr:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.codigo-texto {
+    display: block;
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.ticket-date {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* Overlay & Card do Modal QR */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-dark);
+    border-radius: 20px;
+    padding: 32px;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+}
+
+.btn-close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal-title { font-size: 1.25rem; margin-bottom: 4px; }
+.modal-subtitle { font-size: 0.88rem; color: var(--gold); margin-bottom: 20px; }
+
+.modal-qr-container {
+    background-color: #ffffff;
+    padding: 16px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.modal-qr-img { width: 200px; height: 200px; }
+.modal-code { font-family: monospace; font-size: 0.88rem; margin-bottom: 12px; }
+.modal-instruction { font-size: 0.78rem; color: var(--text-muted); margin-top: 16px; }
+
+/* Responsividade do Checkout e Eventos */
+@media (max-width: 900px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row, .card-row-dual, .payment-grid {
+        grid-template-columns: 1fr;
+    }
+}

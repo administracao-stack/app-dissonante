@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Meus Ingressos | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<main class="ingressos-main">
+    <div class="container">
+        <div class="panel-header">
+            <div>
+                <h1 class="panel-title">Seus Ingressos Confirmados</h1>
+                <p class="panel-subtitle">Gerencie seus acessos e apresente o QR Code na portaria.</p>
+            </div>
+        </div>
+
+        {% if vendas %}
+            <div class="grid-ingressos">
+                {% for ingresso in vendas %}
+                    <div class="card-ingresso">
+                        <div class="ingresso-header">
+                            <h4 class="evento-titulo">{{ ingresso.evento_nome }}</h4>
+                            <span class="status-tag {% if ingresso.status == 'valido' %}status-valido{% else %}status-utilizado{% endif %}">
+                                {{ ingresso.status | upper }}
+                            </span>
+                        </div>
+                        <div class="ingresso-body">
+                            <p class="user-info text-gold">{{ ingresso.comprador.nome }}</p>
+                            <p class="user-info text-muted ticket-sector">{{ ingresso.lote_origem.nome if ingresso.lote_origem else 'Ingresso Geral' }}</p>
+                            
+                            <button type="button" class="btn-open-qr" onclick="abrirModalQR('{{ ingresso.evento_nome }}', '{{ ingresso.comprador.nome }}', '{{ ingresso.codigo_qr }}', '{{ ingresso.status }}')">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                Ver QR Code
+                            </button>
+
+                            <span class="codigo-texto">{{ ingresso.codigo_qr }}</span>
+                            <small class="ticket-date">Adquirido em: {{ ingresso.data_compra.strftime('%d/%m/%Y') }}</small>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <h2 class="empty-state-title">Nenhum ingresso encontrado</h2>
+                <p class="empty-state-text">Você ainda não possui ingressos confirmados em sua conta.</p>
+                <a href="{{ url_for('index') }}#eventos" class="btn-primary">Explorar Eventos</a>
+            </div>
+        {% endif %}
+    </div>
+</main>
+
+<!-- MODAL / POPUP DE EXIBIÇÃO DO QR CODE -->
+<div id="qrModal" class="modal-overlay" onclick="fecharModalQR(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+        <button class="btn-close-modal" onclick="fecharModalQR()">&times;</button>
+        <h3 id="modalEvento" class="modal-title">Evento</h3>
+        <p id="modalTitular" class="modal-subtitle">Titular</p>
+
+        <div class="modal-qr-container">
+            <img id="modalQRImg" src="" alt="QR Code Ingresso" class="modal-qr-img">
+        </div>
+
+        <p id="modalCodeText" class="modal-code"></p>
+        <span id="modalStatus" class="status-tag">VALIDO</span>
+        <p class="modal-instruction">Apresente este código na portaria para leitura individual.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function abrirModalQR(evento, titular, codigo, status) {
+        document.getElementById('modalEvento').innerText = evento;
+        document.getElementById('modalTitular').innerText = titular;
+        document.getElementById('modalCodeText').innerText = codigo;
+        document.getElementById('modalQRImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${codigo}`;
+        
+        const statusTag = document.getElementById('modalStatus');
+        statusTag.innerText = status.toUpperCase();
+        if (status.toLowerCase() === 'valido') {
+            statusTag.className = 'status-tag status-valido';
+        } else {
+            statusTag.className = 'status-tag status-utilizado';
+        }
+
+        document.getElementById('qrModal').classList.add('active');
+    }
+
+    function fecharModalQR(event) {
+        document.getElementById('qrModal').classList.remove('active');
+    }
+</script>
+{% endblock %}

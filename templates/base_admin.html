@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    {# Reutiliza a tag <head> global da aplicação #}
+    {% include 'includes/head.html' %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-dark">
+
+    {# Header exclusivo do Painel Admin #}
+    {% include 'includes/admin/header_admin.html' %}
+
+    {# Notificações e Alertas Flask #}
+    {% include 'includes/scripts/notificacoes_flask.html' %}
+
+    {# Conteúdo dinâmico das páginas administrativas #}
+    <main class="admin-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    {# Footer exclusivo do Painel Admin + LGPD #}
+    {% include 'includes/admin/footer_admin.html' %}
+
+    {# Bloco para inclusão de scripts específicos (ex: validar_ingresso.js) #}
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

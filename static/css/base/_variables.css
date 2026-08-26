@@ -1,0 +1,26 @@
+:root {
+    /* Paleta Céu Noturno / Night Sky */
+    --bg-night-dark: #070a13;   /* Azul Noite Profundo Escuro */
+    --bg-night-light: #172036;  /* Azul Noite Suave */
+    --bg-card: #0f172a;          /* Card em tom azul-escuro slate */
+    --bg-card-hover: #1e293b;
+    --text-light: #ffffff;
+    --text-muted: #94a3b8;
+    
+    /* Cores de Destaque */
+    --gold: #c5a059;              /* Dourado do Logo Dissonante */
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --accent-purple: #a855f7;   /* Roxo complementar */
+    
+    /* Redes & Status */
+    --whatsapp-green: #25d366;
+    --whatsapp-hover: #20ba5a;
+    --success-color: #16a34a;
+    --danger-color: #dc2626;
+    
+    /* Bordas & Fontes */
+    --border-dark: rgba(255, 255, 255, 0.1);
+    --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+    --transition-fast: all 0.3s ease;
+}

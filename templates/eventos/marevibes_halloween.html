@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}MaréVibes Halloween 2026 | Dissonante Experiências{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Banner de Aviso Visível -->
+    <div class="demo-alert">
+        <strong>⚠️ AMBIENTE DE TESTES / DEMONSTRAÇÃO:</strong> O sistema de vendas está passando por testes de integração. As transações efetuadas nesta página <u>não garantem a emissão de ingressos reais</u> nem a entrada no evento[cite: 23].
+    </div>
+
+    <div class="bloco-venda about-card">
+        <span class="badge badge-open">Inscrições Abertas</span>
+        
+        <h1 class="about-title">MaréVibes Halloween 2026</h1>
+        
+        <div class="event-details">
+            <div>📅 31 de Outubro, às 17h</div>
+            <div>📍 Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE</div>
+        </div>
+        
+        <p class="about-text-highlight">
+            Prepare-se para a noite mais misteriosa do ano. O MaréVibes Halloween chega com uma proposta imersiva e exclusiva em Fortaleza, unindo cenografia temática de arrepiar e os melhores DJs da cena local[cite: 23].
+        </p>
+        
+        <p class="about-text">
+            Nossa experiência foi pensada nos mínimos detalhes para garantir uma noite inesquecível. Além de muita música e de uma cenografia temática imersiva, o evento conta com uma estrutura completa de open bar e open food para você aproveitar sem preocupações[cite: 23].
+        </p>
+
+        <!-- O que está incluso -->
+        <div class="event-perks">
+            <h3>O que está incluso na sua experiência:</h3>
+            <ul>
+                <li>🍻 <strong>Open Bar de Chopp Turatti</strong> (geladíssimo a noite toda)</li>
+                <li>🍹 <strong>Open Bar de Drinks</strong> exclusivos da casa</li>
+                <li>🍴 <strong>Buffet com Open Food</strong> liberado</li>
+                <li>🎧 <strong>DJs Convidados</strong> comandando a pista com o melhor do som</li>
+                <li>🎃 <strong>Decoração Temática Exclusiva</strong> e espaços instagramáveis</li>
+            </ul>
+        </div>
+        
+        <!-- Botão Encaminhando para Checkout -->
+        <a href="{{ url_for('checkout') }}" class="btn-primary btn-block">
+            Garantir Meu Ingresso Agora
+        </a>
+    </div>
+</div>
+{% endblock %}

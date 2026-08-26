@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block title %}Recuperar Senha | Dissonante Experiências{% endblock %}
+
+{% block extra_head %}
+    {% if recaptcha_site_key %}
+    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container container-auth">
+    <div class="auth-card">
+        <h2>Recuperação de Senha</h2>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('esqueci_senha') }}" method="POST" id="form-esqueci-senha">
+            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+
+            {% if email %}
+                <!-- Modo 1: E-mail identificado -->
+                <p class="auth-text">
+                    Enviaremos um link de redefinição de senha para:<br>
+                    <strong class="auth-email-highlight">{{ email }}</strong>
+                </p>
+                <input type="hidden" name="email" value="{{ email }}">
+            {% else %}
+                <!-- Modo 2: Fallback -->
+                <p class="auth-subtext">
+                    Informe o seu e-mail cadastrado para receber o link de recuperação.
+                </p>
+                <div class="form-group">
+                    <input type="email" id="email" name="email" required class="form-control" placeholder="seuemail@exemplo.com">
+                </div>
+            {% endif %}
+
+            <button type="submit" id="btn-enviar" class="btn-primary btn-block">
+                {% if enviado %}Reenviar Link de Recuperação{% else %}Enviar Link de Recuperação{% endif %}
+            </button>
+        </form>
+
+        <div class="auth-footer-link">
+            <a href="{{ url_for('login') }}">&larr; Voltar para o Login</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if enviado %}
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('btn-enviar');
+    let tempoRestante = 60;
+    btn.disabled = true;
+
+    const timer = setInterval(function() {
+        btn.innerText = `Aguarde ${tempoRestante}s para reenviar...`;
+        tempoRestante--;
+
+        if (tempoRestante < 0) {
+            clearInterval(timer);
+            btn.disabled = false;
+            btn.innerText = 'Reenviar Link de Recuperação';
+        }
+    }, 1000);
+});
+{% endif %}
+
+{% if recaptcha_site_key %}
+grecaptcha.ready(function() {
+    grecaptcha.execute('{{ recaptcha_site_key }}', {action: 'esqueci_senha'}).then(function(token) {
+        document.getElementById('g-recaptcha-response').value = token;
+    });
+});
+{% endif %}
+</script>
+{% endblock %}
