@@ -775,7 +775,7 @@ def redefinir_senha(token):
     else:
         email = validar_token_recuperacao(token)
         if not email:
-            flash('O link de redefinção é inválido ou expirou. Solicite um novo link.', 'danger')
+            flash('O link de redefinição é inválido ou expirou. Solicite um novo link.', 'danger')
             return redirect(url_for('esqueci_senha'))
 
         usuario = Usuario.query.filter_by(email=email).first()
@@ -902,7 +902,7 @@ def checkout():
                 "description": f"{quantidade}x Ingresso ({lote_ativo.nome}) - MaréVibes",
                 "payment_method_id": "pix",
                 "date_of_expiration": data_expiracao.strftime("%Y-%m-%dT%H:%M:%S.000+00:00"),
-                "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}", # CORRIGIDO AQUI
+                "external_reference": f"{usuario_atual.id}|{lote_ativo.id}|{quantidade}",
                 "payer": payer_payload
             }
 
@@ -977,7 +977,7 @@ def checkout():
                     assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
                     corpo_cliente = f"""Olá, {usuario_atual.nome}!
 
-Seu pagamento via Cartão de Crédito foi confirmado com sucesso! 🎉
+Seu pagamento via Cartão de Crédito foi confirmedo com sucesso! 🎉
 
 Detalhes do Pedido:
 --------------------------------------------------
@@ -1184,17 +1184,18 @@ ID do Pagamento: {payment_id}
 
             elif status in ["refunded", "charged_back", "cancelled"]:
                 ingressos_para_remover = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
-    
-                if ingressos_para_remover:
-                    comprador = Usuario.query.get(ingressos_para_remover[0].usuario_id) # Guardar a referência antes de deletar
-        
-                for ing in ingressos_para_remover:
-                    db.session.delete(ing),
-        
-                    db.session.commit()
-                    print(f"[ESTORNO PROCESSADO]: Ingressos do pagamento {payment_id} removidos com sucesso.")
+                comprador = None
 
-                    if comprador:
+                if ingressos_para_remover:
+                    comprador = Usuario.query.get(ingressos_para_remover[0].usuario_id)
+
+                for ing in ingressos_para_remover:
+                    db.session.delete(ing)
+
+                db.session.commit()
+                print(f"[ESTORNO PROCESSADO]: Ingressos do pagamento {payment_id} removidos com sucesso.")
+
+                if comprador:
                     assunto_cancelamento = "[Dissonante Experiências] Cancelamento de Ingresso / Estorno de Pagamento"
                     corpo_cancelamento = f"""Olá, {comprador.nome}.
 
@@ -1206,7 +1207,7 @@ Se você acredita que isso foi um engano ou não solicitou o estorno, entre em c
 Atenciosamente,
 Equipe Dissonante Experiências
 """
-                        threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cancelamento, corpo_cancelamento)).start()
+                    threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cancelamento, corpo_cancelamento)).start()
 
         except Exception as e:
             db.session.rollback()
