@@ -63,13 +63,16 @@
     position: relative;
     z-index: 3;
     padding: 24px;
+    width: 100%;
 }
 
+/* Botão de Favoritar */
 .btn-favorite {
     position: absolute;
-    top: -380px; /* Posiciona o coração no topo do card */
-    right: 0px;
-    background: rgba(0, 0, 0, 0.5);
+    top: 20px;
+    right: 20px;
+    z-index: 10; /* Garante visibilidade acima das camadas */
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(6px);
     padding: 10px;
     border-radius: 50%;
@@ -78,17 +81,28 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .btn-favorite svg {
     width: 20px;
     height: 20px;
+    pointer-events: none; /* Previne problemas de clique no SVG */
 }
 
 .btn-favorite:hover {
     background: rgba(239, 68, 68, 0.4);
     transform: scale(1.1);
+}
+
+/* Estado ativo (Favoritado) */
+.btn-favorite.active {
+    background: rgba(239, 68, 68, 0.8);
+    color: #ffffff;
+}
+
+.btn-favorite.active svg {
+    fill: currentColor;
 }
 
 .card-title {
@@ -126,6 +140,7 @@
 .carousel-card:hover .btn-comprar-ingresso {
     filter: brightness(1.2);
 }
+
 /* ==========================================================================
    Eventos, Checkout, Status de Pagamento & Meus Ingressos
    ========================================================================== */
