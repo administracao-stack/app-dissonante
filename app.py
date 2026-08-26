@@ -16,7 +16,7 @@ from datetime import datetime, timezone, timedelta
 from functools import wraps
 from dotenv import load_dotenv
 import mercadopago
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
@@ -144,12 +144,10 @@ def inicializar_banco():
                     email_verificado=True
                 )
                 db.session.add(admin_user)
-                print(f"[INICIALIZAÇÃO BANCO]: Conta {email_admin} criada como Administrador.")
             else:
                 if not admin_user.is_admin or not admin_user.email_verificado:
                     admin_user.is_admin = True
                     admin_user.email_verificado = True
-                    print(f"[INICIALIZAÇÃO BANCO]: Permissões de Administrador atualizadas para {email_admin}.")
 
             # Inicialização de lotes padrão
             lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
@@ -177,10 +175,9 @@ def inicializar_banco():
 # --------------------------------------------------------------------------
 
 def validar_recaptcha(token, action_esperada=None):
-    """ Valida o token do Google reCAPTCHA v3 enviado pelo formulário """
     secret_key = os.getenv('RECAPTCHA_SECRET_KEY', '')
     if not secret_key:
-        return True  # Se a chave secreta não estiver configurada no backend, releva a verificação
+        return True
 
     if not token:
         return False
@@ -247,7 +244,6 @@ def enviar_email_direto(destinatario, assunto, corpo_texto, reply_to=None):
     default_sender = os.environ.get('MAIL_DEFAULT_SENDER', 'nao-responda@dissonanteexperiencias.com')
 
     if not mail_user or not mail_password:
-        print("[ERRO E-MAIL]: MAIL_USERNAME OU MAIL_PASSWORD NÃO DEFINIDOS NAS VARIÁVEIS DO RENDER!")
         return False
 
     msg = MIMEMultipart()
@@ -270,11 +266,9 @@ def enviar_email_direto(destinatario, assunto, corpo_texto, reply_to=None):
         server.login(mail_user, mail_password)
         server.send_message(msg)
         server.quit()
-        print(f"[E-MAIL ENVIADO COM SUCESSO]: Para {destinatario}")
         return True
     except Exception as e:
         print(f"[ERRO CRÍTICO NO ENVIO DE E-MAIL]: {str(e)}")
-        traceback.print_exc()
         return False
 
 def enviar_email_confirmacao(usuario_email, usuario_nome, token):
@@ -301,7 +295,6 @@ Equipe Dissonante Experiências
         return True
     except Exception as e:
         print(f"[ERRO PREPARAR E-MAIL]: {str(e)}")
-        traceback.print_exc()
         return False
 
 def gerar_codigo_ingresso():
@@ -340,7 +333,6 @@ def gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade):
     return False
 
 def validar_assinatura_mercadopago(req):
-    """ Valida a assinatura HMAC enviada pelo Mercado Pago para prevenir falsificação """
     x_signature = req.headers.get('x-signature')
     x_request_id = req.headers.get('x-request-id')
     
@@ -380,7 +372,19 @@ def validar_token_recuperacao(token, max_age=3600):
         return None
 
 # --------------------------------------------------------------------------
-# Rotas Públicas e Utilitários
+# Redirecionamentos de Compatibilidade e Estáticos
+# --------------------------------------------------------------------------
+
+@app.route('/style.css')
+def style_fallback():
+    return send_from_directory('static/css', 'main.css')
+
+@app.route('/js/<path:filename>')
+def js_fallback(filename):
+    return send_from_directory('static/js', filename)
+
+# --------------------------------------------------------------------------
+# Rotas Públicas
 # --------------------------------------------------------------------------
 
 @app.route('/')
@@ -405,13 +409,17 @@ def termos_de_uso():
 def politica_privacidade():
     return render_template('politica_privacidade.html')
 
+@app.route('/compromisso')
+def compromisso():
+    return render_template('compromisso.html')
+
 @app.route('/forcar-ativacao/<email>')
 def forcar_ativacao(email):
     usuario = Usuario.query.filter_by(email=email.strip().lower()).first()
     if usuario:
         usuario.email_verificado = True
         db.session.commit()
-        return f"Sucesso! A conta {email} foi ativada manualmente. Agora você já pode fazer login."
+        return f"Sucesso! A conta {email} foi ativada manualmente."
     return "Usuário não encontrado.", 404
 
 @app.route('/contato', methods=['GET', 'POST'])
@@ -430,7 +438,7 @@ def contato():
         email_empresa = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME', ''))
 
         if not email_empresa:
-            flash('Serviço de e-mail indisponível no momento. Tente contato via WhatsApp.', 'warning')
+            flash('Serviço de e-mail indisponível no momento.', 'warning')
             return redirect(url_for('contato'))
 
         corpo = f"""Nova mensagem de contato recebida pelo site:
@@ -451,7 +459,7 @@ Mensagem:
         )
         thread.start()
 
-        flash('Mensagem enviada com sucesso! Em breve entraremos em contato.', 'success')
+        flash('Mensagem enviada com sucesso!', 'success')
         return redirect(url_for('contato'))
 
     return render_template('contato.html')
@@ -459,10 +467,6 @@ Mensagem:
 @app.route('/quem-somos')
 def quem_somos():
     return render_template('quem_somos.html')
-
-@app.route('/compromisso')
-def compromisso():
-    return render_template('compromisso.html')
 
 @app.route('/meia-entrada')
 def meia_entrada():
@@ -536,7 +540,7 @@ def cadastro():
                     flash('Este e-mail já possui um cadastro pendente de validação. Reenviamos o e-mail de ativação.', 'warning')
                     return redirect(url_for('login'))
                 else:
-                    flash('Este e-mail já está cadastrado e verificado. Faça login para continuar.', 'info')
+                    flash('Este e-mail já está cadastrado. Faça login para continuar.', 'info')
                     return redirect(url_for('login'))
 
             if Usuario.query.filter_by(cpf=cpf).first():
@@ -559,14 +563,12 @@ def cadastro():
             token = gerar_token_confirmacao(novo_usuario.email)
             enviar_email_confirmacao(novo_usuario.email, novo_usuario.nome, token)
 
-            flash('Cadastro realizado com sucesso! Enviamos um e-mail de ativação para você. Verifique sua caixa de entrada e spam.', 'success')
+            flash('Cadastro realizado com sucesso! Verifique seu e-mail para ativar a conta.', 'success')
             return redirect(url_for('login'))
 
         except Exception as e:
             db.session.rollback()
-            print(f"[ERRO NO CADASTRO]: {str(e)}")
-            traceback.print_exc()
-            flash('Ocorreu um erro interno ao realizar o cadastro. Tente novamente mais tarde.', 'danger')
+            flash('Erro interno ao realizar o cadastro. Tente novamente.', 'danger')
             return redirect(url_for('cadastro'))
 
     return render_template('cadastro.html')
@@ -680,7 +682,6 @@ def deletar_conta():
         return redirect(url_for('login'))
     except Exception as e:
         db.session.rollback()
-        print(f"[ERRO AO DELETAR CONTA]: {str(e)}")
         flash('Não foi possível excluir sua conta no momento.', 'danger')
         return redirect(url_for('configuracoes'))
 
@@ -738,7 +739,7 @@ def esqueci_senha():
             assunto = "[Dissonante Experiências] Instruções para redefinir sua senha"
             corpo = f"""Olá, {usuario.nome}!
 
-Recebemos uma solicitação para redefinir a senha da sua conta na Dissonante Experiências.
+Recebemos uma solicitação para redefinir a senha da sua conta.
 
 Para criar uma nova senha, clique no link abaixo:
 {link_redefinicao}
@@ -763,19 +764,16 @@ Equipe Dissonante Experiências
 def redefinir_senha(token):
     usuario = None
 
-    # Cenário A: Redefinição via Perfil/Configurações (sem token, usuário logado)
     if token is None:
         if not session.get('usuario_id') or not session.get('autorizado_redefinir_senha'):
-            flash('Acesso não autorizado. Confirme sua senha atual primeiro.', 'danger')
+            flash('Acesso não autorizado.', 'danger')
             return redirect(url_for('configuracoes'))
             
         usuario = Usuario.query.get(session['usuario_id'])
-
-    # Cenário B: Redefinição via E-mail "Esqueci a Senha" (com token)
     else:
         email = validar_token_recuperacao(token)
         if not email:
-            flash('O link de redefinição é inválido ou expirou. Solicite um novo link.', 'danger')
+            flash('O link de redefinição é inválido ou expirou.', 'danger')
             return redirect(url_for('esqueci_senha'))
 
         usuario = Usuario.query.filter_by(email=email).first()
@@ -784,7 +782,6 @@ def redefinir_senha(token):
         flash('Usuário não encontrado.', 'danger')
         return redirect(url_for('login'))
 
-    # Processamento da nova senha
     if request.method == 'POST':
         senha = request.form.get('senha', '')
         confirmar = request.form.get('confirmar_senha', '')
@@ -800,12 +797,10 @@ def redefinir_senha(token):
         usuario.senha_hash = generate_password_hash(senha)
         db.session.commit()
 
-        # Limpa o privilégio temporário se a alteração veio das configurações
         session.pop('autorizado_redefinir_senha', None)
 
         flash('Sua senha foi redefinida com sucesso!', 'success')
         
-        # Redireciona para a página apropriada
         if session.get('usuario_id'):
             return redirect(url_for('perfil'))
         return redirect(url_for('login'))
@@ -819,7 +814,6 @@ def verificar_senha_para_redefinir():
     senha_atual = request.form.get('senha_atual', '')
 
     if check_password_hash(usuario.senha_hash, senha_atual):
-        # Permissão temporária para redefinir a senha
         session['autorizado_redefinir_senha'] = True
         return redirect(url_for('redefinir_senha'))
     
@@ -890,10 +884,9 @@ def checkout():
         }
 
         if not sdk:
-            flash('Ambiente de demonstração: Configure MP_ACCESS_TOKEN no .env para integrar ao Mercado Pago.', 'info')
+            flash('Ambiente de demonstração: Configure MP_ACCESS_TOKEN no .env.', 'info')
             return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
-        # Pagamento via PIX
         if metodo_pagamento == 'pix':
             data_expiracao = datetime.now(timezone.utc) + timedelta(minutes=15)
 
@@ -930,12 +923,9 @@ def checkout():
                     return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
             except Exception as e:
-                print("Exceção fatal ao criar PIX:", str(e))
-                traceback.print_exc()
                 flash('Falha de conexão com o Mercado Pago. Tente novamente.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
-        # Pagamento via Cartão de Crédito
         elif metodo_pagamento == 'credit_card':
             token = request.form.get('token')
             installments = int(request.form.get('installments', 1))
@@ -946,7 +936,7 @@ def checkout():
                 installments = 2
 
             if not token or not payment_method_id:
-                flash('Dados do cartão incompletos ou não tokenizados. Verifique os dados inseridos.', 'warning')
+                flash('Dados do cartão incompletos.', 'warning')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
             payment_data = {
@@ -977,7 +967,7 @@ def checkout():
                     assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
                     corpo_cliente = f"""Olá, {usuario_atual.nome}!
 
-Seu pagamento via Cartão de Crédito foi confirmedo com sucesso! 🎉
+Seu pagamento via Cartão de Crédito foi confirmado! 🎉
 
 Detalhes do Pedido:
 --------------------------------------------------
@@ -988,8 +978,6 @@ ID Transação: {payment_id}
 
 Seus Ingressos:
 {codigos_str}
-
-Apresente os códigos acima na portaria do evento. Você também pode consultar seus ingressos acessando sua conta em nosso site.
 
 Atenciosamente,
 Equipe Dissonante Experiências
@@ -1005,7 +993,7 @@ Equipe Dissonante Experiências
                         'quantidade': quantidade
                     }
 
-                    flash('Pagamento aprovado com sucesso! Seus ingressos foram gerados e enviados por e-mail.', 'success')
+                    flash('Pagamento aprovado com sucesso!', 'success')
                     return redirect(url_for('pagamento'))
                 
                 elif status == "in_process":
@@ -1025,16 +1013,13 @@ Equipe Dissonante Experiências
                     return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
             except Exception as e:
-                print("Exceção ao processar Cartão:", str(e))
-                traceback.print_exc()
-                flash('Falha na comunicação com a operadora do cartão. Tente novamente.', 'danger')
+                flash('Falha na comunicação com a operadora do cartão.', 'danger')
                 return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
 @app.route('/pagamento')
 @cliente_required
 def pagamento():
     compra = session.get('compra_atual')
-    
     if not compra:
         flash('Nenhuma transação pendente encontrada.', 'warning')
         return redirect(url_for('index'))
@@ -1058,7 +1043,6 @@ def checar_status_pagamento(payment_id):
             quantidade = compra.get('quantidade', 1)
 
             if user_id and lote_id:
-                # Gera os ingressos e retorna se eles acabaram de ser criados nesta chamada
                 criou_agora = gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade)
 
                 if criou_agora:
@@ -1073,17 +1057,8 @@ def checar_status_pagamento(payment_id):
 
 Seu pagamento via PIX foi confirmado com sucesso! 🎉
 
-Detalhes do Pedido:
---------------------------------------------------
-Evento: MaréVibes Halloween 2026
-Lote: {lote.nome if lote else 'Geral'}
-Quantidade: {quantidade}
-ID Transação: {payment_id}
-
 Seus Ingressos:
 {codigos_str}
-
-Apresente os códigos acima na portaria do evento. Você também pode consultar seus ingressos a qualquer momento acessando sua conta em nosso site.
 
 Atenciosamente,
 Equipe Dissonante Experiências
@@ -1098,7 +1073,6 @@ Equipe Dissonante Experiências
         return jsonify({'status': status})
 
     except Exception as e:
-        print(f"[ERRO POLLING PAGAMENTO]: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 # --------------------------------------------------------------------------
@@ -1111,7 +1085,6 @@ def webhook_mercadopago():
         return jsonify({"status": "sdk_not_configured"}), 200
 
     if not validar_assinatura_mercadopago(request):
-        print("[ERRO WEBHOOK]: Assinatura HMAC inválida. Requisição não autorizada.")
         return jsonify({"status": "unauthorized"}), 401
 
     data = request.get_json() or {}
@@ -1152,35 +1125,13 @@ def webhook_mercadopago():
 
 Seu pagamento foi confirmado com sucesso! 🎉
 
-Detalhes do Pedido:
---------------------------------------------------
-Evento: MaréVibes Halloween 2026
-Lote: {lote.nome if lote else 'Geral'}
-Quantidade: {qtd}
-ID Transação: {payment_id}
-
 Seus Ingressos:
 {codigos_str}
-
-Apresente os códigos acima na portaria do evento. Você também pode consultar seus ingressos a qualquer momento acessando sua conta em nosso site.
 
 Atenciosamente,
 Equipe Dissonante Experiências
 """
                     threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cliente, corpo_cliente)).start()
-
-                    email_admin = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME', ''))
-                    if email_admin:
-                        assunto_admin = f"[NOVA VENDA APROVADA] ID {payment_id}"
-                        corpo_admin = f"""Nova venda confirmada via Webhook!
-
-Cliente: {comprador.nome} ({comprador.email})
-Lote: {lote.nome if lote else 'Desconhecido'}
-Quantidade: {qtd}
-Valor Total: R$ {payment_info.get('transaction_amount', 0.0):.2f}
-ID do Pagamento: {payment_id}
-"""
-                        threading.Thread(target=enviar_email_direto, args=(email_admin, assunto_admin, corpo_admin)).start()
 
             elif status in ["refunded", "charged_back", "cancelled"]:
                 ingressos_para_remover = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
@@ -1193,16 +1144,12 @@ ID do Pagamento: {payment_id}
                     db.session.delete(ing)
 
                 db.session.commit()
-                print(f"[ESTORNO PROCESSADO]: Ingressos do pagamento {payment_id} removidos com sucesso.")
 
                 if comprador:
-                    assunto_cancelamento = "[Dissonante Experiências] Cancelamento de Ingresso / Estorno de Pagamento"
+                    assunto_cancelamento = "[Dissonante Experiências] Cancelamento de Ingresso / Estorno"
                     corpo_cancelamento = f"""Olá, {comprador.nome}.
 
-Identificamos a devolução/estorno do pagamento (ID: {payment_id}).
-Os ingressos vinculados a esta compra foram cancelados e removidos da sua conta.
-
-Se você acredita que isso foi um engano ou não solicitou o estorno, entre em contato conosco.
+Identificamos a devolução/estorno do pagamento (ID: {payment_id}). Os ingressos foram cancelados.
 
 Atenciosamente,
 Equipe Dissonante Experiências
@@ -1211,8 +1158,6 @@ Equipe Dissonante Experiências
 
         except Exception as e:
             db.session.rollback()
-            print(f"[ERRO CRÍTICO NO WEBHOOK]: {str(e)}")
-            traceback.print_exc()
 
     return jsonify({"status": "ok"}), 200
 
