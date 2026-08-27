@@ -14,6 +14,7 @@
     width: 100%;
     max-width: 1200px;
     padding: 0 20px;
+    flex-wrap: wrap;
 }
 
 .carousel-card {
@@ -88,6 +89,7 @@
     width: 20px;
     height: 20px;
     pointer-events: none; /* Previne problemas de clique no SVG */
+    transition: fill 0.2s ease, stroke 0.2s ease;
 }
 
 .btn-favorite:hover {
@@ -103,6 +105,7 @@
 
 .btn-favorite.active svg {
     fill: currentColor;
+    stroke: currentColor;
 }
 
 .card-title {
