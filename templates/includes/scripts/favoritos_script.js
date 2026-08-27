@@ -1,32 +1,43 @@
+<script>
 document.addEventListener("DOMContentLoaded", function () {
-    // Lógica de Favoritar Global
-    document.querySelectorAll('.btn-favorite').forEach(btn => {
+    const favoriteButtons = document.querySelectorAll('.btn-favorite');
+
+    favoriteButtons.forEach(btn => {
         btn.addEventListener('click', function (e) {
+            // Trava imediatamente a navegação da tag <a> ancestral e a propagação no DOM
             e.preventDefault();
             e.stopPropagation();
 
             const eventoId = this.getAttribute('data-evento-id');
 
-            fetch('/favoritar', {
+            fetch("{{ url_for('favoritar') }}", {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({ evento_id: eventoId })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                return res.json();
+            })
             .then(data => {
-                if (data.status === 'success') {
+                if (data && data.status === 'success') {
+                    // Alterna o estado de ativo no botão
                     this.classList.toggle('active', data.favoritado);
                     
-                    // Atualiza contador do header dinamicamente
+                    // Atualiza o contador no header (ícone de coração) se existir
                     const badge = document.querySelector('.btn-icon-header .badge');
                     if (badge && data.total_favoritos !== undefined) {
                         badge.textContent = data.total_favoritos;
                     }
-                } else if (data.redirect) {
-                    window.location.href = data.redirect;
                 }
             })
-            .catch(err => console.error("Erro ao favoritar:", err));
+            .catch(err => console.error("Erro ao favoritar evento:", err));
         });
     });
 });
+</script>
