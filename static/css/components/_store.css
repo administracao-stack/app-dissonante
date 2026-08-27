@@ -93,9 +93,21 @@
     color: var(--text-muted, #a1a1aa);
 }
 
+.card-meta .date-time {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .card-meta .date {
     color: var(--gold, #d4af37);
     font-weight: 600;
+}
+
+.card-meta .time {
+    color: var(--gold, #d4af37);
+    font-weight: 500;
+    opacity: 0.9;
 }
 
 /* Ação / Botão do Card */
