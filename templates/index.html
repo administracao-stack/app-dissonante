@@ -8,12 +8,12 @@
         
         <!-- Card de Evento 1 -->
         <a href="{{ url_for('evento_marevibes') }}" class="carousel-card">
-            <!-- Botão de favoritar no nível superior do card -->
-            <span class="btn-favorite" data-evento-id="marevibes" role="button" aria-label="Favoritar evento">
+            <!-- Botão de favoritar -->
+            <button type="button" class="btn-favorite" data-evento-id="marevibes" aria-label="Favoritar evento">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
-            </span>
+            </button>
 
             <img src="{{ url_for('static', filename='marevibes-banner.jpg') }}" alt="MaréVibes Halloween 2026" class="card-img-bg">
             <div class="card-overlay"></div>
@@ -33,4 +33,49 @@
 
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const favoriteButtons = document.querySelectorAll('.btn-favorite');
+
+    favoriteButtons.forEach(btn => {
+        // O terceiro argumento `true` (useCapture) impede a propagação antes do link pai <a> interceptar
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            const eventoId = this.getAttribute('data-evento-id');
+
+            fetch("{{ url_for('favoritar') }}", {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ evento_id: eventoId })
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    window.location.href = "{{ url_for('login') }}";
+                    return;
+                }
+                return res.json();
+            })
+            .then(data => {
+                if (data && data.status === 'success') {
+                    this.classList.toggle('active', data.favoritado);
+                    
+                    const badge = document.querySelector('.btn-icon-header .badge');
+                    if (badge && data.total_favoritos !== undefined) {
+                        badge.textContent = data.total_favoritos;
+                    }
+                }
+            })
+            .catch(err => console.error("Erro ao favoritar evento:", err));
+        }, true);
+    });
+});
+</script>
 {% endblock %}
