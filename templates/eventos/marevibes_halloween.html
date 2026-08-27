@@ -4,10 +4,10 @@
 
 {% block content %}
 <div class="event-page-wrapper">
-    <!-- Banner de Aviso -->
-    <div class="demo-alert">
-        <strong>⚠️ AMBIENTE DE TESTES / DEMONSTRAÇÃO:</strong> O sistema de vendas está passando por testes de integração. Transações nesta página não garantem emissão de ingressos reais[cite: 23].
-    </div>
+    <!-- Banner de Aviso (Temporário - Testes) -->
+<div class="demo-alert" style="background-color: #fff3cd; color: #856404; border: 2px dashed #ffebaa; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; text-align: center; margin-bottom: 20px; font-family: sans-serif;">
+    <strong>⚠️ AMBIENTE DE TESTES / DEMONSTRAÇÃO:</strong> O sistema de vendas está passando por testes de integração. Transações nesta página não garantem emissão de ingressos reais.
+</div>
 
     <!-- Seção Principal Superior: Imagem (Esq) + Informações (Dir) -->
     <div class="event-hero-grid">
@@ -125,9 +125,15 @@
         lote2: 0
     };
 
+    // Definição do limite máximo por lote
+    const MAX_QTY_PER_LOTE = 5;
+
     function updateQty(type, change) {
-        if (quantities[type] + change >= 0) {
-            quantities[type] += change;
+        const newQty = quantities[type] + change;
+        
+        // Valida se a quantidade está entre 0 e o limite máximo (5)
+        if (newQty >= 0 && newQty <= MAX_QTY_PER_LOTE) {
+            quantities[type] = newQty;
             document.getElementById(`qty-${type}`).innerText = quantities[type];
             document.getElementById(`input-${type}`).value = quantities[type];
             calculateTotal();
