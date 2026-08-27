@@ -480,21 +480,45 @@ def faq():
 def favoritar():
     if not session.get('usuario_id'):
         return jsonify({'status': 'error', 'redirect': url_for('login')}), 401
-    
-    data = request.get_json()
+
+    data = request.get_json(silent=True) or {}
     evento_id = data.get('evento_id')
-    
+
+    if not evento_id:
+        return jsonify({'status': 'error', 'message': 'ID do evento ausente'}), 400
+
+    # Dicionário mock/base para popular a tela de favoritos.html
+    # (Caso tenha tabela de Eventos no banco futuramente, busque por evento_id aqui)
+    eventos_map = {
+        'marevibes': {
+            'id': 'marevibes',
+            'nome': 'MaréVibes Halloween 2026',
+            'data': '31 OUT 2026'
+        }
+    }
+
     favoritos = session.get('favoritos', [])
     
-    if evento_id in favoritos:
-        favoritos.remove(evento_id)
+    # Procura se o evento já está salvo na lista de dicionários
+    item_existente = next((item for item in favoritos if isinstance(item, dict) and item.get('id') == evento_id), None)
+
+    if item_existente:
+        favoritos.remove(item_existente)
         favoritado = False
     else:
-        favoritos.append(evento_id)
+        # Adiciona os dados do evento mapeados para compatibilidade com o template favoritos.html
+        evento_info = eventos_map.get(evento_id, {'id': evento_id, 'nome': evento_id, 'data': 'Em breve'})
+        favoritos.append(evento_info)
         favoritado = True
-        
+
     session['favoritos'] = favoritos
-    return jsonify({'status': 'success', 'favoritado': favoritado})
+    session.modified = True
+
+    return jsonify({
+        'status': 'success',
+        'favoritado': favoritado,
+        'total_favoritos': len(favoritos)
+    })
 
 @app.route('/carrinho')
 def ver_carrinho():
