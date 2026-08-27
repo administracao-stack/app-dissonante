@@ -3,35 +3,57 @@
 {% block title %}Meus Favoritos | Dissonante Experiências{% endblock %}
 
 {% block content %}
-<main class="profile-container">
-    <div class="profile-card">
-        
-        <div class="profile-header">
-            <h2>Meus Favoritos</h2>
-            <p class="profile-sub">Eventos e experiências que você salvou.</p>
-        </div>
-
-        <hr class="profile-divider">
-
-        {% if session.get('favoritos') %}
-            <div class="tickets-grid">
-                {% for item in session.get('favoritos') %}
-                    <div class="ticket-card">
-                        <h4>{{ item.nome }}</h4>
-                        <p>{{ item.data|default('Em breve') }}</p>
-                        <a href="{{ url_for('evento_detalhe', id=item.id) if 'evento_detalhe' in config else '#' }}" class="btn-ticket">Ver Evento</a>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="empty-state-wrapper" style="text-align: center; padding: 40px 0;">
-                <p class="empty-state">Você ainda não salvou nenhum favorito.</p>
-                <a href="{{ url_for('index') }}#eventos" class="btn-ticket" style="display: inline-block; margin-top: 15px;">
-                    Explorar Eventos
-                </a>
-            </div>
-        {% endif %}
-
+<main class="favorites-page-container">
+    
+    <div class="favorites-header">
+        <h1 class="page-title">Meus Favoritos</h1>
+        <p class="page-subtitle">Eventos e experiências que você salvou para não perder.</p>
     </div>
+
+    {% if session.get('favoritos') %}
+        <div class="tickets-grid">
+            {% for item in session.get('favoritos') %}
+                <div class="ticket-card">
+                    
+                    <button type="button" 
+                            class="btn-favorite active" 
+                            data-evento-id="{{ item.id }}" 
+                            aria-label="Remover dos favoritos">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </button>
+
+                    <div class="ticket-card-content">
+                        <h3 class="card-title">{{ item.nome }}</h3>
+                        <p class="ticket-date">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            {{ item.data|default('Em breve') }}
+                        </p>
+                    </div>
+
+                    <a href="{{ url_for('evento_detalhe', id=item.id) if 'evento_detalhe' in config else '#' }}" class="btn-ticket">
+                        Ver Evento
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state-wrapper">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            <p class="empty-state">Sua lista de favoritos está vazia.</p>
+            <a href="{{ url_for('index') }}#eventos" class="btn-ticket">
+                Explorar Eventos
+            </a>
+        </div>
+    {% endif %}
+
 </main>
 {% endblock %}
