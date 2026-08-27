@@ -379,9 +379,6 @@ def validar_token_recuperacao(token, max_age=3600):
 def style_fallback():
     return send_from_directory('static/css', 'main.css')
 
-@app.route('/js/<path:filename>')
-def js_fallback(filename):
-    return send_from_directory('static/js', filename)
 
 # --------------------------------------------------------------------------
 # Rotas Públicas
