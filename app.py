@@ -149,21 +149,35 @@ def inicializar_banco():
                     admin_user.is_admin = True
                     admin_user.email_verificado = True
 
-            # Inicialização de lotes padrão
+            # 1. Lote Promocional (R$ 1,00 - 10 unidades - Ativo)
             lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
             if not lote_promo:
-                lote_promo = Lote(nome='Lote Promocional', preco=1.00, quantidade_total=15, ativo=True)
+                lote_promo = Lote(nome='Lote Promocional (Teste)', preco=1.00, quantidade_total=10, ativo=True)
                 db.session.add(lote_promo)
             else:
+                lote_promo.nome = 'Lote Promocional (Teste)'
                 lote_promo.preco = 1.00
-                lote_promo.quantidade_total = 15
+                lote_promo.quantidade_total = 10
 
+            # 2. 1º Lote (R$ 100,00 - 10 unidades)
             lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
             if not lote_1:
-                lote_1 = Lote(nome='1º Lote', preco=230.00, quantidade_total=40, ativo=False)
+                lote_1 = Lote(nome='1º Lote', preco=100.00, quantidade_total=10, ativo=False)
                 db.session.add(lote_1)
             else:
-                lote_1.preco = 230.00
+                lote_1.nome = '1º Lote'
+                lote_1.preco = 100.00
+                lote_1.quantidade_total = 10
+
+            # 3. 2º Lote (R$ 200,00 - 10 unidades)
+            lote_2 = Lote.query.filter(Lote.nome.ilike('%2º lote%')).first()
+            if not lote_2:
+                lote_2 = Lote(nome='2º Lote', preco=200.00, quantidade_total=10, ativo=False)
+                db.session.add(lote_2)
+            else:
+                lote_2.nome = '2º Lote'
+                lote_2.preco = 200.00
+                lote_2.quantidade_total = 10
 
             db.session.commit()
         except Exception as e:
@@ -845,6 +859,8 @@ def verificar_senha_para_redefinir():
 # Checkout e Ingressos
 # --------------------------------------------------------------------------
 
+LIMITE_MAXIMO_LOTE = 5  # Trava máxima por lote individual por pedido
+
 @app.route('/checkout', methods=['GET', 'POST'])
 @cliente_required
 def checkout():
@@ -854,6 +870,20 @@ def checkout():
     if not usuario_atual:
         flash('Sua sessão expirou. Faça login novamente.', 'warning')
         return redirect(url_for('login'))
+
+    # Se a requisição vier do formulário com múltiplos lotes (qty_promocional, qty_lote1, qty_lote2)
+    if request.method == 'POST' and ('qty_promocional' in request.form or 'qty_lote1' in request.form or 'qty_lote2' in request.form):
+        try:
+            qty_promo = int(request.form.get('qty_promocional', 0))
+            qty_lote1 = int(request.form.get('qty_lote1', 0))
+            qty_lote2 = int(request.form.get('qty_lote2', 0))
+        except (ValueError, TypeError):
+            qty_promo = qty_lote1 = qty_lote2 = 0
+
+        # Validação do limite de 5 unidades por lote no servidor
+        if qty_promo > LIMITE_MAXIMO_LOTE or qty_lote1 > LIMITE_MAXIMO_LOTE or qty_lote2 > LIMITE_MAXIMO_LOTE:
+            flash(f'Você só pode selecionar no máximo {LIMITE_MAXIMO_LOTE} ingressos de cada lote por compra.', 'danger')
+            return redirect(url_for('evento_marevibes'))
 
     lote_id_req = request.form.get('lote_id', type=int) or request.args.get('lote_id', type=int)
     
@@ -871,6 +901,11 @@ def checkout():
             quantidade = max(1, int(request.form.get('quantidade', 1)))
         except (ValueError, TypeError):
             quantidade = 1
+
+        # Validação do limite individual da compra direta
+        if quantidade > LIMITE_MAXIMO_LOTE:
+            flash(f'O limite máximo permitido é de {LIMITE_MAXIMO_LOTE} ingressos por pedido.', 'warning')
+            return redirect(url_for('checkout', lote_id=lote_ativo.id))
 
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
 
@@ -988,7 +1023,7 @@ def checkout():
                     assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
                     corpo_cliente = f"""Olá, {usuario_atual.nome}!
 
-Seu pagamento via Cartão de Crédito foi confirmado! 🎉
+Seu pagamento via Cartão de Crédito foi confirmed! 🎉
 
 Detalhes do Pedido:
 --------------------------------------------------
@@ -1045,7 +1080,7 @@ def pagamento():
         flash('Nenhuma transação pendente encontrada.', 'warning')
         return redirect(url_for('index'))
         
-    return render_template('includes/scripts/status_pagamento.html', compra=compra)
+    return render_template('status_pagamento.html', compra=compra)
 
 @app.route('/api/checar-status-pagamento/<payment_id>')
 @cliente_required
