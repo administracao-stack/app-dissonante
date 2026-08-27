@@ -39,12 +39,10 @@
 
 .event-banner-img {
     width: 100%;
-    height: auto;
-    max-height: 560px;
-    object-fit: contain; /* Exibe o JPG completo sem cortar bordas */
+    height: auto; /* Garante a proporção original da imagem */
+    display: block;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
 
 /* Espaçamento e Hierarquia do Bloco de Informações */
 .event-info-container {
