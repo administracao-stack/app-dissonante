@@ -1,9 +1,134 @@
 /* ==========================================================================
+   Design da Página do Evento & Seleção de Ingressos
+   ========================================================================== */
+
+.event-page-wrapper {
+    max-width: 1200px;
+    margin: 32px auto;
+    padding: 0 20px;
+}
+
+/* Grid Topo: Banner à Esquerda, Conteúdo à Direita */
+.event-hero-grid {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 32px;
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+}
+
+@media (max-width: 900px) {
+    .event-hero-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.event-banner-img {
+    width: 100%;
+    height: 100%;
+    max-height: 520px;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* ==========================================================================
+   Controles da Caixa Seletora de Ingressos (Padrão Dissonante)
+   ========================================================================== */
+
+.tickets-card-box {
+    width: 100%;
+    max-width: 480px;
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 24px;
+}
+
+/* Linha Individual do Ingresso */
+.ticket-type-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Botões (+ e -) no tom azul/gradiente oficial */
+.btn-qty {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+    transition: transform 0.1s ease, filter 0.2s ease;
+}
+
+.btn-qty:hover {
+    filter: brightness(1.2);
+}
+
+.btn-qty:active {
+    transform: scale(0.92);
+}
+
+.qty-number {
+    font-weight: 700;
+    color: var(--text-light, #ffffff);
+    min-width: 20px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* Destaque do Preço em Dourado Dissonante */
+.ticket-price-tax {
+    font-size: 0.85rem;
+    color: var(--gold, #d4af37);
+    font-weight: 600;
+}
+
+/* Rodapé do Card de Ingressos */
+.tickets-footer {
+    margin-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 16px;
+}
+
+.tickets-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    color: #ffffff;
+    margin-bottom: 16px;
+}
+
+.tickets-total strong {
+    font-size: 1.3rem;
+    color: var(--gold, #d4af37);
+}
+
+/* ==========================================================================
    Fluxo de Checkout e Carrinho de Compras
    ========================================================================== */
 
 .checkout-section {
     padding: 40px 0;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .cart-items-list {
@@ -17,15 +142,16 @@
     justify-content: space-between;
     align-items: center;
     padding: 16px;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-dark);
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
 }
 
 .cart-summary {
     margin-top: 28px;
     padding: 20px;
-    background-color: var(--bg-card);
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
     border-radius: 12px;
     text-align: right;
 }
