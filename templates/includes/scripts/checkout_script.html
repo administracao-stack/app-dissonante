@@ -1,7 +1,7 @@
 {% include 'includes/scripts/recaptcha.html' %}
 
 <script>
-    // Alterna visualmente entre PIX e Cartão de Crédito
+    // Alterna visualmente os containers de pagamento (PIX / Cartão)
     function togglePagamento(metodo) {
         const creditCardContainer = document.getElementById('credit-card-container');
         const labelPix = document.getElementById('label_pix');
@@ -18,21 +18,51 @@
         }
     }
 
-    // Recalcula o valor total ao alterar a quantidade de ingressos
-    document.addEventListener("DOMContentLoaded", function () {
-        const selectQuantidade = document.getElementById('quantidade');
-        const precoUnitarioElem = document.getElementById('preco-unitario-display');
-        const totalDisplayElem = document.getElementById('total-display');
+    // Tokenização e envio do formulário via SDK do Mercado Pago
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('form-checkout');
 
-        if (selectQuantidade && precoUnitarioElem && totalDisplayElem) {
-            const precoTexto = precoUnitarioElem.innerText.replace('R$', '').replace('.', '').replace(',', '.').trim();
-            const precoUnitario = parseFloat(precoTexto) || 0;
+        if (!form) return;
 
-            selectQuantidade.addEventListener('change', function () {
-                const qtd = parseInt(this.value) || 1;
-                const total = precoUnitario * qtd;
-                totalDisplayElem.innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
-            });
-        }
+        // Inicializa o Mercado Pago
+        const mp = new MercadoPago('APP_USR-64555c4f-1ece-4523-9a63-cfb8ca150790');
+
+        form.addEventListener('submit', async function (e) {
+            const metodoInput = document.querySelector('input[name="metodo_pagamento"]:checked');
+            const metodo = metodoInput ? metodoInput.value : 'pix';
+
+            // Se for PIX, envia o formulário normalmente
+            if (metodo === 'pix') {
+                return;
+            }
+
+            // Se for Cartão, intercepta o submit para gerar o token
+            e.preventDefault();
+
+            try {
+                const cardExpirationValue = document.getElementById('cardExpiration').value.split('/');
+                const cardToken = await mp.createCardToken({
+                    cardNumber: document.getElementById('cardNumber').value.replace(/\s+/g, ''),
+                    cardholderName: document.getElementById('cardholderName').value,
+                    cardExpirationMonth: cardExpirationValue[0],
+                    cardExpirationYear: '20' + cardExpirationValue[1],
+                    securityCode: document.getElementById('securityCode').value,
+                    identificationType: 'CPF',
+                    identificationNumber: document.getElementById('cpf').value.replace(/\D/g, '')
+                });
+
+                document.getElementById('token').value = cardToken.id;
+                document.getElementById('payment_method_id').value = cardToken.payment_method_id;
+
+                if (cardToken.issuer_id) {
+                    document.getElementById('issuer_id').value = cardToken.issuer_id;
+                }
+
+                form.submit();
+
+            } catch (error) {
+                alert('Erro ao validar os dados do cartão. Verifique os campos e tente novamente.');
+            }
+        });
     });
 </script>
