@@ -5,113 +5,125 @@
 {% block content %}
 <div class="event-page-wrapper">
     <!-- Banner de Aviso (Temporário - Testes) -->
-<div class="demo-alert" style="background-color: #fff3cd; color: #856404; border: 2px dashed #ffebaa; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; text-align: center; margin-bottom: 20px; font-family: sans-serif;">
-    <strong>⚠️ AMBIENTE DE TESTES / DEMONSTRAÇÃO:</strong> O sistema de vendas está passando por testes de integração. Transações nesta página não garantem emissão de ingressos reais.
-</div>
+    <div class="demo-alert" style="background-color: #fff3cd; color: #856404; border: 2px dashed #ffebaa; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; text-align: center; margin-bottom: 20px; font-family: sans-serif;">
+        <strong>⚠️ AMBIENTE DE TESTES / DEMONSTRAÇÃO:</strong> O sistema de vendas está passando por testes de integração. Transações nesta página não garantem emissão de ingressos reais.
+    </div>
 
-    <!-- Seção Principal Superior: Imagem (Esq) + Informações (Dir) -->
+    <!-- Seção Principal Superior -->
     <div class="event-hero-grid">
-    <div class="event-banner-container">
-        <!-- Corrigido de 'marevibes_banner.jpg' para 'marevibes-banner.jpg' -->
-        <img src="{{ url_for('static', filename='marevibes-banner.jpg') }}" alt="MaréVibes Halloween 2026" class="event-banner-img">
+        <div class="event-banner-container">
+            <img src="{{ url_for('static', filename='marevibes-banner.jpg') }}" alt="MaréVibes Halloween 2026" class="event-banner-img">
+        </div>
+
+        <div class="event-info-container">
+            <div>
+                {% if vendas_encerradas %}
+                    <span class="badge" style="background-color: #dc3545; color: #fff;">Vendas Encerradas</span>
+                {% else %}
+                    <span class="badge badge-open">Ingressos Disponíveis</span>
+                {% endif %}
+                <h1 class="about-title">MaréVibes Halloween 2026</h1>
+            </div>
+            
+            <div class="event-details">
+                <div>📅 31 de Outubro, às 17h</div>
+                <div>📍 Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE</div>
+            </div>
+            
+            <p class="about-text-highlight">
+                Prepare-se para a noite mais misteriosa do ano. O MaréVibes Halloween chega com uma proposta imersiva e exclusiva em Fortaleza, unindo cenografia temática de arrepiar e os melhores DJs da cena local.
+            </p>
+
+            <div class="event-perks">
+                <h3>O que está incluso na sua experiência:</h3>
+                <ul>
+                    <li>🍻 <span><strong>Open Bar de Chopp Turatti</strong> (geladíssimo a noite toda)</span></li>
+                    <li>🍹 <span><strong>Open Bar de Drinks</strong> exclusivos da casa</span></li>
+                    <li>🍴 <span><strong>Buffet com Open Food</strong> liberado</span></li>
+                    <li>🎧 <span><strong>DJs Convidados</strong> comandando a pista com o melhor do som</span></li>
+                    <li>🎃 <span><strong>Decoração Temática Exclusiva</strong> e espaços instagramáveis</span></li>
+                </ul>
+            </div>
+        </div>
     </div>
 
-    <div class="event-info-container">
-        <div>
-            <span class="badge badge-open">Ingressos Disponíveis</span>
-            <h1 class="about-title">MaréVibes Halloween 2026</h1>
-        </div>
-        
-        <div class="event-details">
-            <div>📅 31 de Outubro, às 17h</div>
-            <div>📍 Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE</div>
-        </div>
-        
-        <p class="about-text-highlight">
-            Prepare-se para a noite mais misteriosa do ano. O MaréVibes Halloween chega com uma proposta imersiva e exclusiva em Fortaleza, unindo cenografia temática de arrepiar e os melhores DJs da cena local.
-        </p>
-
-        <div class="event-perks">
-            <h3>O que está incluso na sua experiência:</h3>
-            <ul>
-                <li>🍻 <span><strong>Open Bar de Chopp Turatti</strong> (geladíssimo a noite toda)</span></li>
-                <li>🍹 <span><strong>Open Bar de Drinks</strong> exclusivos da casa</span></li>
-                <li>🍴 <span><strong>Buffet com Open Food</strong> liberado</span></li>
-                <li>🎧 <span><strong>DJs Convidados</strong> comandando a pista com o melhor do som</span></li>
-                <li>🎃 <span><strong>Decoração Temática Exclusiva</strong> e espaços instagramáveis</span></li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-    <!-- Seção Inferior: Seleção de Lotes (Alinhado à esquerda) -->
+    <!-- Seção Inferior: Seleção de Lotes ou Alerta de Encerramento -->
     <div class="tickets-selection-section">
         <div class="tickets-card-box">
             <h2 class="tickets-box-title">Selecione os ingressos</h2>
 
-            <form action="{{ url_for('checkout') }}" method="POST" id="tickets-form">
-                
-                <!-- Input Oculto para enviar o total do evento ao checkout -->
-                <input type="hidden" name="evento_id" value="marevibes_halloween">
-
-                <!-- Opção 1: Promocional -->
-                <div class="ticket-type-row">
-                    <div class="ticket-type-info">
-                        <strong class="ticket-name">Lote Promocional (Teste)</strong>
-                        <span class="ticket-price-tax">R$ 1,00</span>
-                    </div>
-                    <div class="ticket-counter">
-                        <button type="button" class="btn-qty" onclick="updateQty('promo', -1)">-</button>
-                        <span id="qty-promo" class="qty-number">0</span>
-                        <input type="hidden" name="qty_promocional" id="input-promo" value="0">
-                        <button type="button" class="btn-qty" onclick="updateQty('promo', 1)">+</button>
-                    </div>
+            {% if vendas_encerradas %}
+                <div class="tickets-expired-alert">
+                    <h3>⏰ Vendas Encerradas!</h3>
+                    <p>
+                        O limite de tempo para a compra de ingressos expirou em <strong>31/10/2026 às 19:00</strong>.
+                    </p>
                 </div>
+            {% else %}
+                <form action="{{ url_for('checkout') }}" method="POST" id="tickets-form">
+                    
+                    <input type="hidden" name="evento_id" value="marevibes_halloween">
 
-                <!-- Opção 2: 1º Lote -->
-                <div class="ticket-type-row">
-                    <div class="ticket-type-info">
-                        <strong class="ticket-name">1º Lote</strong>
-                        <span class="ticket-price-tax">R$ 100,00</span>
+                    <!-- Opção 1: Promocional -->
+                    <div class="ticket-type-row">
+                        <div class="ticket-type-info">
+                            <strong class="ticket-name">Lote Promocional (Teste)</strong>
+                            <span class="ticket-price-tax">R$ 1,00</span>
+                        </div>
+                        <div class="ticket-counter">
+                            <button type="button" class="btn-qty" onclick="updateQty('promo', -1)">-</button>
+                            <span id="qty-promo" class="qty-number">0</span>
+                            <input type="hidden" name="qty_promocional" id="input-promo" value="0">
+                            <button type="button" class="btn-qty" onclick="updateQty('promo', 1)">+</button>
+                        </div>
                     </div>
-                    <div class="ticket-counter">
-                        <button type="button" class="btn-qty" onclick="updateQty('lote1', -1)">-</button>
-                        <span id="qty-lote1" class="qty-number">0</span>
-                        <input type="hidden" name="qty_lote1" id="input-lote1" value="0">
-                        <button type="button" class="btn-qty" onclick="updateQty('lote1', 1)">+</button>
-                    </div>
-                </div>
 
-                <!-- Opção 3: 2º Lote -->
-                <div class="ticket-type-row">
-                    <div class="ticket-type-info">
-                        <strong class="ticket-name">2º Lote</strong>
-                        <span class="ticket-price-tax">R$ 200,00</span>
+                    <!-- Opção 2: 1º Lote -->
+                    <div class="ticket-type-row">
+                        <div class="ticket-type-info">
+                            <strong class="ticket-name">1º Lote</strong>
+                            <span class="ticket-price-tax">R$ 100,00</span>
+                        </div>
+                        <div class="ticket-counter">
+                            <button type="button" class="btn-qty" onclick="updateQty('lote1', -1)">-</button>
+                            <span id="qty-lote1" class="qty-number">0</span>
+                            <input type="hidden" name="qty_lote1" id="input-lote1" value="0">
+                            <button type="button" class="btn-qty" onclick="updateQty('lote1', 1)">+</button>
+                        </div>
                     </div>
-                    <div class="ticket-counter">
-                        <button type="button" class="btn-qty" onclick="updateQty('lote2', -1)">-</button>
-                        <span id="qty-lote2" class="qty-number">0</span>
-                        <input type="hidden" name="qty_lote2" id="input-lote2" value="0">
-                        <button type="button" class="btn-qty" onclick="updateQty('lote2', 1)">+</button>
-                    </div>
-                </div>
 
-                <!-- Total e Ação -->
-                <div class="tickets-footer">
-                    <div class="tickets-total">
-                        <span>Total</span>
-                        <strong id="display-total">R$ 0,00</strong>
+                    <!-- Opção 3: 2º Lote -->
+                    <div class="ticket-type-row">
+                        <div class="ticket-type-info">
+                            <strong class="ticket-name">2º Lote</strong>
+                            <span class="ticket-price-tax">R$ 200,00</span>
+                        </div>
+                        <div class="ticket-counter">
+                            <button type="button" class="btn-qty" onclick="updateQty('lote2', -1)">-</button>
+                            <span id="qty-lote2" class="qty-number">0</span>
+                            <input type="hidden" name="qty_lote2" id="input-lote2" value="0">
+                            <button type="button" class="btn-qty" onclick="updateQty('lote2', 1)">+</button>
+                        </div>
                     </div>
-                    <button type="submit" id="btn-checkout" class="btn-primary btn-block" disabled>
-                        Ir para pagamento
-                    </button>
-                </div>
 
-            </form>
+                    <!-- Total e Ação -->
+                    <div class="tickets-footer">
+                        <div class="tickets-total">
+                            <span>Total</span>
+                            <strong id="display-total">R$ 0,00</strong>
+                        </div>
+                        <button type="submit" id="btn-checkout" class="btn-primary btn-block" disabled>
+                            Ir para pagamento
+                        </button>
+                    </div>
+
+                </form>
+            {% endif %}
         </div>
     </div>
 </div>
 
+{% if not vendas_encerradas %}
 <script>
     const prices = {
         promo: 1.00,
@@ -125,13 +137,11 @@
         lote2: 0
     };
 
-    // Definição do limite máximo por lote
     const MAX_QTY_PER_LOTE = 5;
 
     function updateQty(type, change) {
         const newQty = quantities[type] + change;
         
-        // Valida se a quantidade está entre 0 e o limite máximo (5)
         if (newQty >= 0 && newQty <= MAX_QTY_PER_LOTE) {
             quantities[type] = newQty;
             document.getElementById(`qty-${type}`).innerText = quantities[type];
@@ -150,5 +160,14 @@
         const btnCheckout = document.getElementById('btn-checkout');
         btnCheckout.disabled = total === 0;
     }
+
+    document.getElementById('tickets-form').addEventListener('submit', function(e) {
+        const totalIngressos = quantities.promo + quantities.lote1 + quantities.lote2;
+        if (totalIngressos === 0) {
+            e.preventDefault();
+            alert('Selecione pelo menos um ingresso para continuar.');
+        }
+    });
 </script>
+{% endif %}
 {% endblock %}
