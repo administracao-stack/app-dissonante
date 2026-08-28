@@ -1,22 +1,36 @@
 <script>
-    // Copia o código PIX para a área de transferência
+    // Copia o código PIX para a área de transferência com suporte a fallback
     function copiarPix() {
         const inputPix = document.getElementById("pix-copia-cola");
         if (!inputPix) return;
+        
         inputPix.select();
         inputPix.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(inputPix.value);
-        
+
         const btnCopiar = document.getElementById("btn-copiar");
-        if (btnCopiar) {
-            btnCopiar.innerText = "Copiado! ✓";
-            btnCopiar.classList.add("copied");
-            
-            setTimeout(() => {
-                btnCopiar.innerText = "Copiar";
-                btnCopiar.classList.remove("copied");
-            }, 3000);
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(inputPix.value).then(() => {
+                exibirFeedbackCopiado(btnCopiar);
+            }).catch(() => {
+                document.execCommand('copy');
+                exibirFeedbackCopiado(btnCopiar);
+            });
+        } else {
+            document.execCommand('copy');
+            exibirFeedbackCopiado(btnCopiar);
         }
+    }
+
+    function exibirFeedbackCopiado(btn) {
+        if (!btn) return;
+        btn.innerText = "Copiado! ✓";
+        btn.classList.add("copied");
+        
+        setTimeout(() => {
+            btn.innerText = "Copiar";
+            btn.classList.remove("copied");
+        }, 3000);
     }
 
     // Polling para checar confirmação do pagamento via PIX
@@ -28,18 +42,18 @@
         fetch(`/api/checar-status-pagamento/${paymentId}`)
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'approved' && data.redirect_url) {
+                if (data.status === 'approved') {
                     const badge = document.getElementById('status-pix-badge');
                     if (badge) {
                         badge.classList.add('approved');
                         badge.innerText = '✅ Pagamento Aprovado! Redirecionando...';
                     }
                     setTimeout(() => {
-                        window.location.href = data.redirect_url;
-                    }, 1000);
+                        window.location.href = data.redirect_url || "{{ url_for('meus_ingressos') }}";
+                    }, 1200);
                 }
             })
-            .catch(err => console.error("Erro ao verificar status:", err));
+            .catch(err => console.error("Erro ao verificar status do Pix:", err));
     }
 
     setInterval(checarStatusPix, 3000);
