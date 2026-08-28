@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Design da Página do Evento & Seleção de Ingressos
+   Design da Página do Evento (Hero Section & Banner)
    ========================================================================== */
 
 .event-page-wrapper {
@@ -39,7 +39,7 @@
 
 .event-banner-img {
     width: 100%;
-    height: auto; /* Garante a proporção original da imagem */
+    height: auto;
     display: block;
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -49,7 +49,7 @@
 .event-info-container {
     display: flex;
     flex-direction: column;
-    gap: 18px; /* Espaçamento entre os blocos de texto */
+    gap: 18px;
 }
 
 .event-info-container .about-title {
@@ -58,6 +58,23 @@
     line-height: 1.2;
     margin: 4px 0 8px 0;
     color: var(--text-light, #ffffff);
+}
+
+/* Badge de Status do Evento */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+}
+
+.badge-open {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .event-details {
@@ -106,9 +123,36 @@
     gap: 8px;
 }
 
+/* Alerta de encerramento de vendas de ingressos */
+.tickets-expired-alert {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 15px;
+}
+
+.tickets-expired-alert h3 {
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.tickets-expired-alert p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
 /* ==========================================================================
-   Controles da Caixa Seletora de Ingressos (Padrão Dissonante)
+   Seção Seletora dos Ingressos & Lotes
    ========================================================================== */
+
+.tickets-selection-section {
+    display: flex;
+    justify-content: flex-start;
+}
 
 .tickets-card-box {
     width: 100%;
@@ -117,6 +161,13 @@
     border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 24px;
+}
+
+.tickets-box-title {
+    font-size: 1.25rem;
+    color: #ffffff;
+    margin-bottom: 20px;
+    font-weight: 700;
 }
 
 /* Linha Individual do Ingresso */
@@ -129,6 +180,29 @@
     border-radius: 12px;
     margin-bottom: 12px;
     background: rgba(255, 255, 255, 0.02);
+}
+
+.ticket-type-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ticket-name {
+    color: #ffffff;
+    font-size: 0.95rem;
+}
+
+.ticket-price-tax {
+    font-size: 0.85rem;
+    color: var(--gold, #d4af37);
+    font-weight: 600;
+}
+
+.ticket-counter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 /* Botões (+ e -) no tom azul/gradiente oficial */
@@ -165,14 +239,7 @@
     font-size: 1rem;
 }
 
-/* Destaque do Preço em Dourado Dissonante */
-.ticket-price-tax {
-    font-size: 0.85rem;
-    color: var(--gold, #d4af37);
-    font-weight: 600;
-}
-
-/* Rodapé do Card de Ingressos */
+/* Rodapé do Card de Ingressos e Botão Principal */
 .tickets-footer {
     margin-top: 24px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -193,37 +260,501 @@
     color: var(--gold, #d4af37);
 }
 
-/* ==========================================================================
-   Fluxo de Checkout e Carrinho de Compras
-   ========================================================================== */
-
-.checkout-section {
-    padding: 40px 0;
-    max-width: 1200px;
-    margin: 0 auto;
+.btn-block {
+    width: 100%;
 }
+
+.btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+
+.btn-primary:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* ==========================================================================
+   Página do Carrinho de Compras
+   ========================================================================== */
 
 .cart-items-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
 }
 
 .cart-item-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
-    background-color: var(--bg-card, #111827);
-    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cart-item-row h4 {
+    margin: 0 0 4px 0;
+    font-size: 1.05rem;
+    color: #ffffff;
+}
+
+.cart-item-row small {
+    color: var(--text-muted, #a1a1aa);
+    font-size: 0.88rem;
+}
+
+.cart-item-price {
+    text-align: right;
+    font-size: 1.1rem;
+    color: var(--gold, #d4af37);
+    font-weight: 700;
 }
 
 .cart-summary {
     margin-top: 28px;
-    padding: 20px;
+    text-align: right;
+}
+
+.empty-state-wrapper {
+    text-align: center;
+    padding: 48px 0;
+}
+
+.empty-state {
+    color: var(--text-muted, #a1a1aa);
+    font-size: 1.05rem;
+    margin-bottom: 16px;
+}
+
+/* ==========================================================================
+   Página de Checkout & Formulário de Pagamento
+   ========================================================================== */
+
+.checkout-main {
+    padding: 40px 0;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 32px;
+    align-items: start;
+}
+
+@media (max-width: 992px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.checkout-titulo {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 24px;
+}
+
+.checkout-form-container {
     background-color: var(--bg-card, #111827);
     border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 32px;
+}
+
+.checkout-step, 
+.checkout-step-block {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkout-step h2, 
+.checkout-step-heading {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gold, #d4af37);
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.form-group label, 
+.form-label {
+    font-size: 0.88rem;
+    color: #d1d5db;
+    font-weight: 600;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+.form-row, 
+.card-row-dual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    .form-row, 
+    .card-row-dual {
+        grid-template-columns: 1fr;
+    }
+}
+
+.payment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+    .payment-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.payment-option-card {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    text-align: right;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.payment-option-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.payment-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.payment-icon {
+    font-size: 1.4rem;
+}
+
+.payment-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.payment-option-card.active {
+    border-color: #2563eb;
+    background-color: rgba(37, 99, 235, 0.08);
+}
+
+.credit-card-fields {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+.checkout-termos {
+    margin-bottom: 24px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.checkout-termos a {
+    color: var(--gold, #d4af37);
+    text-decoration: underline;
+}
+
+.btn-finalizar {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    transition: filter 0.2s ease, transform 0.1s ease;
+}
+
+.btn-finalizar:hover {
+    filter: brightness(1.15);
+}
+
+.btn-finalizar:active {
+    transform: scale(0.99);
+}
+
+.resumo-card {
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 24px;
+    position: sticky;
+    top: 24px;
+}
+
+.resumo-card h3 {
+    font-size: 1.2rem;
+    color: #ffffff;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.resumo-item {
+    font-size: 0.92rem;
+    color: #a1a1aa;
+}
+
+.resumo-card hr {
+    border: none;
+    border-top: 1px dashed rgba(255, 255, 255, 0.12);
+    margin: 16px 0;
+}
+
+.resumo-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.valor-destaque {
+    font-size: 1.4rem;
+    color: var(--gold, #d4af37);
+    font-weight: 800;
+}
+
+/* ==========================================================================
+   Tela de Status de Pagamento (PIX / Cartão)
+   ========================================================================== */
+
+.payment-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.card-payment {
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
+    border-radius: 20px;
+    padding: 32px;
+    text-align: center;
+}
+
+.status-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+}
+
+.status-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.status-approved { color: #4ade80; }
+.status-pending { color: #fbbf24; }
+.status-white { color: #ffffff; }
+
+.status-desc, .status-desc-sm {
+    color: var(--text-muted, #9ca3af);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+/* Badge de Checagem do PIX */
+.status-pix-badge {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.status-pix-badge.approved {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* QR Code & Copia e Cola */
+.pix-qr-container {
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 16px;
+    display: inline-block;
+    margin-bottom: 24px;
+}
+
+.pix-qr-image {
+    width: 200px;
+    height: 200px;
+    display: block;
+}
+
+.copia-cola-wrapper {
+    text-align: left;
+    margin-bottom: 24px;
+}
+
+.copia-cola-label {
+    display: block;
+    font-size: 0.85rem;
+    color: #d1d5db;
+    margin-bottom: 8px;
+}
+
+.pix-copy-box {
+    display: flex;
+    gap: 8px;
+}
+
+.pix-code-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #a1a1aa;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.btn-copy-pix {
+    padding: 10px 18px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter 0.2s;
+}
+
+.btn-copy-pix.copied {
+    background: #16a34a;
+}
+
+/* Card Resumo */
+.order-summary-card {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.order-summary-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--gold, #d4af37);
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.order-summary-title {
+    font-size: 1.1rem;
+    color: #ffffff;
+    margin-bottom: 6px;
+}
+
+.order-summary-info {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    margin-bottom: 12px;
+}
+
+.order-summary-price {
+    display: block;
+    font-size: 1rem;
+    color: #ffffff;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 10px;
+}
+
+.payment-notice {
+    font-size: 0.82rem;
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
+.btn-finish-checkout {
+    display: block;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn-finish-checkout:hover {
+    background: rgba(255, 255, 255, 0.15);
 }
