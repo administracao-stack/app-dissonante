@@ -12,7 +12,7 @@
     <div class="container">
 
         <!-- Banner de Aviso no Checkout -->
-        <div class="demo-alert">
+        <div class="demo-alert" style="background-color: #fff3cd; color: #856404; border: 2px dashed #ffebaa; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; text-align: center; margin-bottom: 20px; font-family: sans-serif;">
             <strong>⚠️ ATENÇÃO - PÁGINA EM HOMOLOGAÇÃO:</strong> Esta página está em testes de integração de pagamento. As cobranças geradas funcionam normalmente na API, porém <u>nenhum ingresso válido será emitido</u> para esta transação.
         </div>
 
@@ -21,7 +21,10 @@
                 <h1 class="checkout-titulo">Finalize sua Compra</h1>
 
                 <form action="{{ url_for('checkout') }}" method="POST" id="form-checkout">
-                    <input type="hidden" name="lote_id" value="{{ lote.id }}">
+                    <!-- Preserva as quantidades selecionadas na tela do evento -->
+                    <input type="hidden" name="qty_promocional" value="{{ qty_promo }}">
+                    <input type="hidden" name="qty_lote1" value="{{ qty_lote1 }}">
+                    <input type="hidden" name="qty_lote2" value="{{ qty_lote2 }}">
 
                     <!-- Etapa 1: Dados do Comprador -->
                     <div class="checkout-step">
@@ -55,14 +58,6 @@
                                 <input type="tel" id="telefone" name="telefone" required class="form-control" 
                                        placeholder="(85) 90000-0000" 
                                        value="{{ usuario.telefone if usuario and usuario.telefone else '' }}">
-                            </div>
-                            <div class="form-group">
-                                <label for="quantidade">Quantidade de Ingressos:</label>
-                                <select name="quantidade" id="quantidade" class="form-control">
-                                    {% for i in range(1, 6) %}
-                                        <option value="{{ i }}">{{ i }}x Ingresso{% if i > 1 %}s{% endif %}</option>
-                                    {% endfor %}
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -144,18 +139,21 @@
                         <span>Evento:</span>
                         <strong>Marevibes Halloween 2026</strong>
                     </div>
-                    <div class="resumo-item">
-                        <span>Setor:</span>
-                        <strong>{{ lote.nome }}</strong>
+
+                    <hr>
+
+                    <!-- Lista dinâmica de ingressos selecionados -->
+                    {% for item in ordem_compra %}
+                    <div class="resumo-item" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span>{{ item.quantidade }}x {{ item.nome }}</span>
+                        <strong>R$ {{ "%.2f"|format(item.subtotal)|replace('.', ',') }}</strong>
                     </div>
-                    <div class="resumo-item">
-                        <span>Preço Unitário:</span>
-                        <strong id="preco-unitario-display">R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}</strong>
-                    </div>
+                    {% endfor %}
+
                     <hr>
                     <div class="resumo-total">
                         <span>Total:</span>
-                        <strong id="total-display" class="valor-destaque">R$ {{ "%.2f"|format(lote.preco)|replace('.', ',') }}</strong>
+                        <strong id="total-display" class="valor-destaque">R$ {{ "%.2f"|format(total_pedido)|replace('.', ',') }}</strong>
                     </div>
                 </div>
             </div>
