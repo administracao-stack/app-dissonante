@@ -125,11 +125,11 @@
 
 /* Alerta de encerramento de vendas de ingressos */
 .tickets-expired-alert {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 12px;
     text-align: center;
     margin-top: 15px;
 }
@@ -205,7 +205,7 @@
     gap: 12px;
 }
 
-/* Botões (+ e -) no tom azul/gradiente oficial */
+/* Botões (+ e -) */
 .btn-qty {
     width: 32px;
     height: 32px;
@@ -239,7 +239,7 @@
     font-size: 1rem;
 }
 
-/* Rodapé do Card de Ingressos e Botão Principal */
+/* Rodapé do Card de Ingressos */
 .tickets-footer {
     margin-top: 24px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -264,6 +264,8 @@
     width: 100%;
 }
 
+/* Estilo unificado para o Botão Principal e ID do Carrinho */
+#btn-add-cart,
 .btn-primary {
     display: flex;
     align-items: center;
@@ -277,13 +279,20 @@
     border-radius: 10px;
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-    transition: filter 0.2s ease, opacity 0.2s ease;
+    transition: filter 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
 }
 
+#btn-add-cart:hover:not(:disabled),
 .btn-primary:hover:not(:disabled) {
     filter: brightness(1.15);
 }
 
+#btn-add-cart:active:not(:disabled),
+.btn-primary:active:not(:disabled) {
+    transform: scale(0.99);
+}
+
+#btn-add-cart:disabled,
 .btn-primary:disabled {
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.3);
@@ -295,51 +304,129 @@
    Página do Carrinho de Compras
    ========================================================================== */
 
-.cart-items-list {
-    display: flex;
-    flex-direction: column;
+.cart-container {
+    max-width: 900px;
+    margin: 40px auto;
 }
 
-.cart-item-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0;
+.cart-limit-notice {
+    font-size: 0.88rem;
+    color: var(--text-muted, #a1a1aa);
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+.cart-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+}
+
+.cart-table th,
+.cart-table td {
+    padding: 14px 12px;
+    color: var(--text-light, #ffffff);
+}
+
+.cart-table-header-row {
+    border-bottom: 2px solid var(--border-dark, rgba(255, 255, 255, 0.15));
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--text-muted, #a1a1aa);
+}
+
+.cart-table-row {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.cart-item-row h4 {
-    margin: 0 0 4px 0;
-    font-size: 1.05rem;
+.cart-table-row strong {
     color: #ffffff;
+    font-size: 1rem;
 }
 
-.cart-item-row small {
+.cart-table-row small {
     color: var(--text-muted, #a1a1aa);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
 }
 
-.cart-item-price {
-    text-align: right;
-    font-size: 1.1rem;
+.btn-remove-cart {
+    color: #ef4444;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-remove-cart:hover {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+
+.cart-footer-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cart-footer-actions h3 {
+    font-size: 1.2rem;
+    color: #ffffff;
+    margin: 0;
+}
+
+.cart-total-price {
     color: var(--gold, #d4af37);
+    font-weight: 800;
+    font-size: 1.4rem;
+    margin-left: 8px;
+}
+
+.btn-checkout-action {
+    padding: 12px 28px;
+    font-size: 1rem;
     font-weight: 700;
 }
 
-.cart-summary {
-    margin-top: 28px;
-    text-align: right;
-}
-
-.empty-state-wrapper {
+.cart-empty-state {
     text-align: center;
     padding: 48px 0;
+    color: var(--text-muted, #a1a1aa);
 }
 
-.empty-state {
-    color: var(--text-muted, #a1a1aa);
+.cart-empty-state p {
     font-size: 1.05rem;
     margin-bottom: 16px;
+}
+
+.btn-empty-cart-action {
+    display: inline-block;
+    text-decoration: none;
+}
+
+/* Responsividade do Carrinho em Dispositivos Móveis */
+@media (max-width: 640px) {
+    .cart-table th:nth-child(2),
+    .cart-table td:nth-child(2) {
+        display: none; /* Oculta a coluna de Preço Unitário no celular para economizar espaço */
+    }
+
+    .cart-footer-actions {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .btn-checkout-action {
+        width: 100%;
+    }
 }
 
 /* ==========================================================================
@@ -557,6 +644,12 @@
 .resumo-item {
     font-size: 0.92rem;
     color: #a1a1aa;
+}
+
+.resumo-item-dynamic {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
 }
 
 .resumo-card hr {
