@@ -60,7 +60,7 @@
                     </p>
                 </div>
             {% else %}
-                <form action="{{ url_for('checkout') }}" method="POST" id="tickets-form">
+                <form action="{{ url_for('adicionar_carrinho_multiplo') }}" method="POST" id="tickets-form">
                     
                     <input type="hidden" name="evento_id" value="marevibes_halloween">
 
@@ -112,8 +112,8 @@
                             <span>Total</span>
                             <strong id="display-total">R$ 0,00</strong>
                         </div>
-                        <button type="submit" id="btn-checkout" class="btn-primary btn-block" disabled>
-                            Ir para pagamento
+                        <button type="submit" id="btn-add-cart" class="btn-primary btn-block" disabled>
+                            🛒 Adicionar ao Carrinho
                         </button>
                     </div>
 
@@ -157,15 +157,15 @@
 
         document.getElementById('display-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
         
-        const btnCheckout = document.getElementById('btn-checkout');
-        btnCheckout.disabled = total === 0;
+        const btnAddCart = document.getElementById('btn-add-cart');
+        btnAddCart.disabled = total === 0;
     }
 
     document.getElementById('tickets-form').addEventListener('submit', function(e) {
         const totalIngressos = quantities.promo + quantities.lote1 + quantities.lote2;
         if (totalIngressos === 0) {
             e.preventDefault();
-            alert('Selecione pelo menos um ingresso para continuar.');
+            alert('Selecione pelo menos um ingresso para adicionar ao carrinho.');
         }
     });
 </script>
