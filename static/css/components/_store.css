@@ -246,6 +246,23 @@
     font-weight: 600;
 }
 
+/* Estilos de Ícones SVG */
+.icon-heart {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.icon-calendar {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
 /* Botão de Ação do Card de Favoritos */
 .btn-ticket {
     display: inline-flex;
@@ -265,6 +282,10 @@
     filter: brightness(1.15);
 }
 
+.btn-ticket-empty {
+    max-width: 200px;
+}
+
 /* Estado Vazio */
 .empty-state-wrapper {
     text-align: center;
@@ -276,6 +297,11 @@
 }
 
 .empty-icon {
+    width: 48px;
+    height: 48px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
     color: var(--text-muted, #a1a1aa);
     opacity: 0.5;
 }
