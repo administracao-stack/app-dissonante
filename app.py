@@ -1097,13 +1097,19 @@ def favoritar():
     if not evento_id:
         return jsonify({'status': 'error', 'message': 'ID do evento ausente'}), 400
 
-    # Dicionário de mapeamento de eventos conhecidos e suas rotas/endpoints
+    # Dicionário de mapeamento de eventos conhecidos com rotas/endpoints dedicados
     eventos_map = {
         'marevibes': {
             'id': 'marevibes',
             'nome': 'MaréVibes Halloween 2026',
             'data': '31 OUT 2026',
-            'endpoint': 'evento_marevibes'  # Endpoint fixo do evento atual
+            'endpoint': 'evento_marevibes' # Aponta para @app.route('/evento/marevibes-halloween')
+        },
+        'marevibes_halloween': {
+            'id': 'marevibes_halloween',
+            'nome': 'MaréVibes Halloween 2026',
+            'data': '31 OUT 2026',
+            'endpoint': 'evento_marevibes'
         }
     }
 
@@ -1115,7 +1121,7 @@ def favoritar():
             'id': str(evento_db.id),
             'nome': evento_db.titulo,
             'data': evento_db.data_hora.strftime('%d %b %Y').upper() if evento_db.data_hora else 'Em breve',
-            'endpoint': 'detalhes_evento', # Rota genérica para eventos dinâmicos
+            'endpoint': 'detalhes_evento', # Nome da rota genérica para eventos com parâmetro slug
             'slug': evento_db.slug
         }
     else:
