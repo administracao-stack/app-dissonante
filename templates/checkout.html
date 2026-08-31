@@ -144,7 +144,7 @@
 
                     <!-- Lista dinâmica de ingressos selecionados -->
                     {% for item in ordem_compra %}
-                    <div class="resumo-item" style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <div class="resumo-item resumo-item-dynamic">
                         <span>{{ item.quantidade }}x {{ item.nome }}</span>
                         <strong>R$ {{ "%.2f"|format(item.subtotal)|replace('.', ',') }}</strong>
                     </div>
