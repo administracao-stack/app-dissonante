@@ -24,8 +24,14 @@
 
         if (!form) return;
 
-        // Inicializa o Mercado Pago
-        const mp = new MercadoPago('APP_USR-64555c4f-1ece-4523-9a63-cfb8ca150790');
+        // Inicializa o Mercado Pago dinamicamente via variável de ambiente indevida pelo Flask
+        const mpPublicKey = "{{ mp_public_key }}";
+        
+        if (!mpPublicKey) {
+            console.warn('A chave MP_PUBLIC_KEY não está configurada no ambiente.');
+        }
+
+        const mp = new MercadoPago(mpPublicKey);
 
         form.addEventListener('submit', async function (e) {
             const metodoInput = document.querySelector('input[name="metodo_pagamento"]:checked');
@@ -35,6 +41,37 @@
             if (metodo === 'pix') {
                 return;
             }
+
+            // Se for Cartão, intercepta o submit para gerar o token
+            e.preventDefault();
+
+            try {
+                const cardExpirationValue = document.getElementById('cardExpiration').value.split('/');
+                const cardToken = await mp.createCardToken({
+                    cardNumber: document.getElementById('cardNumber').value.replace(/\s+/g, ''),
+                    cardholderName: document.getElementById('cardholderName').value,
+                    cardExpirationMonth: cardExpirationValue[0],
+                    cardExpirationYear: '20' + cardExpirationValue[1],
+                    securityCode: document.getElementById('securityCode').value,
+                    identificationType: 'CPF',
+                    identificationNumber: document.getElementById('cpf').value.replace(/\D/g, '')
+                });
+
+                document.getElementById('token').value = cardToken.id;
+                document.getElementById('payment_method_id').value = cardToken.payment_method_id;
+
+                if (cardToken.issuer_id) {
+                    document.getElementById('issuer_id').value = cardToken.issuer_id;
+                }
+
+                form.submit();
+
+            } catch (error) {
+                alert('Erro ao validar os dados do cartão. Verifique os campos e tente novamente.');
+            }
+        });
+    });
+</script>            }
 
             // Se for Cartão, intercepta o submit para gerar o token
             e.preventDefault();
