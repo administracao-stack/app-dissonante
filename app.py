@@ -1097,22 +1097,45 @@ def favoritar():
     if not evento_id:
         return jsonify({'status': 'error', 'message': 'ID do evento ausente'}), 400
 
+    # Dicionário de mapeamento de eventos conhecidos e suas rotas/endpoints
     eventos_map = {
         'marevibes': {
             'id': 'marevibes',
             'nome': 'MaréVibes Halloween 2026',
-            'data': '31 OUT 2026'
+            'data': '31 OUT 2026',
+            'endpoint': 'evento_marevibes'  # Endpoint fixo do evento atual
         }
     }
 
+    # Tenta obter do banco de dados caso seja um evento dinâmico por ID ou slug
+    evento_db = Evento.query.filter((Evento.id == evento_id) | (Evento.slug == evento_id)).first()
+
+    if evento_db:
+        evento_info = {
+            'id': str(evento_db.id),
+            'nome': evento_db.titulo,
+            'data': evento_db.data_hora.strftime('%d %b %Y').upper() if evento_db.data_hora else 'Em breve',
+            'endpoint': 'detalhes_evento', # Rota genérica para eventos dinâmicos
+            'slug': evento_db.slug
+        }
+    else:
+        evento_info = eventos_map.get(
+            evento_id, 
+            {
+                'id': evento_id, 
+                'nome': f'Evento {evento_id}', 
+                'data': 'Em breve',
+                'endpoint': 'index'
+            }
+        )
+
     favoritos = session.get('favoritos', [])
-    item_existente = next((item for item in favoritos if isinstance(item, dict) and item.get('id') == evento_id), None)
+    item_existente = next((item for item in favoritos if isinstance(item, dict) and item.get('id') == evento_info['id']), None)
 
     if item_existente:
         favoritos.remove(item_existente)
         favoritado = False
     else:
-        evento_info = eventos_map.get(evento_id, {'id': evento_id, 'nome': evento_id, 'data': 'Em breve'})
         favoritos.append(evento_info)
         favoritado = True
 
