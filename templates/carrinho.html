@@ -47,19 +47,19 @@
             </table>
 
             <div class="cart-footer-actions">
-                <h3>Total: <span class="cart-total-price">R$ {{ "%.2f"|format(total)|replace('.', ',') }}</span></h3>
-                <form action="{{ url_for('checkout') }}" method="GET">
-                    <button type="submit" class="btn-primary btn-checkout-action">
-                        Avançar para Checkout →
-                    </button>
-                </form>
+            <h3>Total: <span class="cart-total-price">R$ {{ "%.2f"|format(total)|replace('.', ',') }}</span></h3>
+                <div class="cart-buttons-group">
+                    <form action="{{ url_for('limpar_carrinho') }}" method="POST">
+                        <button type="submit" class="btn-clear-cart" onclick="return confirm('Tem certeza que deseja esvaziar seu carrinho?');">
+                            Limpar Carrinho
+                        </button>
+                    </form>
+                    <form action="{{ url_for('checkout') }}" method="GET">
+                        <button type="submit" class="btn-primary btn-checkout-action">
+                            Avançar para Checkout →
+                        </button>
+                    </form>
+                </div>
             </div>
-        {% else %}
-            <div class="cart-empty-state">
-                <p>Seu carrinho está vazio no momento.</p>
-                <a href="{{ url_for('index') }}" class="btn-primary btn-empty-cart-action">Ver Eventos Disponíveis</a>
-            </div>
-        {% endif %}
-    </div>
 </main>
 {% endblock %}
