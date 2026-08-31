@@ -856,6 +856,11 @@ def remover_carrinho(lote_id):
         flash('Item removido do carrinho.', 'info')
     return redirect(url_for('ver_carrinho'))
 
+@app.route('/carrinho/limpar', methods=['POST'])
+def limpar_carrinho():
+    session.pop('carrinho', None)
+    return redirect(url_for('ver_carrinho'))
+
 @app.route('/webhook/mercadopago', methods=['POST'])
 def webhook_mercadopago():
     if not sdk:
