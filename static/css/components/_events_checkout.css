@@ -388,6 +388,32 @@
     margin-left: 8px;
 }
 
+/* Container flexível para os botões alinhados */
+.cart-buttons-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Botão Secundário: Limpar Carrinho */
+.btn-clear-cart {
+    padding: 12px 20px;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-clear-cart:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #f87171;
+}
+
 .btn-checkout-action {
     padding: 12px 28px;
     font-size: 1rem;
@@ -424,6 +450,13 @@
         text-align: center;
     }
 
+    .cart-buttons-group {
+        width: 100%;
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+
+    .btn-clear-cart,
     .btn-checkout-action {
         width: 100%;
     }
