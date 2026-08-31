@@ -22,6 +22,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from sqlalchemy import or_
 
 # Carrega as variáveis de ambiente local (.env)
 load_dotenv()
@@ -1085,58 +1086,80 @@ def deletar_conta():
         return redirect(url_for('configuracoes'))
 
 @app.route('/meus-favoritos')
+@cliente_required
 def meus_favoritos():
     return render_template('favoritos.html')
 
 @app.route('/favoritar', methods=['POST'])
-@cliente_required
 def favoritar():
-    data = request.get_json(silent=True) or {}
-    evento_id = data.get('evento_id')
+    # Checagem manual de autenticação para chamadas de API (AJAX/Fetch)
+    if 'usuario_id' not in session:
+        return jsonify({
+            'status': 'error', 
+            'message': 'Autenticação necessária'
+        }), 401
 
-    if not evento_id:
+    data = request.get_json(silent=True) or {}
+    evento_id_raw = data.get('evento_id')
+
+    if not evento_id_raw:
         return jsonify({'status': 'error', 'message': 'ID do evento ausente'}), 400
 
-    # Dicionário de mapeamento de eventos conhecidos com rotas/endpoints dedicados
+    evento_id_str = str(evento_id_raw).strip()
+
+    # Dicionário de mapeamento para eventos legados/estáticos
     eventos_map = {
         'marevibes': {
             'id': 'marevibes',
             'nome': 'MaréVibes Halloween 2026',
             'data': '31 OUT 2026',
-            'endpoint': 'evento_marevibes' # Aponta para @app.route('/evento/marevibes-halloween')
+            'endpoint': 'evento_marevibes',
+            'slug': 'marevibes'
         },
         'marevibes_halloween': {
             'id': 'marevibes_halloween',
             'nome': 'MaréVibes Halloween 2026',
             'data': '31 OUT 2026',
-            'endpoint': 'evento_marevibes'
+            'endpoint': 'evento_marevibes',
+            'slug': 'marevibes-halloween'
         }
     }
 
-    # Tenta obter do banco de dados caso seja um evento dinâmico por ID ou slug
-    evento_db = Evento.query.filter((Evento.id == evento_id) | (Evento.slug == evento_id)).first()
+    # Busca no banco de dados por ID numérico ou Slug
+    filtros = [Evento.slug == evento_id_str]
+    if evento_id_str.isdigit():
+        filtros.append(Evento.id == int(evento_id_str))
+
+    evento_db = Evento.query.filter(or_(*filtros)).first()
 
     if evento_db:
         evento_info = {
             'id': str(evento_db.id),
             'nome': evento_db.titulo,
             'data': evento_db.data_hora.strftime('%d %b %Y').upper() if evento_db.data_hora else 'Em breve',
-            'endpoint': 'detalhes_evento', # Nome da rota genérica para eventos com parâmetro slug
+            'endpoint': 'detalhes_evento',
             'slug': evento_db.slug
         }
     else:
         evento_info = eventos_map.get(
-            evento_id, 
+            evento_id_str, 
             {
-                'id': evento_id, 
-                'nome': f'Evento {evento_id}', 
+                'id': evento_id_str, 
+                'nome': f'Evento {evento_id_str}', 
                 'data': 'Em breve',
-                'endpoint': 'index'
+                'endpoint': 'index',
+                'slug': ''
             }
         )
 
     favoritos = session.get('favoritos', [])
-    item_existente = next((item for item in favoritos if isinstance(item, dict) and item.get('id') == evento_info['id']), None)
+    
+    # Busca garantindo comparação entre strings para evitar duplicação no array
+    target_id = str(evento_info['id'])
+    item_existente = next(
+        (item for item in favoritos if isinstance(item, dict) and str(item.get('id')) == target_id), 
+        None
+    )
 
     if item_existente:
         favoritos.remove(item_existente)
