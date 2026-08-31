@@ -1084,6 +1084,10 @@ def deletar_conta():
         flash('Não foi possível excluir sua conta no momento.', 'danger')
         return redirect(url_for('configuracoes'))
 
+@app.route('/meus-favoritos')
+def meus_favoritos():
+    return render_template('favoritos.html')
+
 @app.route('/favoritar', methods=['POST'])
 @cliente_required
 def favoritar():
