@@ -37,11 +37,11 @@
                         </p>
                     </div>
 
-                    {% if item.slug %}
-                        <a href="{{ url_for(item.endpoint|default('index'), slug=item.slug) }}" class="btn-ticket">
+                   {% if item.get('slug') and item.get('endpoint') %}
+                        <a href="{{ url_for(item.endpoint, slug=item.slug) }}" class="btn-ticket">
                             Ver Evento
                         </a>
-                    {% elif item.endpoint %}
+                    {% elif item.get('endpoint') %}
                         <a href="{{ url_for(item.endpoint) }}" class="btn-ticket">
                             Ver Evento
                         </a>
