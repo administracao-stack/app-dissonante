@@ -19,7 +19,7 @@
                             class="btn-favorite active" 
                             data-evento-id="{{ item.id }}" 
                             aria-label="Remover dos favoritos">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <svg class="icon-heart">
                             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                         </svg>
                     </button>
@@ -27,7 +27,7 @@
                     <div class="ticket-card-content">
                         <h3 class="card-title">{{ item.nome }}</h3>
                         <p class="ticket-date">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg class="icon-calendar">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                                 <line x1="16" y1="2" x2="16" y2="6"></line>
                                 <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -37,19 +37,29 @@
                         </p>
                     </div>
 
-                    <a href="{{ url_for('evento_marevibes') }}" class="btn-ticket">
-                        Ver Evento
-                    </a>
+                    {% if item.slug %}
+                        <a href="{{ url_for(item.endpoint|default('index'), slug=item.slug) }}" class="btn-ticket">
+                            Ver Evento
+                        </a>
+                    {% elif item.endpoint %}
+                        <a href="{{ url_for(item.endpoint) }}" class="btn-ticket">
+                            Ver Evento
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('index') }}" class="btn-ticket">
+                            Ver Evento
+                        </a>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>
     {% else %}
         <div class="empty-state-wrapper">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="empty-icon">
+            <svg class="empty-icon">
                 <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
             </svg>
             <p class="empty-state">Sua lista de favoritos está vazia.</p>
-            <a href="{{ url_for('index') }}#eventos" class="btn-ticket">
+            <a href="{{ url_for('index') }}#eventos" class="btn-ticket btn-ticket-empty">
                 Explorar Eventos
             </a>
         </div>
