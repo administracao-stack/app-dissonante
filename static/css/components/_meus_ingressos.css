@@ -1,0 +1,282 @@
+/* ==========================================================================
+   Página: Meus Ingressos (meus_ingressos.html)
+   ========================================================================== */
+
+.ingressos-main {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 24px;
+    min-height: 60vh;
+}
+
+.panel-header {
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
+    padding-bottom: 16px;
+}
+
+.panel-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-light, #ffffff);
+    margin-bottom: 8px;
+}
+
+.panel-subtitle {
+    font-size: 1rem;
+    color: var(--text-muted, #a1a1aa);
+}
+
+/* --- Grid de Ingressos --- */
+.grid-ingressos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+/* --- Card de Ingresso --- */
+.card-ingresso {
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform var(--transition-fast, 0.2s ease), border-color var(--transition-fast, 0.2s ease);
+}
+
+.card-ingresso:hover {
+    transform: translateY(-4px);
+    border-color: var(--gold, #d4af37);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.ingresso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.evento-titulo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-light, #ffffff);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.ingresso-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.user-info {
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.user-info.titular {
+    color: var(--gold, #d4af37);
+    font-weight: 600;
+}
+
+.ticket-sector {
+    color: var(--text-muted, #a1a1aa);
+    font-size: 0.875rem;
+}
+
+.codigo-texto {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-muted, #a1a1aa);
+    letter-spacing: 1px;
+    word-break: break-all;
+}
+
+.ticket-date {
+    font-size: 0.8rem;
+    color: var(--text-muted, #71717a);
+    display: block;
+    margin-top: 4px;
+}
+
+/* --- Badges de Status --- */
+.status-tag {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.status-valido {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-utilizado {
+    background-color: rgba(113, 113, 122, 0.15);
+    color: #a1a1aa;
+    border: 1px solid rgba(113, 113, 122, 0.3);
+}
+
+/* --- Botões de Ação --- */
+.btn-open-qr {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.btn-open-qr:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+/* --- Estado Vazio --- */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-light, #ffffff);
+    margin: 0;
+}
+
+.empty-state-text {
+    font-size: 1rem;
+    color: var(--text-muted, #a1a1aa);
+    margin: 0;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: filter 0.2s ease;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.15);
+}
+
+/* --- Modal QR Code --- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-card {
+    position: relative;
+    background-color: var(--bg-card, #111827);
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.15));
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+}
+
+.btn-close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted, #a1a1aa);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.btn-close-modal:hover {
+    color: #ffffff;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-light, #ffffff);
+    margin: 0 0 4px 0;
+}
+
+.modal-subtitle {
+    font-size: 0.9rem;
+    color: var(--gold, #d4af37);
+    margin: 0 0 20px 0;
+}
+
+.modal-qr-container {
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.modal-qr-img {
+    width: 200px;
+    height: 200px;
+    display: block;
+}
+
+.modal-code {
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--text-muted, #a1a1aa);
+    margin: 0 0 12px 0;
+    word-break: break-all;
+}
+
+.modal-instruction {
+    font-size: 0.8rem;
+    color: var(--text-muted, #71717a);
+    margin-top: 16px;
+}
