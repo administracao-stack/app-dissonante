@@ -31,8 +31,9 @@
                     let actionName = form.getAttribute('data-recaptcha-action');
                     if (!actionName) {
                         const actionUrl = form.getAttribute('action') || window.location.pathname;
-                        actionName = actionUrl.split('/').filter(Boolean).pop() || 'submit';
-                        actionName = actionName.replace(/[^a-zA-Z0-9_]/g, '_'); // Sanitiza o nome da ação para o Google
+                        const cleanPath = actionUrl.split('?')[0]; // Remove query params (?email=...)
+                        actionName = cleanPath.split('/').filter(Boolean).pop() || 'submit';
+                        actionName = actionName.replace(/[^a-zA-Z0-9_]/g, '_');
                     }
 
                     grecaptcha.ready(function () {
