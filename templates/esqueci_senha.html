@@ -2,12 +2,6 @@
 
 {% block title %}Recuperar Senha | Dissonante Experiências{% endblock %}
 
-{% block extra_head %}
-    {% if recaptcha_site_key %}
-    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
-    {% endif %}
-{% endblock %}
-
 {% block content %}
 <div class="container container-auth">
     <div class="auth-card">
@@ -21,7 +15,7 @@
             {% endif %}
         {% endwith %}
 
-        <form action="{{ url_for('esqueci_senha') }}" method="POST" id="form-esqueci-senha">
+        <form action="{{ url_for('esqueci_senha') }}" method="POST" id="form-esqueci-senha" data-recaptcha-action="esqueci_senha">
             <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
 
             {% if email %}
@@ -71,14 +65,6 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.innerText = 'Reenviar Link de Recuperação';
         }
     }, 1000);
-});
-{% endif %}
-
-{% if recaptcha_site_key %}
-grecaptcha.ready(function() {
-    grecaptcha.execute('{{ recaptcha_site_key }}', {action: 'esqueci_senha'}).then(function(token) {
-        document.getElementById('g-recaptcha-response').value = token;
-    });
 });
 {% endif %}
 </script>
