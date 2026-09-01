@@ -1576,7 +1576,7 @@ def trocar_lote_ativo(lote_id):
     flash(f'Lote ativo alterado para: {lote_alvo.nome} (R$ {lote_alvo.preco:.2f})', 'success')
     return redirect(url_for('admin_dashboard'))
 
-@app.route('/admin/validar', methods=['GET', 'POST'], endpoint='validar_ingresso')
+@app.route('/admin/validar', methods=['GET', 'POST'])
 @admin_required
 def painel_validacao():
     resultado = None
