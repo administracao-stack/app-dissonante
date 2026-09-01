@@ -14,6 +14,7 @@
 @import url('./components/_admin.css');
 @import url('./components/_auth.css');
 @import url('./components/_store.css');
+@import url('./components/_meus_ingressos.css');
 
 /* 3. Eventos, Checkout & Institucional */
 @import url('./components/_events_checkout.css');
