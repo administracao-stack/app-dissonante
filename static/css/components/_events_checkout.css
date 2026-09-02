@@ -705,6 +705,29 @@
     font-weight: 800;
 }
 
+/* Timer Regressivo de Reserva do Checkout
+
+.resumo-timer-card {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.timer-label {
+    font-size: 0.85rem;
+    color: #3730a3;
+    display: block;
+    font-weight: 600;
+}
+
+.timer-display {
+    font-size: 1.4rem;
+    color: #4338ca;
+}
+
 /* ==========================================================================
    Tela de Status de Pagamento (PIX / Cartão)
    ========================================================================== */
