@@ -11,7 +11,7 @@
 <main class="checkout-main">
     <div class="container">
 
-        <!-- Banner de Aviso no Checkout -->
+        <!-- Banner de Aviso no Checkout (Preservado conforme solicitado) -->
         <div class="demo-alert" style="background-color: #fff3cd; color: #856404; border: 2px dashed #ffebaa; padding: 12px 16px; border-radius: 8px; font-size: 0.9rem; text-align: center; margin-bottom: 20px; font-family: sans-serif;">
             <strong>⚠️ ATENÇÃO - PÁGINA EM HOMOLOGAÇÃO:</strong> Esta página está em testes de integração de pagamento. As cobranças geradas funcionam normalmente na API, porém <u>nenhum ingresso válido será emitido</u> para esta transação.
         </div>
@@ -133,6 +133,13 @@
 
             <!-- Resumo do Pedido -->
             <div class="checkout-resumo">
+
+                <!-- TIMER DE RESERVA DA COMPRA -->
+                <div class="resumo-timer-card">
+                    <span class="timer-label">⏱️ Seus ingressos estão reservados por:</span>
+                    <strong id="timer-reserva" class="timer-display">15:00</strong>
+                </div>
+
                 <div class="resumo-card">
                     <h3>Resumo do Pedido</h3>
                     <div class="resumo-item">
