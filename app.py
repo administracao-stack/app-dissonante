@@ -23,6 +23,7 @@ from sqlalchemy.orm import joinedload
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from sqlalchemy import or_
+from flask_migrate import Migrate
 
 # Carrega as variáveis de ambiente local (.env)
 load_dotenv()
@@ -56,7 +57,9 @@ if database_url:
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///dev.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Instanciação correta das extensões
 db = SQLAlchemy(app)
+migrate = Migrate(app, db, render_as_batch=True)
 
 # --------------------------------------------------------------------------
 # Configuração do Mercado Pago
@@ -79,14 +82,13 @@ def inject_globals():
     }
     ambiente_teste = not MERCADOPAGO_TOKEN or MERCADOPAGO_TOKEN.startswith('TEST-')
     
-    # Injeta a chave pública do reCAPTCHA v3 para os templates HTML
     recaptcha_site_key = os.getenv('RECAPTCHA_SITE_KEY', '')
     
     return dict(
         evento=evento_default, 
         ambiente_teste=ambiente_teste,
         recaptcha_site_key=recaptcha_site_key,
-        mp_public_key=MP_PUBLIC_KEY, # Passa a chave pública para todos os templates
+        mp_public_key=MP_PUBLIC_KEY,
         vendas_encerradas=vendas_encerradas()
     )
 
@@ -114,7 +116,7 @@ class Evento(db.Model):
     __tablename__ = 'eventos'
     
     id = db.Column(db.Integer, primary_key=True)
-    slug = db.Column(db.String(100), unique=True, nullable=False) # ex: 'marevibes-halloween-2026'
+    slug = db.Column(db.String(100), unique=True, nullable=False)
     titulo = db.Column(db.String(150), nullable=False)
     data_hora = db.Column(db.DateTime, nullable=False)
     local = db.Column(db.String(255), nullable=False)
@@ -130,7 +132,7 @@ class Lote(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     evento_id = db.Column(db.Integer, db.ForeignKey('eventos.id'), nullable=True)
-    nome = db.Column(db.String(50), nullable=False) # Ex: "1º Lote", "VIP"
+    nome = db.Column(db.String(50), nullable=False)
     preco = db.Column(db.Float, nullable=False)
     quantidade_total = db.Column(db.Integer, nullable=False)
     ativo = db.Column(db.Boolean, default=True)
@@ -143,10 +145,10 @@ class Pedido(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    pagamento_id = db.Column(db.String(100), unique=True, nullable=True) # ID retornado pelo Mercado Pago
-    status = db.Column(db.String(20), default='pending') # pending, approved, cancelled
+    pagamento_id = db.Column(db.String(100), unique=True, nullable=True)
+    status = db.Column(db.String(20), default='pending')
     total = db.Column(db.Float, nullable=False)
-    metodo_pagamento = db.Column(db.String(20), nullable=True) # pix, credit_card
+    metodo_pagamento = db.Column(db.String(20), nullable=True)
     data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     itens = db.relationship('ItemPedido', backref='pedido', lazy=True, cascade='all, delete-orphan')
@@ -192,10 +194,9 @@ class ReservaCarrinho(db.Model):
     lote = db.relationship('Lote')
 
 def inicializar_banco():
+    """Garante dados iniciais no banco (admins e lotes padrão)."""
     with app.app_context():
         try:
-            db.create_all()
-
             # Configura/Garante o usuário Administrador Principal
             email_admin = "administracao@dissonanteexperiencias.com"
             admin_user = Usuario.query.filter_by(email=email_admin).first()
@@ -216,7 +217,7 @@ def inicializar_banco():
                     admin_user.is_admin = True
                     admin_user.email_verificado = True
 
-            # 1. Lote Promocional (R$ 1,00 - 10 unidades - Ativo)
+            # 1. Lote Promocional
             lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
             if not lote_promo:
                 lote_promo = Lote(nome='Lote Promocional (Teste)', preco=1.00, quantidade_total=10, ativo=True)
@@ -226,7 +227,7 @@ def inicializar_banco():
                 lote_promo.preco = 1.00
                 lote_promo.quantidade_total = 10
 
-            # 2. 1º Lote (R$ 100,00 - 10 unidades)
+            # 2. 1º Lote
             lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
             if not lote_1:
                 lote_1 = Lote(nome='1º Lote', preco=100.00, quantidade_total=10, ativo=False)
@@ -236,7 +237,7 @@ def inicializar_banco():
                 lote_1.preco = 100.00
                 lote_1.quantidade_total = 10
 
-            # 3. 2º Lote (R$ 200,00 - 10 unidades)
+            # 3. 2º Lote
             lote_2 = Lote.query.filter(Lote.nome.ilike('%2º lote%')).first()
             if not lote_2:
                 lote_2 = Lote(nome='2º Lote', preco=200.00, quantidade_total=10, ativo=False)
@@ -249,7 +250,7 @@ def inicializar_banco():
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar banco: {str(e)}")
+            print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar dados padrão: {str(e)}")
 
 # --------------------------------------------------------------------------
 # Decoradores e Funções Auxiliares
@@ -415,7 +416,6 @@ def gerar_ingressos_para_pagamento(pagamento_id, usuario_id, lote_id, quantidade
     if not lote:
         return False
         
-    # Evita duplicação verificando se já existem ingressos gerados para o mesmo ID de pagamento
     if Ingresso.query.filter_by(pagamento_id=str(pagamento_id)).count() > 0:
         return False
 
@@ -439,7 +439,6 @@ def gerar_ingressos_para_pedido(pedido_id, payment_id):
     if not pedido:
         return False
 
-    # Evita duplicação de ingressos para o mesmo pedido
     if Ingresso.query.filter_by(pedido_id=pedido.id).count() > 0:
         return False
 
@@ -489,16 +488,14 @@ def validar_assinatura_mercadopago(req):
 
     return sha256_hash == v1
 
-MINUTOS_RESERVA = 15  # Tempo que o ingresso fica travado no carrinho
+MINUTOS_RESERVA = 15
 
 def limpar_reservas_expiradas():
-    """Remove reservas cujo tempo de retenção expirou."""
     agora = datetime.now(timezone.utc)
     ReservaCarrinho.query.filter(ReservaCarrinho.data_expiracao < agora).delete()
     db.session.commit()
 
 def obter_estoque_disponivel(lote_id, session_id_atual=None):
-    """Calcula ingressos disponíveis: Total - Vendidos - Reservados Ativos por outros."""
     limpar_reservas_expiradas()
     
     lote = Lote.query.get(lote_id)
@@ -507,7 +504,6 @@ def obter_estoque_disponivel(lote_id, session_id_atual=None):
 
     vendidos = Ingresso.query.filter_by(lote_id=lote_id).count()
     
-    # Soma ingressos travados em carrinhos de OUTRAS sessões
     query_reservas = db.session.query(func.sum(ReservaCarrinho.quantidade)).filter(
         ReservaCarrinho.lote_id == lote_id,
         ReservaCarrinho.data_expiracao > datetime.now(timezone.utc)
@@ -772,25 +768,17 @@ Equipe Dissonante Experiências
 
     return render_template('esqueci_senha.html', email=email_preenchido, enviado=enviado)
 
-@app.route('/redefinir-senha', defaults={'token': None}, methods=['GET', 'POST'])
+# --------------------------------------------------------------------------
+# ROTA EXCLUSIVA DE REDEFINIÇÃO DE SENHA VIA TOKEN (E-MAIL)
+# --------------------------------------------------------------------------
 @app.route('/redefinir-senha/<token>', methods=['GET', 'POST'])
 def redefinir_senha(token):
-    usuario = None
+    email = validar_token_recuperacao(token)
+    if not email:
+        flash('O link de redefinição é inválido ou expirou.', 'danger')
+        return redirect(url_for('esqueci_senha'))
 
-    if token is None:
-        if not session.get('usuario_id') or not session.get('autorizado_redefinir_senha'):
-            flash('Acesso não autorizado.', 'danger')
-            return redirect(url_for('configuracoes'))
-            
-        usuario = Usuario.query.get(session['usuario_id'])
-    else:
-        email = validar_token_recuperacao(token)
-        if not email:
-            flash('O link de redefinição é inválido ou expirou.', 'danger')
-            return redirect(url_for('esqueci_senha'))
-
-        usuario = Usuario.query.filter_by(email=email).first()
-
+    usuario = Usuario.query.filter_by(email=email).first()
     if not usuario:
         flash('Usuário não encontrado.', 'danger')
         return redirect(url_for('login'))
@@ -810,12 +798,7 @@ def redefinir_senha(token):
         usuario.senha_hash = generate_password_hash(senha)
         db.session.commit()
 
-        session.pop('autorizado_redefinir_senha', None)
-
-        flash('Sua senha foi redefinida com sucesso!', 'success')
-        
-        if session.get('usuario_id'):
-            return redirect(url_for('perfil'))
+        flash('Sua senha foi redefinida com sucesso! Faça login para continuar.', 'success')
         return redirect(url_for('login'))
 
     return render_template('redefinir_senha.html', token=token)
@@ -837,7 +820,6 @@ def adicionar_carrinho_multiplo():
         flash('Selecione ao menos um ingresso para continuar.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
-    # Garante que a sessão tenha um ID único constante
     if 'session_token' not in session:
         session['session_token'] = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
     
@@ -854,14 +836,12 @@ def adicionar_carrinho_multiplo():
     quantidades = [('promo', qty_promo), ('lote1', qty_lote1), ('lote2', qty_lote2)]
 
     try:
-        # Usa transação com trava de linha para evitar Race Conditions de milissegundos
         for chave, qtd in quantidades:
             if qtd > 0:
                 lote = mapa_lotes.get(chave)
                 if not lote:
                     continue
 
-                # Lock na linha do lote durante a verificação
                 db.session.query(Lote).filter_by(id=lote.id).with_for_update().first()
 
                 disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
@@ -872,7 +852,6 @@ def adicionar_carrinho_multiplo():
                     flash(f'Desculpe, restam apenas {disponiveis} ingressos disponíveis/disponibilizados para o {lote.nome}.', 'danger')
                     return redirect(url_for('evento_marevibes'))
 
-                # Atualiza ou cria a reserva no banco de dados com validade de 15 min
                 expiracao = datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_RESERVA)
                 reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()
 
@@ -888,7 +867,6 @@ def adicionar_carrinho_multiplo():
                     )
                     db.session.add(reserva)
 
-                # Atualiza a sessão local do usuário
                 if str_lote_id in carrinho:
                     carrinho[str_lote_id]['quantidade'] += qtd
                 else:
@@ -915,12 +893,10 @@ def adicionar_carrinho_multiplo():
 def remover_carrinho(lote_id):
     session_id = session.get('session_token')
     
-    # 1. Remove a trava do banco de dados
     if session_id:
         ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote_id).delete()
         db.session.commit()
 
-    # 2. Remove do carrinho da sessão
     carrinho = session.get('carrinho', {})
     str_lote_id = str(lote_id)
     if str_lote_id in carrinho:
@@ -935,12 +911,10 @@ def remover_carrinho(lote_id):
 def limpar_carrinho():
     session_id = session.get('session_token')
     
-    # 1. Remove todas as travas deste usuário no banco
     if session_id:
         ReservaCarrinho.query.filter_by(session_id=session_id).delete()
         db.session.commit()
 
-    # 2. Limpa o carrinho da sessão
     session.pop('carrinho', None)
     flash('Carrinho limpo com sucesso.', 'info')
     return redirect(url_for('ver_carrinho'))
@@ -965,7 +939,6 @@ def webhook_mercadopago():
             if status == "approved":
                 ext_ref = payment_info.get("external_reference", "")
                 
-                # Trata pagamentos via ID do Pedido
                 if ext_ref and ext_ref.startswith("PEDIDO_"):
                     pedido_id = int(ext_ref.split("_")[1])
                     pedido = Pedido.query.get(pedido_id)
@@ -992,7 +965,6 @@ Equipe Dissonante Experiências
 """
                             threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cliente, corpo_cliente)).start()
 
-                # Trata pagamentos diretos via external_reference (usuario_id|lote_id|quantidade)
                 else:
                     usr_id, lote_id, qtd = extrair_ref_externa(ext_ref)
                     if usr_id and lote_id and qtd:
@@ -1140,17 +1112,43 @@ def configuracoes():
 
     return render_template('configuracoes.html', usuario=usuario)
 
-@app.route('/configuracoes/verificar-senha', methods=['POST'])
+# --------------------------------------------------------------------------
+# ROTA EXCLUSIVA PARA ALTERAÇÃO DE SENHA DO USUÁRIO LOGADO
+# --------------------------------------------------------------------------
+@app.route('/configuracoes/alterar-senha', methods=['POST'])
 @cliente_required
-def verificar_senha_para_redefinir():
+def alterar_senha_configuracoes():
     usuario = Usuario.query.get(session['usuario_id'])
-    senha_atual = request.form.get('senha_atual', '')
-
-    if check_password_hash(usuario.senha_hash, senha_atual):
-        session['autorizado_redefinir_senha'] = True
-        return redirect(url_for('redefinir_senha'))
     
-    flash('Senha atual incorreta.', 'danger')
+    senha_atual = request.form.get('senha_atual', '')
+    nova_senha = request.form.get('nova_senha', '')
+    confirmar_senha = request.form.get('confirmar_senha', '')
+
+    # Validar preenchimento dos campos
+    if not senha_atual or not nova_senha or not confirmar_senha:
+        flash('Por favor, preencha todos os campos para alterar a senha.', 'warning')
+        return redirect(url_for('configuracoes'))
+
+    # Validar a senha atual
+    if not check_password_hash(usuario.senha_hash, senha_atual):
+        flash('Sua senha atual está incorreta.', 'danger')
+        return redirect(url_for('configuracoes'))
+
+    # Validar tamanho mínimo
+    if len(nova_senha) < 6:
+        flash('A nova senha deve ter no mínimo 6 caracteres.', 'warning')
+        return redirect(url_for('configuracoes'))
+
+    # Validar coincidência das senhas
+    if nova_senha != confirmar_senha:
+        flash('A nova senha e a confirmação não coincidem.', 'danger')
+        return redirect(url_for('configuracoes'))
+
+    # Atualizar a senha no banco de dados
+    usuario.senha_hash = generate_password_hash(nova_senha)
+    db.session.commit()
+
+    flash('Sua senha foi alterada com sucesso!', 'success')
     return redirect(url_for('configuracoes'))
 
 @app.route('/deletar-conta', methods=['POST'])
@@ -1181,7 +1179,6 @@ def meus_favoritos():
 
 @app.route('/favoritar', methods=['POST'])
 def favoritar():
-    # Checagem manual de autenticação para chamadas de API (AJAX/Fetch)
     if 'usuario_id' not in session:
         return jsonify({
             'status': 'error', 
@@ -1196,7 +1193,6 @@ def favoritar():
 
     evento_id_str = str(evento_id_raw).strip()
 
-    # Dicionário de mapeamento para eventos legados/estáticos
     eventos_map = {
         'marevibes': {
             'id': 'marevibes',
@@ -1214,7 +1210,6 @@ def favoritar():
         }
     }
 
-    # Busca no banco de dados por ID numérico ou Slug
     filtros = [Evento.slug == evento_id_str]
     if evento_id_str.isdigit():
         filtros.append(Evento.id == int(evento_id_str))
@@ -1243,7 +1238,6 @@ def favoritar():
 
     favoritos = session.get('favoritos', [])
     
-    # Busca garantindo comparação entre strings para evitar duplicação no array
     target_id = str(evento_info['id'])
     item_existente = next(
         (item for item in favoritos if isinstance(item, dict) and str(item.get('id')) == target_id), 
@@ -1268,7 +1262,6 @@ def favoritar():
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
-    # EXIGÊNCIA DE LOGIN APENAS NA HORA DE FINALIZAR A COMPRA
     if 'usuario_id' not in session:
         flash('Para finalizar a sua compra, faça login ou crie uma conta.', 'info')
         return redirect(url_for('login'))
@@ -1284,13 +1277,11 @@ def checkout():
         flash('Sua sessão expirou. Faça login novamente.', 'warning')
         return redirect(url_for('login'))
 
-    # Coleta dos itens DIRETAMENTE do carrinho na sessão
     carrinho = session.get('carrinho', {})
     if not carrinho:
         flash('Seu carrinho está vazio. Selecione seus ingressos para continuar.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
-    # VALIDAÇÃO DO LIMITADOR DE INGRESSOS POR CLIENTE
     qtd_no_carrinho = sum(item.get('quantidade', 0) for item in carrinho.values())
     ingressos_ja_comprados = Ingresso.query.filter_by(usuario_id=usuario_id).count()
 
@@ -1332,11 +1323,9 @@ def checkout():
         flash('Nenhum ingresso válido foi encontrado no seu carrinho.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
-    # Processamento do Pagamento quando o formulário dentro do checkout é submetido
     if request.method == 'POST':
         metodo_pagamento = request.form.get('metodo_pagamento', 'pix')
 
-        # Validação de estoque para todos os itens do carrinho
         for item in ordem_compra:
             lote_obj = item['lote']
             vendidos = Ingresso.query.filter_by(lote_id=lote_obj.id).count()
@@ -1345,7 +1334,6 @@ def checkout():
                 flash(f'Restam apenas {disponiveis} ingresso(s) no {lote_obj.nome}.', 'danger')
                 return redirect(url_for('evento_marevibes'))
 
-        # Montagem dos dados do pagador
         nome_completo = (usuario_atual.nome or 'Cliente').strip().split(' ', 1)
         first_name = nome_completo[0]
         last_name = nome_completo[1] if len(nome_completo) > 1 else "Silva"
@@ -1367,7 +1355,6 @@ def checkout():
         qtd_total_ingressos = sum(item['quantidade'] for item in ordem_compra)
 
         try:
-            # 1. CRIAR O REGISTRO DO PEDIDO NO BANCO
             novo_pedido = Pedido(
                 usuario_id=usuario_atual.id,
                 total=float(total_pedido),
@@ -1375,9 +1362,8 @@ def checkout():
                 metodo_pagamento=metodo_pagamento
             )
             db.session.add(novo_pedido)
-            db.session.flush() # Gera o ID do pedido antes de fechar a transação
+            db.session.flush()
 
-            # 2. SALVAR OS ITENS ASSOCIADOS AO PEDIDO
             for item in ordem_compra:
                 item_pedido = ItemPedido(
                     pedido_id=novo_pedido.id,
@@ -1394,7 +1380,6 @@ def checkout():
             flash('Erro interno ao registrar o pedido. Tente novamente.', 'danger')
             return redirect(url_for('evento_marevibes'))
 
-        # Trata Pagamento via PIX
         if metodo_pagamento == 'pix':
             data_expiracao = datetime.now(timezone.utc) + timedelta(minutes=15)
             payment_data = {
@@ -1426,7 +1411,6 @@ def checkout():
                         'qr_code': pix_info.get("qr_code"),
                         'qr_code_base64': pix_info.get("qr_code_base64")
                     }
-                    # Limpa o carrinho após gerar o Pix
                     session.pop('carrinho', None)
                     return redirect(url_for('pagamento'))
                 else:
@@ -1443,7 +1427,6 @@ def checkout():
                 flash('Falha de conexão com o Mercado Pago. Tente novamente.', 'danger')
                 return redirect(url_for('evento_marevibes'))
 
-        # Trata Pagamento via Cartão de Crédito
         elif metodo_pagamento == 'credit_card':
             token = request.form.get('token')
             installments = int(request.form.get('installments', 1))
@@ -1482,7 +1465,6 @@ def checkout():
                     novo_pedido.pagamento_id = str(payment_id)
                     novo_pedido.status = 'approved'
                     
-                    # Emite os ingressos com base na estrutura de itens do Pedido
                     gerar_ingressos_para_pedido(novo_pedido.id, payment_id)
 
                     ingressos = Ingresso.query.filter_by(pedido_id=novo_pedido.id).all()
@@ -1491,7 +1473,7 @@ def checkout():
                     assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
                     corpo_cliente = f"""Olá, {usuario_atual.nome}!
 
-Seu pagamento via Cartão de Crédito referente ao Pedido #{novo_pedido.id} foi confirmado! 🎉
+Seu pagamento via Cartão de Crédito referente ao Pedido #{novo_pedido.id} foi confirmed! 🎉
 
 Detalhes do Pedido:
 --------------------------------------------------
@@ -1516,7 +1498,6 @@ Equipe Dissonante Experiências
                         'quantidade': qtd_total_ingressos
                     }
 
-                    # Limpa o carrinho após aprovação do Cartão
                     session.pop('carrinho', None)
 
                     flash('Pagamento aprovado com sucesso!', 'success')
@@ -1534,7 +1515,6 @@ Equipe Dissonante Experiências
                         'total': float(total_pedido),
                         'quantidade': qtd_total_ingressos
                     }
-                    # Limpa o carrinho após envio para análise
                     session.pop('carrinho', None)
                     flash('Pagamento em análise pela operadora do cartão.', 'info')
                     return redirect(url_for('pagamento'))
@@ -1551,7 +1531,6 @@ Equipe Dissonante Experiências
                 flash('Falha na comunicação com a operadora do cartão.', 'danger')
                 return redirect(url_for('evento_marevibes'))
 
-    # Método GET: Renderiza o resumo do pedido no checkout vindo do carrinho
     return render_template(
         'checkout.html',
         usuario=usuario_atual,
@@ -1690,7 +1669,7 @@ def painel_validacao():
     return render_template('admin/validar.html', resultado=resultado, codigo=codigo_buscado)
 
 # --------------------------------------------------------------------------
-# Inicialização do Banco de Dados
+# Carga dos Dados Iniciais do Banco
 # --------------------------------------------------------------------------
 
 inicializar_banco()
