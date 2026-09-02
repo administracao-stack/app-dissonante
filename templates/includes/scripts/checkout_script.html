@@ -18,15 +18,35 @@
         }
     }
 
-    // Tokenização e envio do formulário via SDK do Mercado Pago
-    document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('form-checkout');
+    // Cronômetro de Trava dos Ingressos (15 minutos)
+    function iniciarTimerReserva() {
+        const display = document.getElementById('timer-reserva');
+        if (!display) return;
 
+        let tempoRestante = 15 * 60; // 15 minutos em segundos
+
+        const interval = setInterval(() => {
+            const minutos = Math.floor(tempoRestante / 60);
+            const segundos = tempoRestante % 60;
+
+            display.textContent = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+
+            if (--tempoRestante < 0) {
+                clearInterval(interval);
+                alert('O tempo de reserva dos seus ingressos expirou! A página será recarregada.');
+                window.location.reload();
+            }
+        }, 1000);
+    }
+
+    // Inicialização da Página
+    document.addEventListener('DOMContentLoaded', function () {
+        iniciarTimerReserva();
+
+        const form = document.getElementById('form-checkout');
         if (!form) return;
 
-        // Inicializa o Mercado Pago dinamicamente via variável de ambiente indevida pelo Flask
         const mpPublicKey = "{{ mp_public_key }}";
-        
         if (!mpPublicKey) {
             console.warn('A chave MP_PUBLIC_KEY não está configurada no ambiente.');
         }
@@ -37,43 +57,10 @@
             const metodoInput = document.querySelector('input[name="metodo_pagamento"]:checked');
             const metodo = metodoInput ? metodoInput.value : 'pix';
 
-            // Se for PIX, envia o formulário normalmente
             if (metodo === 'pix') {
                 return;
             }
 
-            // Se for Cartão, intercepta o submit para gerar o token
-            e.preventDefault();
-
-            try {
-                const cardExpirationValue = document.getElementById('cardExpiration').value.split('/');
-                const cardToken = await mp.createCardToken({
-                    cardNumber: document.getElementById('cardNumber').value.replace(/\s+/g, ''),
-                    cardholderName: document.getElementById('cardholderName').value,
-                    cardExpirationMonth: cardExpirationValue[0],
-                    cardExpirationYear: '20' + cardExpirationValue[1],
-                    securityCode: document.getElementById('securityCode').value,
-                    identificationType: 'CPF',
-                    identificationNumber: document.getElementById('cpf').value.replace(/\D/g, '')
-                });
-
-                document.getElementById('token').value = cardToken.id;
-                document.getElementById('payment_method_id').value = cardToken.payment_method_id;
-
-                if (cardToken.issuer_id) {
-                    document.getElementById('issuer_id').value = cardToken.issuer_id;
-                }
-
-                form.submit();
-
-            } catch (error) {
-                alert('Erro ao validar os dados do cartão. Verifique os campos e tente novamente.');
-            }
-        });
-    });
-</script>            }
-
-            // Se for Cartão, intercepta o submit para gerar o token
             e.preventDefault();
 
             try {
