@@ -1672,7 +1672,9 @@ def painel_validacao():
 # Carga dos Dados Iniciais do Banco
 # --------------------------------------------------------------------------
 
-inicializar_banco()
+#inicializar_banco()
 
 if __name__ == '__main__':
+    with app.app_context():
+        inicializar_banco()
     app.run(debug=False)
