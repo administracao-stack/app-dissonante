@@ -54,6 +54,33 @@
 
         <hr class="settings-divider">
 
+        <!-- Seção de Segurança / Alteração de Senha Direta -->
+        <div class="security-zone">
+            <h3>Redefinição de Senha</h3>
+            <p>Altere sua senha de acesso confirmando sua senha atual abaixo.</p>
+            
+            <form action="{{ url_for('alterar_senha_configuracoes') }}" method="POST" class="settings-form">
+                <div class="auth-group">
+                    <label for="senha_atual">Senha Atual</label>
+                    <input type="password" id="senha_atual" name="senha_atual" required placeholder="Digite sua senha atual">
+                </div>
+
+                <div class="auth-row">
+                    <div class="auth-group">
+                        <label for="nova_senha">Nova Senha</label>
+                        <input type="password" id="nova_senha" name="nova_senha" minlength="6" required placeholder="Mínimo 6 caracteres">
+                    </div>
+
+                    <div class="auth-group">
+                        <label for="confirmar_senha">Confirmar Nova Senha</label>
+                        <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" required placeholder="Repita a nova senha">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save-settings">Atualizar Senha</button>
+            </form>
+        </div>
+
         <!-- Zona de Perigo: Exclusão da Conta -->
         <div class="danger-zone">
             <h3>Excluir Conta</h3>
