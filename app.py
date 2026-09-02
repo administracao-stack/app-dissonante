@@ -180,6 +180,16 @@ class Ingresso(db.Model):
     pedido_id = db.Column(db.Integer, db.ForeignKey('pedidos.id'), nullable=True)
     pagamento_id = db.Column(db.String(100), nullable=True)
 
+class ReservaCarrinho(db.Model):
+    __tablename__ = 'reservas_carrinho'
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.String(100), nullable=False, index=True)
+    lote_id = db.Column(db.Integer, db.ForeignKey('lotes.id'), nullable=False)
+    quantidade = db.Column(db.Integer, nullable=False)
+    data_expiracao = db.Column(db.DateTime, nullable=False, index=True)
+
+    lote = db.relationship('Lote')
 
 def inicializar_banco():
     with app.app_context():
@@ -478,6 +488,36 @@ def validar_assinatura_mercadopago(req):
     sha256_hash = hmac_obj.hexdigest()
 
     return sha256_hash == v1
+
+MINUTOS_RESERVA = 15  # Tempo que o ingresso fica travado no carrinho
+
+def limpar_reservas_expiradas():
+    """Remove reservas cujo tempo de retenção expirou."""
+    agora = datetime.now(timezone.utc)
+    ReservaCarrinho.query.filter(ReservaCarrinho.data_expiracao < agora).delete()
+    db.session.commit()
+
+def obter_estoque_disponivel(lote_id, session_id_atual=None):
+    """Calcula ingressos disponíveis: Total - Vendidos - Reservados Ativos por outros."""
+    limpar_reservas_expiradas()
+    
+    lote = Lote.query.get(lote_id)
+    if not lote:
+        return 0
+
+    vendidos = Ingresso.query.filter_by(lote_id=lote_id).count()
+    
+    # Soma ingressos travados em carrinhos de OUTRAS sessões
+    query_reservas = db.session.query(func.sum(ReservaCarrinho.quantidade)).filter(
+        ReservaCarrinho.lote_id == lote_id,
+        ReservaCarrinho.data_expiracao > datetime.now(timezone.utc)
+    )
+    if session_id_atual:
+        query_reservas = query_reservas.filter(ReservaCarrinho.session_id != session_id_atual)
+
+    reservados = query_reservas.scalar() or 0
+    
+    return max(0, lote.quantidade_total - vendidos - reservados)
 
 @app.route('/style.css')
 def style_fallback():
@@ -789,7 +829,6 @@ def ver_carrinho():
 
 @app.route('/carrinho/adicionar-multiplo', methods=['POST'])
 def adicionar_carrinho_multiplo():
-    # Coleta as quantidades do formulário
     qty_promo = int(request.form.get('qty_promocional', 0))
     qty_lote1 = int(request.form.get('qty_lote1', 0))
     qty_lote2 = int(request.form.get('qty_lote2', 0))
@@ -798,9 +837,14 @@ def adicionar_carrinho_multiplo():
         flash('Selecione ao menos um ingresso para continuar.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
-    lotes_db = Lote.query.all()
+    # Garante que a sessão tenha um ID único constante
+    if 'session_token' not in session:
+        session['session_token'] = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
     
-    # Mapeamento dos lotes no banco
+    session_id = session['session_token']
+    carrinho = session.get('carrinho', {})
+
+    lotes_db = Lote.query.all()
     mapa_lotes = {
         'promo': next((l for l in lotes_db if 'promocional' in l.nome.lower()), None),
         'lote1': next((l for l in lotes_db if '1º lote' in l.nome.lower()), None),
@@ -808,57 +852,97 @@ def adicionar_carrinho_multiplo():
     }
 
     quantidades = [('promo', qty_promo), ('lote1', qty_lote1), ('lote2', qty_lote2)]
-    carrinho = session.get('carrinho', {})
 
-    for chave, qtd in quantidades:
-        if qtd > 0:
-            lote = mapa_lotes.get(chave)
-            if not lote:
-                continue
+    try:
+        # Usa transação com trava de linha para evitar Race Conditions de milissegundos
+        for chave, qtd in quantidades:
+            if qtd > 0:
+                lote = mapa_lotes.get(chave)
+                if not lote:
+                    continue
 
-            # Validação de estoque disponível no banco
-            vendidos = Ingresso.query.filter_by(lote_id=lote.id).count()
-            disponiveis = lote.quantidade_total - vendidos
-            
-            # Quantidade atual já presente no carrinho + a nova quantidade
-            str_lote_id = str(lote.id)
-            qtd_no_carrinho = carrinho.get(str_lote_id, {}).get('quantidade', 0)
+                # Lock na linha do lote durante a verificação
+                db.session.query(Lote).filter_by(id=lote.id).with_for_update().first()
 
-            if (qtd_no_carrinho + qtd) > disponiveis:
-                flash(f'Desculpe, restam apenas {disponiveis} ingressos disponíveis para o {lote.nome}.', 'danger')
-                return redirect(url_for('evento_marevibes'))
+                disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
+                str_lote_id = str(lote.id)
 
-            # Adiciona ou atualiza o item no carrinho
-            if str_lote_id in carrinho:
-                carrinho[str_lote_id]['quantidade'] += qtd
-            else:
-                carrinho[str_lote_id] = {
-                    'lote_id': lote.id,
-                    'evento_nome': lote.evento.titulo if (hasattr(lote, 'evento') and lote.evento) else "MaréVibes Halloween 2026",
-                    'lote_nome': lote.nome,
-                    'preco': lote.preco,
-                    'quantidade': qtd
-                }
+                if qtd > disponiveis:
+                    db.session.rollback()
+                    flash(f'Desculpe, restam apenas {disponiveis} ingressos disponíveis/disponibilizados para o {lote.nome}.', 'danger')
+                    return redirect(url_for('evento_marevibes'))
 
-    session['carrinho'] = carrinho
-    session.modified = True
-    flash('Ingressos adicionados ao carrinho!', 'success')
+                # Atualiza ou cria a reserva no banco de dados com validade de 15 min
+                expiracao = datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_RESERVA)
+                reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()
+
+                if reserva:
+                    reserva.quantidade += qtd
+                    reserva.data_expiracao = expiracao
+                else:
+                    reserva = ReservaCarrinho(
+                        session_id=session_id,
+                        lote_id=lote.id,
+                        quantidade=qtd,
+                        data_expiracao=expiracao
+                    )
+                    db.session.add(reserva)
+
+                # Atualiza a sessão local do usuário
+                if str_lote_id in carrinho:
+                    carrinho[str_lote_id]['quantidade'] += qtd
+                else:
+                    carrinho[str_lote_id] = {
+                        'lote_id': lote.id,
+                        'evento_nome': lote.evento.titulo if (hasattr(lote, 'evento') and lote.evento) else "MaréVibes Halloween 2026",
+                        'lote_nome': lote.nome,
+                        'preco': lote.preco,
+                        'quantidade': qtd
+                    }
+
+        db.session.commit()
+        session['carrinho'] = carrinho
+        session.modified = True
+        flash('Ingressos reservados e adicionados ao carrinho por 15 minutos!', 'success')
+
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao reservar os ingressos. Tente novamente.', 'danger')
+
     return redirect(url_for('ver_carrinho'))
 
 @app.route('/carrinho/remover/<int:lote_id>', methods=['POST'])
 def remover_carrinho(lote_id):
+    session_id = session.get('session_token')
+    
+    # 1. Remove a trava do banco de dados
+    if session_id:
+        ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote_id).delete()
+        db.session.commit()
+
+    # 2. Remove do carrinho da sessão
     carrinho = session.get('carrinho', {})
     str_lote_id = str(lote_id)
     if str_lote_id in carrinho:
         del carrinho[str_lote_id]
         session['carrinho'] = carrinho
         session.modified = True
-        flash('Item removido do carrinho.', 'info')
+        flash('Item removido do carrinho e reserva liberada.', 'info')
+        
     return redirect(url_for('ver_carrinho'))
 
 @app.route('/carrinho/limpar', methods=['POST'])
 def limpar_carrinho():
+    session_id = session.get('session_token')
+    
+    # 1. Remove todas as travas deste usuário no banco
+    if session_id:
+        ReservaCarrinho.query.filter_by(session_id=session_id).delete()
+        db.session.commit()
+
+    # 2. Limpa o carrinho da sessão
     session.pop('carrinho', None)
+    flash('Carrinho limpo com sucesso.', 'info')
     return redirect(url_for('ver_carrinho'))
 
 @app.route('/webhook/mercadopago', methods=['POST'])
