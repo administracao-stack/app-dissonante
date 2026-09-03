@@ -1040,7 +1040,7 @@ LIMITE_MAXIMO_LOTE = 5
 def meus_ingressos():
     usuario_id = session.get('usuario_id')
     ingressos = Ingresso.query.filter_by(usuario_id=usuario_id).order_by(Ingresso.data_compra.desc()).all()
-    return render_template('meus_ingressos.html', ingressos=ingressos)
+    return render_template('meus_ingressos.html', vendas=ingressos)
 
 @app.route('/perfil')
 @cliente_required
