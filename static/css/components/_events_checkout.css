@@ -146,66 +146,25 @@
 }
 
 /* ==========================================================================
-   Seção Seletora dos Ingressos & Lotes
+   Seção Seletora dos Ingressos & Lotes (Ajustado)
    ========================================================================== */
 
 .tickets-selection-section {
     display: flex;
-    justify-content: flex-start;
+    justify-content: flex-start; /* Alinha à esquerda; altere para center se desejar centralizado */
+    width: 100%;
 }
 
 .tickets-card-box {
     width: 100%;
-    max-width: 480px;
+    max-width: 520px; /* Expandido levemente para dar respiro aos preços */
     background-color: var(--bg-card, #111827);
     border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 24px;
 }
 
-.tickets-box-title {
-    font-size: 1.25rem;
-    color: #ffffff;
-    margin-bottom: 20px;
-    font-weight: 700;
-}
-
-/* Linha Individual do Ingresso */
-.ticket-type-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.08));
-    border-radius: 12px;
-    margin-bottom: 12px;
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.ticket-type-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.ticket-name {
-    color: #ffffff;
-    font-size: 0.95rem;
-}
-
-.ticket-price-tax {
-    font-size: 0.85rem;
-    color: var(--gold, #d4af37);
-    font-weight: 600;
-}
-
-.ticket-counter {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Botões (+ e -) */
+/* Ajuste fino dos botões de quantidade */
 .btn-qty {
     width: 32px;
     height: 32px;
@@ -220,84 +179,88 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-    transition: transform 0.1s ease, filter 0.2s ease;
+    transition: transform 0.1s ease, filter 0.2s ease, opacity 0.2s ease;
 }
 
-.btn-qty:hover {
-    filter: brightness(1.2);
-}
-
-.btn-qty:active {
-    transform: scale(0.92);
-}
-
-.qty-number {
-    font-weight: 700;
-    color: var(--text-light, #ffffff);
-    min-width: 20px;
-    text-align: center;
-    font-size: 1rem;
-}
-
-/* Rodapé do Card de Ingressos */
-.tickets-footer {
-    margin-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 16px;
-}
-
-.tickets-total {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.1rem;
-    color: #ffffff;
-    margin-bottom: 16px;
-}
-
-.tickets-total strong {
-    font-size: 1.3rem;
-    color: var(--gold, #d4af37);
-}
-
-.btn-block {
-    width: 100%;
-}
-
-/* Estilo unificado para o Botão Principal e ID do Carrinho */
-#btn-add-cart,
-.btn-primary {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 14px;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: #ffffff;
-    font-weight: 700;
-    font-size: 1rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-    transition: filter 0.2s ease, opacity 0.2s ease, transform 0.1s ease;
-}
-
-#btn-add-cart:hover:not(:disabled),
-.btn-primary:hover:not(:disabled) {
-    filter: brightness(1.15);
-}
-
-#btn-add-cart:active:not(:disabled),
-.btn-primary:active:not(:disabled) {
-    transform: scale(0.99);
-}
-
-#btn-add-cart:disabled,
-.btn-primary:disabled {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.3);
+.btn-qty:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
+    filter: grayscale(1);
     box-shadow: none;
+}
+
+/* ==========================================================================
+   Estilos dos Lotes Expansíveis (Acordeão Corrigido)
+   ========================================================================== */
+
+.ticket-accordion-item {
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.ticket-accordion-item:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.ticket-accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s ease;
+}
+
+.ticket-accordion-header:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.accordion-arrow {
+    font-size: 0.8rem;
+    color: var(--gold, #d4af37);
+    transition: transform 0.3s ease;
+}
+
+.accordion-arrow.rotated {
+    transform: rotate(180deg);
+}
+
+/* Prevenção de corte no max-height */
+.ticket-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.25);
+    transition: max-height 0.35s cubic-bezier(0, 1, 0, 1), padding 0.3s ease;
+}
+
+.ticket-accordion-content.open {
+    max-height: 500px; /* Aumentado para evitar corte de conteúdo */
+    padding: 8px 16px 12px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    transition: max-height 0.35s ease-in-out, padding 0.3s ease;
+}
+
+.ticket-sub-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+.ticket-sub-row:last-child {
+    border-bottom: none;
+}
+
+.sub-ticket-name {
+    color: #e5e7eb;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 /* ==========================================================================
