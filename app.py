@@ -1548,6 +1548,10 @@ def pagamento():
         
     return render_template('pagamento.html', compra=compra)
 
+import threading
+
+import threading
+
 @app.route('/api/checar-status-pagamento/<payment_id>')
 @cliente_required
 def checar_status_pagamento(payment_id):
@@ -1555,28 +1559,59 @@ def checar_status_pagamento(payment_id):
         return jsonify({'status': 'error', 'message': 'Mercado Pago não configurado'}), 500
 
     try:
-        payment_info = sdk.payment().get(payment_id).get("response", {})
+        # 1. Consulta o pagamento na API do Mercado Pago
+        payment_response = sdk.payment().get(payment_id)
+        payment_info = payment_response.get("response", {})
         status = payment_info.get("status")
+        status_detail = payment_info.get("status_detail")
+        payment_method = payment_info.get("payment_method_id", "desconhecido").upper()
 
+        # 2. Resgate robusto do ID do Pedido (Sessão -> external_reference -> Banco)
+        pedido_id = None
+        compra = session.get('compra_atual', {})
+        if compra and str(compra.get('payment_id')) == str(payment_id):
+            pedido_id = compra.get('pedido_id')
+
+        if not pedido_id:
+            ext_ref = payment_info.get("external_reference")
+            if ext_ref and ext_ref.startswith("PEDIDO_"):
+                try:
+                    pedido_id = int(ext_ref.split("_")[1])
+                except ValueError:
+                    pass
+
+        if not pedido_id:
+            pedido_db = Pedido.query.filter_by(id_transacao=str(payment_id)).first()
+            if pedido_db:
+                pedido_id = pedido_db.id
+
+        # 3. TRATAMENTO DE STATUS
+
+        # === CASO APROVADO (Pix ou Cartão) ===
         if status == 'approved':
-            compra = session.get('compra_atual', {})
-            user_id = session.get('usuario_id')
-            lote_id = compra.get('lote_id')
-            quantidade = compra.get('quantidade', 1)
-
-            if user_id and lote_id:
-                criou_agora = gerar_ingressos_para_pagamento(payment_id, user_id, lote_id, quantidade)
+            if pedido_id:
+                # Processa o pedido e cria os ingressos (retorna True apenas se gerou agora)
+                criou_agora = gerar_ingressos_para_pedido(pedido_id, payment_id)
 
                 if criou_agora:
-                    comprador = Usuario.query.get(user_id)
-                    ingressos = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
-                    
-                    codigos_str = "\n".join([f"- Código: {ing.codigo_qr}" for ing in ingressos])
+                    pedido = Pedido.query.get(pedido_id)
+                    comprador = Usuario.query.get(pedido.usuario_id) if pedido else None
 
-                    assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
-                    corpo_cliente = f"""Olá, {comprador.nome}!
+                    if comprador:
+                        ingressos = Ingresso.query.filter(
+                            (Ingresso.pedido_id == pedido_id) | (Ingresso.pagamento_id == str(payment_id))
+                        ).all()
 
-Seu pagamento via PIX foi confirmado com sucesso! 🎉
+                        if ingressos:
+                            codigos_str = "\n".join([f"- Código: {ing.codigo_qr}" for ing in ingressos])
+                            
+                            # Ajusta a mensagem de acordo com a forma de pagamento
+                            tipo_pagamento = "PIX" if "PIX" in payment_method else "Cartão de Crédito"
+                            
+                            assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
+                            corpo_cliente = f"""Olá, {comprador.nome}!
+
+Seu pagamento via {tipo_pagamento} foi confirmado com sucesso! 🎉
 
 Seus Ingressos:
 {codigos_str}
@@ -1584,16 +1619,39 @@ Seus Ingressos:
 Atenciosamente,
 Equipe Dissonante Experiências
 """
-                    threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cliente, corpo_cliente)).start()
+                            # Dispara o e-mail em background
+                            threading.Thread(
+                                target=enviar_email_direto, 
+                                args=(comprador.email, assunto_cliente, corpo_cliente)
+                            ).start()
 
             if 'compra_atual' in session:
                 session['compra_atual']['status'] = 'approved'
 
-            return jsonify({'status': 'approved', 'redirect_url': url_for('meus_ingressos')})
+            return jsonify({
+                'status': 'approved', 
+                'redirect_url': url_for('meus_ingressos')
+            })
 
-        return jsonify({'status': status})
+        # === CASO RECUSADO/CANCELADO (Mais comum em Cartão) ===
+        elif status in ['rejected', 'cancelled']:
+            if 'compra_atual' in session:
+                session['compra_atual']['status'] = status
+
+            return jsonify({
+                'status': status,
+                'detail': status_detail,
+                'message': 'O pagamento não foi aprovado. Tente novamente ou use outra forma de pagamento.'
+            })
+
+        # === CASO PENDENTE OU EM ANÁLISE (Pix pendente ou Cartão em análise) ===
+        return jsonify({
+            'status': status,
+            'detail': status_detail
+        })
 
     except Exception as e:
+        app.logger.error(f"Erro ao checar status do pagamento {payment_id}: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 # ==========================================================================
