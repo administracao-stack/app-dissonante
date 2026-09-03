@@ -28,6 +28,7 @@
             <div class="event-details">
                 <div>📅 31 de Outubro, às 17h</div>
                 <div>📍 Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE</div>
+                <div>🔞 Classificação Indicativa: Strictly 18+</div>
             </div>
             
             <p class="about-text-highlight">
@@ -47,7 +48,7 @@
         </div>
     </div>
 
-    <!-- Seção Inferior: Seleção de Lotes ou Alerta de Encerramento -->
+    <!-- Seção Inferior: Seleção de Lotes com Árvore Expansível -->
     <div class="tickets-selection-section">
         <div class="tickets-card-box">
             <h2 class="tickets-box-title">Selecione os ingressos</h2>
@@ -64,11 +65,11 @@
                     
                     <input type="hidden" name="evento_id" value="marevibes_halloween">
 
-                    <!-- Opção 1: Promocional -->
+                    <!-- Lote Promocional (Sem Expansão) -->
                     <div class="ticket-type-row">
                         <div class="ticket-type-info">
-                            <strong class="ticket-name">Lote Promocional (Teste)</strong>
-                            <span class="ticket-price-tax">R$ 1,00</span>
+                            <strong class="ticket-name">Lote Promocional</strong>
+                            <span class="ticket-price-tax">R$ 162,00 <small>(com taxa de serviço)</small></span>
                         </div>
                         <div class="ticket-counter">
                             <button type="button" class="btn-qty" onclick="updateQty('promo', -1)">-</button>
@@ -78,31 +79,85 @@
                         </div>
                     </div>
 
-                    <!-- Opção 2: 1º Lote -->
-                    <div class="ticket-type-row">
-                        <div class="ticket-type-info">
-                            <strong class="ticket-name">1º Lote</strong>
-                            <span class="ticket-price-tax">R$ 100,00</span>
+                    <!-- 1º Lote (Expansível) -->
+                    <div class="ticket-accordion-item">
+                        <div class="ticket-accordion-header" onclick="toggleAccordion('lote1-details')">
+                            <div class="ticket-type-info">
+                                <strong class="ticket-name">1º Lote</strong>
+                                <span class="ticket-price-tax">A partir de R$ 178,20</span>
+                            </div>
+                            <span class="accordion-arrow" id="arrow-lote1-details">▼</span>
                         </div>
-                        <div class="ticket-counter">
-                            <button type="button" class="btn-qty" onclick="updateQty('lote1', -1)">-</button>
-                            <span id="qty-lote1" class="qty-number">0</span>
-                            <input type="hidden" name="qty_lote1" id="input-lote1" value="0">
-                            <button type="button" class="btn-qty" onclick="updateQty('lote1', 1)">+</button>
+                        
+                        <div class="ticket-accordion-content" id="lote1-details">
+                            <!-- 1º Lote Meia -->
+                            <div class="ticket-sub-row">
+                                <div class="ticket-type-info">
+                                    <span class="sub-ticket-name">1º Lote - Meia</span>
+                                    <span class="ticket-price-tax">R$ 178,20</span>
+                                </div>
+                                <div class="ticket-counter">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote1_meia', -1)">-</button>
+                                    <span id="qty-lote1_meia" class="qty-number">0</span>
+                                    <input type="hidden" name="qty_lote1_meia" id="input-lote1_meia" value="0">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote1_meia', 1)">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 1º Lote Inteira -->
+                            <div class="ticket-sub-row">
+                                <div class="ticket-type-info">
+                                    <span class="sub-ticket-name">1º Lote - Inteira</span>
+                                    <span class="ticket-price-tax">R$ 194,40</span>
+                                </div>
+                                <div class="ticket-counter">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote1_inteira', -1)">-</button>
+                                    <span id="qty-lote1_inteira" class="qty-number">0</span>
+                                    <input type="hidden" name="qty_lote1_inteira" id="input-lote1_inteira" value="0">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote1_inteira', 1)">+</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Opção 3: 2º Lote -->
-                    <div class="ticket-type-row">
-                        <div class="ticket-type-info">
-                            <strong class="ticket-name">2º Lote</strong>
-                            <span class="ticket-price-tax">R$ 200,00</span>
+                    <!-- 2º Lote (Expansível) -->
+                    <div class="ticket-accordion-item">
+                        <div class="ticket-accordion-header" onclick="toggleAccordion('lote2-details')">
+                            <div class="ticket-type-info">
+                                <strong class="ticket-name">2º Lote</strong>
+                                <span class="ticket-price-tax">A partir de R$ 194,40</span>
+                            </div>
+                            <span class="accordion-arrow" id="arrow-lote2-details">▼</span>
                         </div>
-                        <div class="ticket-counter">
-                            <button type="button" class="btn-qty" onclick="updateQty('lote2', -1)">-</button>
-                            <span id="qty-lote2" class="qty-number">0</span>
-                            <input type="hidden" name="qty_lote2" id="input-lote2" value="0">
-                            <button type="button" class="btn-qty" onclick="updateQty('lote2', 1)">+</button>
+                        
+                        <div class="ticket-accordion-content" id="lote2-details">
+                            <!-- 2º Lote Meia -->
+                            <div class="ticket-sub-row">
+                                <div class="ticket-type-info">
+                                    <span class="sub-ticket-name">2º Lote - Meia</span>
+                                    <span class="ticket-price-tax">R$ 194,40</span>
+                                </div>
+                                <div class="ticket-counter">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote2_meia', -1)">-</button>
+                                    <span id="qty-lote2_meia" class="qty-number">0</span>
+                                    <input type="hidden" name="qty_lote2_meia" id="input-lote2_meia" value="0">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote2_meia', 1)">+</button>
+                                </div>
+                            </div>
+
+                            <!-- 2º Lote Inteira -->
+                            <div class="ticket-sub-row">
+                                <div class="ticket-type-info">
+                                    <span class="sub-ticket-name">2º Lote - Inteira</span>
+                                    <span class="ticket-price-tax">R$ 226,80</span>
+                                </div>
+                                <div class="ticket-counter">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote2_inteira', -1)">-</button>
+                                    <span id="qty-lote2_inteira" class="qty-number">0</span>
+                                    <input type="hidden" name="qty_lote2_inteira" id="input-lote2_inteira" value="0">
+                                    <button type="button" class="btn-qty" onclick="updateQty('lote2_inteira', 1)">+</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -125,24 +180,41 @@
 
 {% if not vendas_encerradas %}
 <script>
+    // Tabela de Preços com o valor real recalculado (Base + 8% Taxa Dissonante)
     const prices = {
-        promo: 1.00,
-        lote1: 100.00,
-        lote2: 200.00
+        promo: 162.00,
+        lote1_meia: 178.20,
+        lote1_inteira: 194.40,
+        lote2_meia: 194.40,
+        lote2_inteira: 226.80
     };
 
     const quantities = {
         promo: 0,
-        lote1: 0,
-        lote2: 0
+        lote1_meia: 0,
+        lote1_inteira: 0,
+        lote2_meia: 0,
+        lote2_inteira: 0
     };
 
-    const MAX_QTY_PER_LOTE = 5;
+    const MAX_QTY_PER_ITEM = 5;
+
+    function toggleAccordion(id) {
+        const content = document.getElementById(id);
+        const arrow = document.getElementById(`arrow-${id}`);
+        if (content.classList.contains('open')) {
+            content.classList.remove('open');
+            arrow.classList.remove('rotated');
+        } else {
+            content.classList.add('open');
+            arrow.classList.add('rotated');
+        }
+    }
 
     function updateQty(type, change) {
         const newQty = quantities[type] + change;
         
-        if (newQty >= 0 && newQty <= MAX_QTY_PER_LOTE) {
+        if (newQty >= 0 && newQty <= MAX_QTY_PER_ITEM) {
             quantities[type] = newQty;
             document.getElementById(`qty-${type}`).innerText = quantities[type];
             document.getElementById(`input-${type}`).value = quantities[type];
@@ -151,9 +223,10 @@
     }
 
     function calculateTotal() {
-        const total = (quantities.promo * prices.promo) + 
-                      (quantities.lote1 * prices.lote1) + 
-                      (quantities.lote2 * prices.lote2);
+        let total = 0;
+        for (const key in quantities) {
+            total += quantities[key] * prices[key];
+        }
 
         document.getElementById('display-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
         
@@ -162,7 +235,11 @@
     }
 
     document.getElementById('tickets-form').addEventListener('submit', function(e) {
-        const totalIngressos = quantities.promo + quantities.lote1 + quantities.lote2;
+        let totalIngressos = 0;
+        for (const key in quantities) {
+            totalIngressos += quantities[key];
+        }
+
         if (totalIngressos === 0) {
             e.preventDefault();
             alert('Selecione pelo menos um ingresso para adicionar ao carrinho.');
