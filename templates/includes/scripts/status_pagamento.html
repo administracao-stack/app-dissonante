@@ -1,5 +1,4 @@
 <script>
-    // Copia o código PIX para a área de transferência com suporte a fallback
     function copiarPix() {
         const inputPix = document.getElementById("pix-copia-cola");
         if (!inputPix) return;
@@ -33,62 +32,55 @@
         }, 3000);
     }
 
-    // Polling Unificado para Pix, Cartão de Crédito ou qualquer método de pagamento
-    {% if compra and compra.payment_id %}
-    const paymentId = "{{ compra.payment_id }}";
-    let checkInterval = null;
+    document.addEventListener("DOMContentLoaded", function () {
+        {% if compra is defined and compra and compra.payment_id %}
+        const paymentId = "{{ compra.payment_id }}";
+        let checkInterval = null;
 
-    function checarStatusPagamento() {
-        if (!paymentId) return;
+        function checarStatusPagamento() {
+            if (!paymentId) return;
 
-        fetch(`/api/checar-status-pagamento/${paymentId}`)
-            .then(response => response.json())
-            .then(data => {
-                const badge = document.getElementById('status-pix-badge');
+            fetch(`/api/checar-status-pagamento/${paymentId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('status-pix-badge');
 
-                // 1. PAGAMENTO APROVADO (Pix ou Cartão)
-                if (data.status === 'approved') {
-                    if (checkInterval) clearInterval(checkInterval);
-                    
-                    if (badge) {
-                        badge.classList.remove('rejected');
-                        badge.classList.add('approved');
-                        badge.innerText = '✅ Pagamento Aprovado! Redirecionando...';
+                    if (data.status === 'approved') {
+                        if (checkInterval) clearInterval(checkInterval);
+                        
+                        if (badge) {
+                            badge.classList.remove('rejected');
+                            badge.classList.add('approved');
+                            badge.innerText = '✅ Pagamento Aprovado! Redirecionando...';
+                        }
+                        
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url || "{{ url_for('meus_ingressos') }}";
+                        }, 1200);
+                    } 
+                    else if (data.status === 'rejected' || data.status === 'cancelled') {
+                        if (checkInterval) clearInterval(checkInterval);
+                        
+                        if (badge) {
+                            badge.classList.remove('approved');
+                            badge.classList.add('rejected');
+                            badge.innerText = '❌ Pagamento não aprovado.';
+                        }
+                        
+                        alert(data.message || "Seu pagamento não foi aprovado. Por favor, tente novamente.");
+                        window.location.href = "{{ url_for('checkout') }}";
                     }
-                    
-                    setTimeout(() => {
-                        window.location.href = data.redirect_url || "{{ url_for('meus_ingressos') }}";
-                    }, 1200);
-                } 
-                
-                // 2. PAGAMENTO RECUSADO OU CANCELADO
-                else if (data.status === 'rejected' || data.status === 'cancelled') {
-                    if (checkInterval) clearInterval(checkInterval);
-                    
-                    if (badge) {
-                        badge.classList.remove('approved');
-                        badge.classList.add('rejected');
-                        badge.innerText = '❌ Pagamento não aprovado.';
+                    else if (data.status === 'in_process') {
+                        if (badge) {
+                            badge.innerText = '⏳ Pagamento em análise pela operadora...';
+                        }
                     }
-                    
-                    alert(data.message || "Seu pagamento não foi aprovado. Por favor, tente novamente.");
-                    window.location.href = "{{ url_for('checkout') }}";
-                }
+                })
+                .catch(err => console.error("Erro ao verificar status do pagamento:", err));
+        }
 
-                // 3. EM ANÁLISE DE ANTIFRAUDE (Cartão)
-                else if (data.status === 'in_process') {
-                    if (badge) {
-                        badge.innerText = '⏳ Pagamento em análise pela operadora...';
-                    }
-                }
-            })
-            .catch(err => console.error("Erro ao verificar status do pagamento:", err));
-    }
-
-    // Executa a primeira verificação imediatamente ao carregar
-    checarStatusPagamento();
-
-    // Configura o intervalo para repetir a cada 3 segundos
-    checkInterval = setInterval(checarStatusPagamento, 3000);
-    {% endif %}
+        checarStatusPagamento();
+        checkInterval = setInterval(checarStatusPagamento, 3000);
+        {% endif %}
+    });
 </script>
