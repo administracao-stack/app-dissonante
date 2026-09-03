@@ -23,7 +23,7 @@
 
     {# --- SCRIPTS GLOBAIS --- #}
 
-    {# 1. Utilitário de Máscaras em formulários (CPF, Telefone, Cartão, CVV, etc) #}
+    {# 1. Utilitário de Máscaras em formulários (Movidor para static/js) #}
     <script src="{{ url_for('static', filename='js/mascaras.js') }}"></script>
 
     {# 2. Lógica para Favoritar Eventos #}
@@ -48,25 +48,14 @@
         });
     </script>
 
-    {# --- INCLUDES CONDICIONAIS DE SCRIPTS (Para telas específicas) --- #}
+    {# --- INCLUDES CONDICIONAIS DE TEMPLATES DE SCRIPTS --- #}
 
     {# Script para telas que contêm reCAPTCHA v3 #}
     {% include 'includes/scripts/recaptcha.html' %}
 
-    {# Script para a tela de Checkout (Aplicações no formulário de pagamento) #}
+    {# Script para a tela de Checkout #}
     {% if request.endpoint == 'checkout' %}
         {% include 'includes/scripts/checkout_script.html' %}
-    {% endif %}
-
-    {# Script para verificação de status de pagamento PIX em tempo real #}
-    {% if request.endpoint == 'status_pagamento' or request.endpoint == 'confirmacao' %}
-        {% include 'includes/scripts/status_pagamento.html' %}
-    {% endif %}
-
-    {# Script e dependência da câmera para validação de ingressos (Portaria/QR Code) #}
-    {% if request.endpoint == 'validar_ingresso' %}
-        <script src="https://unpkg.com/html5-qrcode"></script>
-        <script src="{{ url_for('static', filename='js/validar_ingresso.js') }}"></script>
     {% endif %}
 
     {# Bloco para scripts JS extras específicos de qualquer template estendido #}
