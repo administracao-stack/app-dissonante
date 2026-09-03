@@ -1546,7 +1546,7 @@ def pagamento():
         flash('Nenhuma transação pendente encontrada.', 'warning')
         return redirect(url_for('index'))
         
-    return render_template('status_pagamento.html', compra=compra)
+    return render_template('pagamento.html', compra=compra)
 
 @app.route('/api/checar-status-pagamento/<payment_id>')
 @cliente_required
