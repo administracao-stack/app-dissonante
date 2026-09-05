@@ -137,9 +137,7 @@
     transform: translateY(-1px);
 }
 
-/* --------------------------------------------------------------------------
-   Lógica Unificada do Botão Favoritar
-   -------------------------------------------------------------------------- */
+/* Botão Favoritar */
 .btn-favorite {
     position: absolute;
     top: 16px;
@@ -309,4 +307,40 @@
 .empty-state {
     font-size: 1.1rem;
     color: var(--text-muted, #a1a1aa);
+}
+
+/* ==========================================================================
+   Bloco Unificado de Responsividade (Loja e Favoritos)
+   ========================================================================== */
+
+@media (max-width: 576px) {
+    .hero-carousel-section,
+    .favorites-page-container,
+    .ingressos-main {
+        padding: 0 16px;
+        margin: 20px auto;
+    }
+
+    .carousel-card {
+        flex: 0 0 82vw;
+        min-height: 360px;
+        padding: 16px;
+    }
+
+    .card-title,
+    .panel-title,
+    .favorites-header .page-title {
+        font-size: 1.35rem;
+    }
+
+    .grid-ingressos,
+    .tickets-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .card-ingresso,
+    .ticket-card {
+        padding: 18px;
+    }
 }
