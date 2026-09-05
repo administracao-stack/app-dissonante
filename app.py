@@ -889,7 +889,6 @@ def ver_carrinho():
 
 @app.route('/carrinho/adicionar-multiplo', methods=['POST'])
 def adicionar_carrinho_multiplo():
-    # 1. Tratar input de form e converter para int de forma segura
     def get_int_field(field_name):
         try:
             val = request.form.get(field_name, 0)
@@ -910,13 +909,14 @@ def adicionar_carrinho_multiplo():
         flash('Selecione ao menos um ingresso para continuar.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
+    # Inicialização segura da sessão de reserva
     if 'session_token' not in session:
         session['session_token'] = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
     
     session_id = session['session_token']
     carrinho = session.get('carrinho', {})
 
-    # 2. Mapeamento dos lotes no banco de dados
+    # Mapeamento dos lotes
     lotes_db = Lote.query.all()
     mapa_lotes = {
         'teste': next((l for l in lotes_db if l.nome.lower() == 'teste'), None),
@@ -942,9 +942,6 @@ def adicionar_carrinho_multiplo():
                 lote = mapa_lotes.get(chave)
                 if not lote or not lote.ativo:
                     continue
-
-                # Lock pessimista para concorrencia no banco
-                db.session.query(Lote).filter_by(id=lote.id).with_for_update().first()
 
                 disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
                 str_lote_id = str(lote.id)
@@ -987,6 +984,7 @@ def adicionar_carrinho_multiplo():
 
     except Exception as e:
         db.session.rollback()
+        print(f"[ERRO ADICIONAR CARRINHO]: {str(e)}")
         flash('Erro ao reservar os ingressos. Tente novamente.', 'danger')
 
     return redirect(url_for('ver_carrinho'))
