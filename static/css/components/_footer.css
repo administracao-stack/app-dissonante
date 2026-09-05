@@ -1,6 +1,7 @@
 /* ==========================================================================
    Footer Institucional & Banner LGPD
    ========================================================================== */
+
 .footer {
     background-color: var(--bg-night-dark);
     color: var(--text-muted);
@@ -150,15 +151,32 @@
     transform: translateY(-1px);
 }
 
-/* Mobile Footer */
+/* ==========================================================================
+   Bloco Unificado de Responsividade (Footer)
+   ========================================================================== */
+
 @media (max-width: 768px) {
-    .footer-bottom {
-        flex-direction: column;
-        text-align: center;
+    .footer-grid, 
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
     }
-    
+
+    .footer-bottom,
     .cookie-banner {
         flex-direction: column;
         text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .footer-grid, 
+    .footer-content {
+        grid-template-columns: 1fr;
+    }
+
+    .cookie-banner {
+        width: 95%;
+        padding: 16px;
     }
 }
