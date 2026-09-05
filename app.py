@@ -898,7 +898,6 @@ def adicionar_carrinho_multiplo():
             return 0
 
     qty_teste = get_int_field('qty_teste')
-    # CORREÇÃO PRINCIPAL: Alterado de 'qty_promocional' para 'qty_promo'
     qty_promo = get_int_field('qty_promo') 
     qty_lote1_meia = get_int_field('qty_lote1_meia')
     qty_lote1_inteira = get_int_field('qty_lote1_inteira')
