@@ -1,6 +1,7 @@
 /* ==========================================================================
    Header & Navegação (Público e Admin)
    ========================================================================== */
+
 .site-header {
     background-color: var(--bg-night-dark);
     color: var(--text-light);
@@ -186,16 +187,55 @@
     transform: translateY(-1px);
 }
 
-/* Ajustes Responsivos do Header */
+/* ==========================================================================
+   Bloco Unificado de Responsividade (Header)
+   ========================================================================== */
+
 @media (max-width: 768px) {
     .navbar-content {
         flex-direction: column;
-        gap: 15px;
+        gap: 16px;
     }
-    
+
     .nav-menu {
+        width: 100%;
         flex-wrap: wrap;
         justify-content: center;
         gap: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .site-header .container {
+        padding: 12px 16px;
+    }
+
+    .brand-logo {
+        gap: 8px;
+    }
+
+    .navbar-logo-icon {
+        height: 32px;
+    }
+
+    .brand-name {
+        font-size: 0.95rem;
+    }
+
+    .brand-sub {
+        font-size: 0.55rem;
+        letter-spacing: 2px;
+    }
+
+    .nav-menu a, 
+    .nav-menu .btn-whatsapp {
+        font-size: 0.78rem;
+        padding: 6px 12px;
+    }
+
+    .header-cta {
+        gap: 12px;
+        width: 100%;
+        justify-content: center;
     }
 }
