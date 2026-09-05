@@ -563,7 +563,11 @@
     color: #4ade80;
 }
 
-/* Responsividade para Tablets e Smartphones */
+/* ==========================================================================
+   Bloco Unificado de Responsividade (Autenticação, Perfil & Modais)
+   ========================================================================== */
+
+/* Tablet & Mobile Geral (Até 768px) */
 @media (max-width: 768px) {
     .auth-container {
         grid-template-columns: 1fr;
@@ -579,13 +583,11 @@
         padding: 24px;
     }
 
-    /* Empilha campos em duas colunas (Ex: CPF e Telefone, Nova Senha e Confirmar) */
     .auth-row {
         grid-template-columns: 1fr;
         gap: 0;
     }
 
-    /* Ajusta padding das caixas e cartões no mobile */
     .profile-container, .settings-container {
         margin: 20px auto;
         padding: 0 12px;
@@ -599,7 +601,6 @@
         padding: 16px;
     }
 
-    /* Alinha o cabeçalho das configurações no mobile */
     .settings-header, .profile-header {
         flex-direction: column;
         align-items: flex-start;
@@ -611,7 +612,6 @@
         justify-content: center;
     }
 
-    /* Torna botões de ação facilmente clicáveis em telas sensíveis ao toque */
     .btn-save-settings, 
     .btn-delete-account, 
     .btn-reset-password {
@@ -620,8 +620,12 @@
     }
 }
 
-/* Ajustes Finos para Smartphones Pequenos (Até 480px) */
+/* Smartphones Pequenos (Até 480px) */
 @media (max-width: 480px) {
+    .auth-card, .email-confirm-card {
+        padding: 24px;
+    }
+
     .modal-content {
         padding: 20px;
         width: 95%;
