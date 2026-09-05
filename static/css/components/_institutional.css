@@ -4,7 +4,8 @@
    ========================================================================== */
 
 /* Hero Banner Institucional / Serviços */
-.hero-contato, .hero-banner {
+.hero-contato, 
+.hero-banner {
     position: relative;
     padding: 60px 20px;
     text-align: center;
@@ -13,13 +14,15 @@
     margin-bottom: 40px;
 }
 
-.hero-contato-titulo, .hero-content h1 {
+.hero-contato-titulo, 
+.hero-content h1 {
     font-size: 2.2rem;
     color: var(--text-light);
     margin-bottom: 12px;
 }
 
-.hero-contato-subtitulo, .hero-content p {
+.hero-contato-subtitulo, 
+.hero-content p {
     font-size: 1rem;
     color: var(--text-muted);
     max-width: 600px;
@@ -42,7 +45,8 @@
     height: 100%;
 }
 
-.card-contato-titulo, .info-box-titulo {
+.card-contato-titulo, 
+.info-box-titulo {
     font-size: 1.4rem;
     margin-bottom: 24px;
 }
@@ -148,7 +152,8 @@
     margin-bottom: 10px;
 }
 
-.legal-content p, .legal-content li {
+.legal-content p, 
+.legal-content li {
     font-size: 0.92rem;
     color: var(--text-muted);
     line-height: 1.7;
@@ -247,7 +252,10 @@
     color: var(--text-light);
 }
 
-/* Responsividade Institucional */
+/* ==========================================================================
+   Bloco Unificado de Responsividade (Institucional)
+   ========================================================================== */
+
 @media (max-width: 768px) {
     .contato-grid {
         grid-template-columns: 1fr;
