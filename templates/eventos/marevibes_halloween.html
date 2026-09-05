@@ -65,6 +65,22 @@
                     
                     <input type="hidden" name="evento_id" value="marevibes_halloween">
 
+                    <!-- Lote Teste (Apenas para Validação) -->
+                    <div class="ticket-type-row">
+                        <div class="ticket-type-info">
+                            <strong class="ticket-name">Lote Teste</strong>
+                            <span class="ticket-price-tax">
+                                <strong>R$ 1,01 no Pix</strong> <small>(R$ 1,05 no cartão à vista)</small>
+                            </span>
+                        </div>
+                        <div class="ticket-counter">
+                            <button type="button" class="btn-qty" onclick="updateQty('teste', -1)">-</button>
+                            <span id="qty-teste" class="qty-number">0</span>
+                            <input type="hidden" name="qty_teste" id="input-teste" value="0">
+                            <button type="button" class="btn-qty" onclick="updateQty('teste', 1)">+</button>
+                        </div>
+                    </div>
+
                     <!-- Lote Promocional (Sem Expansão) -->
                     <div class="ticket-type-row">
                         <div class="ticket-type-info">
@@ -207,6 +223,7 @@
 <script>
     // Tabela de Preços Base
     const prices = {
+        teste: 1.00,
         promo: 162.00,
         lote1_meia: 178.20,
         lote1_inteira: 194.40,
@@ -215,6 +232,7 @@
     };
 
     const quantities = {
+        teste: 0,
         promo: 0,
         lote1_meia: 0,
         lote1_inteira: 0,
