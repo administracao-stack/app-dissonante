@@ -18,7 +18,7 @@
         <div class="event-info-container">
             <div>
                 {% if vendas_encerradas %}
-                    <span class="badge" style="background-color: #dc3545; color: #fff;">Vendas Encerradas</span>
+                    <span class="badge badge-closed">Vendas Encerradas</span>
                 {% else %}
                     <span class="badge badge-open">Ingressos Disponíveis</span>
                 {% endif %}
@@ -69,7 +69,9 @@
                     <div class="ticket-type-row">
                         <div class="ticket-type-info">
                             <strong class="ticket-name">Lote Promocional</strong>
-                            <span class="ticket-price-tax">R$ 162,00 <small>(com taxa de serviço)</small></span>
+                            <span class="ticket-price-tax">
+                                <strong>R$ 163,62 no Pix</strong> <small>(R$ 170,51 no cartão à vista)</small>
+                            </span>
                         </div>
                         <div class="ticket-counter">
                             <button type="button" class="btn-qty" onclick="updateQty('promo', -1)">-</button>
@@ -84,7 +86,9 @@
                         <div class="ticket-accordion-header" onclick="toggleAccordion('lote1-details')">
                             <div class="ticket-type-info">
                                 <strong class="ticket-name">1º Lote</strong>
-                                <span class="ticket-price-tax">A partir de R$ 178,20</span>
+                                <span class="ticket-price-tax">
+                                    A partir de <strong>R$ 179,98 no Pix</strong> <small>(R$ 187,56 no cartão à vista)</small>
+                                </span>
                             </div>
                             <span class="accordion-arrow" id="arrow-lote1-details">▼</span>
                         </div>
@@ -94,7 +98,9 @@
                             <div class="ticket-sub-row">
                                 <div class="ticket-type-info">
                                     <span class="sub-ticket-name">1º Lote - Meia</span>
-                                    <span class="ticket-price-tax">R$ 178,20</span>
+                                    <span class="ticket-price-tax">
+                                        <strong>R$ 179,98 no Pix</strong> <small>(R$ 187,56 no cartão à vista)</small>
+                                    </span>
                                 </div>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_meia', -1)">-</button>
@@ -108,7 +114,9 @@
                             <div class="ticket-sub-row">
                                 <div class="ticket-type-info">
                                     <span class="sub-ticket-name">1º Lote - Inteira</span>
-                                    <span class="ticket-price-tax">R$ 194,40</span>
+                                    <span class="ticket-price-tax">
+                                        <strong>R$ 196,34 no Pix</strong> <small>(R$ 204,61 no cartão à vista)</small>
+                                    </span>
                                 </div>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_inteira', -1)">-</button>
@@ -125,7 +133,9 @@
                         <div class="ticket-accordion-header" onclick="toggleAccordion('lote2-details')">
                             <div class="ticket-type-info">
                                 <strong class="ticket-name">2º Lote</strong>
-                                <span class="ticket-price-tax">A partir de R$ 194,40</span>
+                                <span class="ticket-price-tax">
+                                    A partir de <strong>R$ 196,34 no Pix</strong> <small>(R$ 204,61 no cartão à vista)</small>
+                                </span>
                             </div>
                             <span class="accordion-arrow" id="arrow-lote2-details">▼</span>
                         </div>
@@ -135,7 +145,9 @@
                             <div class="ticket-sub-row">
                                 <div class="ticket-type-info">
                                     <span class="sub-ticket-name">2º Lote - Meia</span>
-                                    <span class="ticket-price-tax">R$ 194,40</span>
+                                    <span class="ticket-price-tax">
+                                        <strong>R$ 196,34 no Pix</strong> <small>(R$ 204,61 no cartão à vista)</small>
+                                    </span>
                                 </div>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote2_meia', -1)">-</button>
@@ -149,7 +161,9 @@
                             <div class="ticket-sub-row">
                                 <div class="ticket-type-info">
                                     <span class="sub-ticket-name">2º Lote - Inteira</span>
-                                    <span class="ticket-price-tax">R$ 226,80</span>
+                                    <span class="ticket-price-tax">
+                                        <strong>R$ 229,07 no Pix</strong> <small>(R$ 238,71 no cartão à vista)</small>
+                                    </span>
                                 </div>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote2_inteira', -1)">-</button>
@@ -161,12 +175,23 @@
                         </div>
                     </div>
 
-                    <!-- Total e Ação -->
+                    <!-- Total Simulador (Dupla Exibição) e Ação -->
                     <div class="tickets-footer">
                         <div class="tickets-total">
-                            <span>Total</span>
-                            <strong id="display-total">R$ 0,00</strong>
+                            <span class="tickets-total-label">Total Estimado</span>
+                            
+                            <!-- Destaque Principal: Pix -->
+                            <strong id="display-total-pix" class="total-pix-display">
+                                R$ 0,00 <span class="pix-badge-text">no Pix</span>
+                            </strong>
+
+                            <!-- Destaque Secundário: Cartão de Crédito -->
+                            <div class="total-card-display">
+                                <div id="display-total-card1x">Cartão à vista: (R$ 0,00)</div>
+                                <div id="display-total-card2x">Cartão 2x: (R$ 0,00 ou 2x de R$ 0,00)</div>
+                            </div>
                         </div>
+
                         <button type="submit" id="btn-add-cart" class="btn-primary btn-block" disabled>
                             🛒 Adicionar ao Carrinho
                         </button>
@@ -180,7 +205,7 @@
 
 {% if not vendas_encerradas %}
 <script>
-    // Tabela de Preços com o valor real recalculado (Base + 8% Taxa Dissonante)
+    // Tabela de Preços Base
     const prices = {
         promo: 162.00,
         lote1_meia: 178.20,
@@ -196,6 +221,11 @@
         lote2_meia: 0,
         lote2_inteira: 0
     };
+
+    // Taxas da Plataforma (Mercado Pago)
+    const TAXA_PIX = 0.0099;       // 0,99%
+    const TAXA_CREDITO_1X = 0.0499; // 4,99%
+    const TAXA_CREDITO_2X = 0.0629; // 6,29%
 
     const MAX_QTY_PER_ITEM = 5;
 
@@ -223,15 +253,28 @@
     }
 
     function calculateTotal() {
-        let total = 0;
+        let totalBase = 0;
         for (const key in quantities) {
-            total += quantities[key] * prices[key];
+            totalBase += quantities[key] * prices[key];
         }
 
-        document.getElementById('display-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        if (totalBase > 0) {
+            const totalPix = totalBase / (1 - TAXA_PIX);
+            const totalCard1x = totalBase / (1 - TAXA_CREDITO_1X);
+            const totalCard2x = totalBase / (1 - TAXA_CREDITO_2X);
+            const parcela2x = totalCard2x / 2;
+
+            document.getElementById('display-total-pix').innerHTML = `R$ ${totalPix.toFixed(2).replace('.', ',')} <span class="pix-badge-text">no Pix</span>`;
+            document.getElementById('display-total-card1x').innerText = `Cartão à vista: (R$ ${totalCard1x.toFixed(2).replace('.', ',')})`;
+            document.getElementById('display-total-card2x').innerText = `Cartão 2x: (R$ ${totalCard2x.toFixed(2).replace('.', ',')} ou 2x de R$ ${parcela2x.toFixed(2).replace('.', ',')})`;
+        } else {
+            document.getElementById('display-total-pix').innerHTML = 'R$ 0,00 <span class="pix-badge-text">no Pix</span>';
+            document.getElementById('display-total-card1x').innerText = 'Cartão à vista: (R$ 0,00)';
+            document.getElementById('display-total-card2x').innerText = 'Cartão 2x: (R$ 0,00 ou 2x de R$ 0,00)';
+        }
         
         const btnAddCart = document.getElementById('btn-add-cart');
-        btnAddCart.disabled = total === 0;
+        btnAddCart.disabled = totalBase === 0;
     }
 
     document.getElementById('tickets-form').addEventListener('submit', function(e) {
