@@ -33,54 +33,64 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        {% if compra is defined and compra and compra.payment_id %}
-        const paymentId = "{{ compra.payment_id }}";
-        let checkInterval = null;
+    {% if compra is defined and compra and compra.payment_id %}
+    const paymentId = "{{ compra.payment_id }}";
+    let checkInterval = null;
+    let tempoDecorrido = 0;
+    const TEMPO_MAXIMO_MS = 15 * 60 * 1000; // 15 minutos
 
-        function checarStatusPagamento() {
-            if (!paymentId) return;
+    function checarStatusPagamento() {
+        if (!paymentId) return;
 
-            fetch(`/api/checar-status-pagamento/${paymentId}`)
-                .then(response => response.json())
-                .then(data => {
-                    const badge = document.getElementById('status-pix-badge');
-
-                    if (data.status === 'approved') {
-                        if (checkInterval) clearInterval(checkInterval);
-                        
-                        if (badge) {
-                            badge.classList.remove('rejected');
-                            badge.classList.add('approved');
-                            badge.innerText = '✅ Pagamento Aprovado! Redirecionando...';
-                        }
-                        
-                        setTimeout(() => {
-                            window.location.href = data.redirect_url || "{{ url_for('meus_ingressos') }}";
-                        }, 1200);
-                    } 
-                    else if (data.status === 'rejected' || data.status === 'cancelled') {
-                        if (checkInterval) clearInterval(checkInterval);
-                        
-                        if (badge) {
-                            badge.classList.remove('approved');
-                            badge.classList.add('rejected');
-                            badge.innerText = '❌ Pagamento não aprovado.';
-                        }
-                        
-                        alert(data.message || "Seu pagamento não foi aprovado. Por favor, tente novamente.");
-                        window.location.href = "{{ url_for('checkout') }}";
-                    }
-                    else if (data.status === 'in_process') {
-                        if (badge) {
-                            badge.innerText = '⏳ Pagamento em análise pela operadora...';
-                        }
-                    }
-                })
-                .catch(err => console.error("Erro ao verificar status do pagamento:", err));
+        tempoDecorrido += 3000;
+        if (tempoDecorrido >= TEMPO_MAXIMO_MS) {
+            if (checkInterval) clearInterval(checkInterval);
+            const badge = document.getElementById('status-payment-badge');
+            if (badge) badge.innerText = '⌛ Tempo limite de verificação excedido. Atualize a página.';
+            return;
         }
 
-        checarStatusPagamento();
-        checkInterval = setInterval(checarStatusPagamento, 3000);
-        {% endif %}
-    });
+        fetch(`/api/checar-status-pagamento/${paymentId}`)
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('status-payment-badge');
+
+                if (data.status === 'approved') {
+                    if (checkInterval) clearInterval(checkInterval);
+                    
+                    if (badge) {
+                        badge.classList.remove('rejected');
+                        badge.classList.add('approved');
+                        badge.innerText = '✅ Pagamento Aprovado! Redirecionando...';
+                    }
+                    
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url || "{{ url_for('meus_ingressos') }}";
+                    }, 1200);
+                } 
+                else if (data.status === 'rejected' || data.status === 'cancelled') {
+                    if (checkInterval) clearInterval(checkInterval);
+                    
+                    if (badge) {
+                        badge.classList.remove('approved');
+                        badge.classList.add('rejected');
+                        badge.innerText = '❌ Pagamento não aprovado.';
+                    }
+                    
+                    alert(data.message || "Seu pagamento não foi aprovado. Por favor, tente novamente.");
+                    window.location.href = "{{ url_for('checkout') }}";
+                }
+                else if (data.status === 'in_process') {
+                    if (badge) {
+                        badge.innerText = '⏳ Pagamento em análise pela operadora...';
+                    }
+                }
+            })
+            .catch(err => console.error("Erro ao verificar status do pagamento:", err));
+    }
+
+    checarStatusPagamento();
+    checkInterval = setInterval(checarStatusPagamento, 3000);
+    {% endif %}
+});
 </script>
