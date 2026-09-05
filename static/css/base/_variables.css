@@ -19,8 +19,16 @@
     --success-color: #16a34a;
     --danger-color: #dc2626;
     
-    /* Bordas & Fontes */
+    /* Ergonomia Mobile & Touch */
+    --touch-target-min: 48px;   /* Mínimo recomendado pela W3C para toque */
+    --touch-target-large: 56px; /* Altura ideal para botões de portaria */
+    
+    /* Elevação & Bordas */
     --border-dark: rgba(255, 255, 255, 0.1);
+    --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --shadow-glow-primary: 0 4px 15px rgba(99, 102, 241, 0.3);
+    
+    /* Fontes & Transições */
     --font-main: 'Inter', system-ui, -apple-system, sans-serif;
     --transition-fast: all 0.3s ease;
 }
