@@ -22,7 +22,12 @@ a {
     transition: var(--transition-fast);
 }
 
-img, svg {
+img, 
+svg, 
+video, 
+iframe, 
+canvas {
     display: block;
     max-width: 100%;
+    height: auto;
 }
