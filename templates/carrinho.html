@@ -30,14 +30,14 @@
                     {% for item in carrinho %}
                     <tr class="cart-table-row">
                         <td>
-                            <strong>{{ item.evento_nome }}</strong><br>
-                            <small>{{ item.lote_nome }}</small>
+                            <strong>{{ item['evento_nome'] }}</strong><br>
+                            <small>{{ item['lote_nome'] }}</small>
                         </td>
-                        <td>R$ {{ "%.2f"|format(item.preco)|replace('.', ',') }}</td>
-                        <td>{{ item.quantidade }}</td>
-                        <td>R$ {{ "%.2f"|format(item.preco * item.quantidade)|replace('.', ',') }}</td>
+                        <td>R$ {{ "%.2f"|format(item['preco'])|replace('.', ',') }}</td>
+                        <td>{{ item['quantidade'] }}</td>
+                        <td>R$ {{ "%.2f"|format(item['preco'] * item['quantidade'])|replace('.', ',') }}</td>
                         <td>
-                            <form action="{{ url_for('remover_carrinho', lote_id=item.lote_id) }}" method="POST">
+                            <form action="{{ url_for('remover_carrinho', lote_id=item['lote_id']) }}" method="POST">
                                 <button type="submit" class="btn-remove-cart">Remover</button>
                             </form>
                         </td>
@@ -60,10 +60,11 @@
                         </button>
                     </form>
                 </div>
-
+                
                 {% else %}
                     <p>Seu carrinho está vazio.</p>
                 {% endif %}
+
             </div>
 </main>
 {% endblock %}
