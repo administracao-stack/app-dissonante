@@ -21,14 +21,6 @@
     align-items: start;
 }
 
-@media (max-width: 900px) {
-    .event-hero-grid {
-        grid-template-columns: 1fr;
-        gap: 24px;
-        padding: 20px;
-    }
-}
-
 /* Container e Imagem sem corte */
 .event-banner-container {
     width: 100%;
@@ -75,6 +67,11 @@
     background-color: rgba(34, 197, 94, 0.15);
     color: #4ade80;
     border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge-closed {
+    background-color: #dc3545;
+    color: #ffffff;
 }
 
 .event-details {
@@ -146,25 +143,75 @@
 }
 
 /* ==========================================================================
-   Seção Seletora dos Ingressos & Lotes (Ajustado)
+   Seção Seletora dos Ingressos & Lotes
    ========================================================================== */
 
 .tickets-selection-section {
     display: flex;
-    justify-content: flex-start; /* Alinha à esquerda; altere para center se desejar centralizado */
+    justify-content: flex-start;
     width: 100%;
 }
 
 .tickets-card-box {
     width: 100%;
-    max-width: 520px; /* Expandido levemente para dar respiro aos preços */
+    max-width: 520px;
     background-color: var(--bg-card, #111827);
     border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 24px;
 }
 
-/* Ajuste fino dos botões de quantidade */
+.ticket-type-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.08));
+    border-radius: 12px;
+    margin-bottom: 12px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ticket-type-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ticket-name {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.ticket-price-tax {
+    font-size: 0.85rem;
+    color: var(--text-muted, #a1a1aa);
+}
+
+.ticket-price-tax strong {
+    color: #4ade80;
+}
+
+.ticket-price-tax small {
+    color: #9ca3af;
+}
+
+.ticket-counter {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.qty-number {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Botões de quantidade */
 .btn-qty {
     width: 32px;
     height: 32px;
@@ -190,7 +237,7 @@
 }
 
 /* ==========================================================================
-   Estilos dos Lotes Expansíveis (Acordeão Corrigido)
+   Estilos dos Lotes Expansíveis (Acordeão)
    ========================================================================== */
 
 .ticket-accordion-item {
@@ -230,7 +277,6 @@
     transform: rotate(180deg);
 }
 
-/* Prevenção de corte no max-height */
 .ticket-accordion-content {
     max-height: 0;
     overflow: hidden;
@@ -239,7 +285,7 @@
 }
 
 .ticket-accordion-content.open {
-    max-height: 500px; /* Aumentado para evitar corte de conteúdo */
+    max-height: 500px;
     padding: 8px 16px 12px 16px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     transition: max-height 0.35s ease-in-out, padding 0.3s ease;
@@ -261,6 +307,54 @@
     color: #e5e7eb;
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+/* ==========================================================================
+   Rodapé do Simulador de Seleção de Ingressos
+   ========================================================================== */
+
+.tickets-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tickets-total {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+}
+
+.tickets-total-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.total-pix-display {
+    color: #28a745;
+    font-size: 1.3rem;
+    font-weight: 800;
+}
+
+.pix-badge-text {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #28a745;
+}
+
+.total-card-display {
+    font-size: 0.8rem;
+    color: #6c757d;
+    line-height: 1.3;
+    margin-top: 2px;
 }
 
 /* ==========================================================================
@@ -351,14 +445,12 @@
     margin-left: 8px;
 }
 
-/* Container flexível para os botões alinhados */
 .cart-buttons-group {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-/* Botão Secundário: Limpar Carrinho */
 .btn-clear-cart {
     padding: 12px 20px;
     background-color: rgba(239, 68, 68, 0.1);
@@ -399,32 +491,6 @@
     text-decoration: none;
 }
 
-/* Responsividade do Carrinho em Dispositivos Móveis */
-@media (max-width: 640px) {
-    .cart-table th:nth-child(2),
-    .cart-table td:nth-child(2) {
-        display: none; /* Oculta a coluna de Preço Unitário no celular para economizar espaço */
-    }
-
-    .cart-footer-actions {
-        flex-direction: column;
-        gap: 16px;
-        align-items: stretch;
-        text-align: center;
-    }
-
-    .cart-buttons-group {
-        width: 100%;
-        flex-direction: column-reverse;
-        gap: 10px;
-    }
-
-    .btn-clear-cart,
-    .btn-checkout-action {
-        width: 100%;
-    }
-}
-
 /* ==========================================================================
    Página de Checkout & Formulário de Pagamento
    ========================================================================== */
@@ -440,12 +506,6 @@
     grid-template-columns: 1fr 380px;
     gap: 32px;
     align-items: start;
-}
-
-@media (max-width: 992px) {
-    .checkout-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 .checkout-titulo {
@@ -515,24 +575,11 @@
     gap: 16px;
 }
 
-@media (max-width: 600px) {
-    .form-row, 
-    .card-row-dual {
-        grid-template-columns: 1fr;
-    }
-}
-
 .payment-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
     margin-bottom: 24px;
-}
-
-@media (max-width: 600px) {
-    .payment-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 .payment-option-card {
@@ -668,8 +715,7 @@
     font-weight: 800;
 }
 
-/* Timer Regressivo de Reserva do Checkout
-
+/* Timer Regressivo de Reserva do Checkout */
 .resumo-timer-card {
     background: #eef2ff;
     border: 1px solid #c7d2fe;
@@ -731,7 +777,6 @@
     margin-bottom: 20px;
 }
 
-/* Badge de Checagem Unificado (Pix e Cartão) */
 .status-pix-badge {
     display: inline-block;
     padding: 10px 18px;
@@ -745,14 +790,12 @@
     transition: all 0.3s ease;
 }
 
-/* Estado Aprovado (Verde) */
 .status-pix-badge.approved {
     background: rgba(34, 197, 94, 0.15);
     color: #4ade80;
     border-color: rgba(34, 197, 94, 0.3);
 }
 
-/* Estado Recusado / Cancelado (Vermelho) */
 .status-pix-badge.rejected {
     background: rgba(239, 68, 68, 0.15);
     color: #f87171;
@@ -883,4 +926,72 @@
 .btn-finish-checkout:hover {
     background: rgba(255, 255, 255, 0.15);
     border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Correção de segurança para imagens e QR Codes */
+.pix-qr-image,
+.modal-qr-img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* ==========================================================================
+   Bloco Unificado de Responsividade (Eventos & Checkout)
+   ========================================================================== */
+
+@media (max-width: 992px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .event-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .cart-footer-actions {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+    }
+
+    .cart-buttons-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-clear-cart,
+    .btn-checkout-action {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .form-row, 
+    .card-row-dual,
+    .payment-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tickets-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+
+    .tickets-footer .btn-primary {
+        width: 100%;
+    }
+
+    .pix-copy-box {
+        flex-direction: column;
+    }
+
+    .btn-copy-pix {
+        width: 100%;
+    }
 }
