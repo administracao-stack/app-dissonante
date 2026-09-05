@@ -2,6 +2,7 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-light);
     font-weight: 700;
     line-height: 1.2;
+    overflow-wrap: break-word;
 }
 
 p {
@@ -22,4 +23,19 @@ p {
     color: var(--text-muted);
     max-width: 800px;
     margin: 0 auto 30px auto;
+}
+
+/* ==========================================================================
+   Ajustes Responsivos para Tipografia
+   ========================================================================== */
+
+@media (max-width: 576px) {
+    h1 { font-size: 1.75rem; }
+    h2 { font-size: 1.45rem; }
+    h3 { font-size: 1.25rem; }
+    
+    .section-subtitle {
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+    }
 }
