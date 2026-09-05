@@ -1,21 +1,67 @@
 {% include 'includes/scripts/recaptcha.html' %}
 
 <script>
-    // Alterna visualmente os containers de pagamento (PIX / Cartão)
-    function togglePagamento(metodo) {
+    const VALOR_BASE_TOTAL = {{ total_pedido|tojson }};
+    const TAXAS_MP = {
+        pix: 0.0099,
+        credit_card_1x: 0.0499,
+        credit_card_2x: 0.1462
+    };
+
+    function calcularValorComTaxa(valorBase, taxa) {
+        if (valorBase <= 0) return { final: 0, taxaVal: 0 };
+        const valorFinal = Math.round((valorBase / (1 - taxa)) * 100) / 100;
+        const taxaVal = Math.round((valorFinal - valorBase) * 100) / 100;
+        return { final: valorFinal, taxaVal: taxaVal };
+    }
+
+    function formatarMoeda(valor) {
+        return 'R$ ' + valor.toFixed(2).replace('.', ',');
+    }
+
+    // Alterna o container e recalcula o resumo com base no método selecionado
+    function atualizarValoresCheckout(metodo) {
         const creditCardContainer = document.getElementById('credit-card-container');
         const labelPix = document.getElementById('label_pix');
         const labelCartao = document.getElementById('label_cartao');
+        const selectInstallments = document.getElementById('installments');
+        const totalDisplay = document.getElementById('total-display');
+        const taxaDisplay = document.getElementById('taxa-display');
+
+        let taxaAplicada = 0;
+        let parcelas = 1;
 
         if (metodo === 'credit_card') {
             if (creditCardContainer) creditCardContainer.classList.remove('is-hidden');
             if (labelCartao) labelCartao.classList.add('active');
             if (labelPix) labelPix.classList.remove('active');
+
+            if (selectInstallments) {
+                parcelas = parseInt(selectInstallments.value) || 1;
+            }
+            taxaAplicada = (parcelas === 2) ? TAXAS_MP.credit_card_2x : TAXAS_MP.credit_card_1x;
         } else {
             if (creditCardContainer) creditCardContainer.classList.add('is-hidden');
             if (labelPix) labelPix.classList.add('active');
             if (labelCartao) labelCartao.classList.remove('active');
+
+            taxaAplicada = TAXAS_MP.pix;
         }
+
+        // Atualizar as labels do Select de Parcelas
+        const calc1x = calcularValorComTaxa(VALOR_BASE_TOTAL, TAXAS_MP.credit_card_1x);
+        const calc2x = calcularValorComTaxa(VALOR_BASE_TOTAL, TAXAS_MP.credit_card_2x);
+
+        const opt1 = document.getElementById('opt-parcela-1');
+        const opt2 = document.getElementById('opt-parcela-2');
+
+        if (opt1) opt1.textContent = `1x de ${formatarMoeda(calc1x.final)} (À vista)`;
+        if (opt2) opt2.textContent = `2x de ${formatarMoeda(calc2x.final / 2)} (Total: ${formatarMoeda(calc2x.final)})`;
+
+        // Atualizar o resumo visual
+        const resultado = calcularValorComTaxa(VALOR_BASE_TOTAL, taxaAplicada);
+        if (totalDisplay) totalDisplay.textContent = formatarMoeda(resultado.final);
+        if (taxaDisplay) taxaDisplay.textContent = formatarMoeda(resultado.taxaVal);
     }
 
     // Cronômetro de Trava dos Ingressos (15 minutos)
@@ -23,7 +69,7 @@
         const display = document.getElementById('timer-reserva');
         if (!display) return;
 
-        let tempoRestante = 15 * 60; // 15 minutos em segundos
+        let tempoRestante = 15 * 60;
 
         const interval = setInterval(() => {
             const minutos = Math.floor(tempoRestante / 60);
@@ -42,6 +88,10 @@
     // Inicialização da Página
     document.addEventListener('DOMContentLoaded', function () {
         iniciarTimerReserva();
+        
+        // Recalcula o valor inicial padrão (PIX)
+        const metodoInicial = document.querySelector('input[name="metodo_pagamento"]:checked')?.value || 'pix';
+        atualizarValoresCheckout(metodoInicial);
 
         const form = document.getElementById('form-checkout');
         if (!form) return;
