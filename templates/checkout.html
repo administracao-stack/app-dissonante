@@ -68,7 +68,7 @@
 
                         <div class="payment-grid">
                             <label class="payment-option-card active" id="label_pix">
-                                <input type="radio" name="metodo_pagamento" value="pix" checked onclick="togglePagamento('pix')">
+                                <input type="radio" name="metodo_pagamento" value="pix" checked onclick="atualizarValoresCheckout('pix')">
                                 <div class="payment-content">
                                     <div class="payment-icon">⚡</div>
                                     <div class="payment-title">PIX (Aprovação Instantânea)</div>
@@ -76,7 +76,7 @@
                             </label>
 
                             <label class="payment-option-card" id="label_cartao">
-                                <input type="radio" name="metodo_pagamento" value="credit_card" onclick="togglePagamento('credit_card')">
+                                <input type="radio" name="metodo_pagamento" value="credit_card" onclick="atualizarValoresCheckout('credit_card')">
                                 <div class="payment-content">
                                     <div class="payment-icon">💳</div>
                                     <div class="payment-title">Cartão de Crédito</div>
@@ -113,9 +113,9 @@
 
                             <div class="form-group form-group-sm">
                                 <label class="form-label">Parcelas:</label>
-                                <select name="installments" id="installments" class="form-control">
-                                    <option value="1">1x (À vista)</option>
-                                    <option value="2">2x (Sem juros)</option>
+                                <select name="installments" id="installments" class="form-control" onchange="atualizarValoresCheckout('credit_card')">
+                                    <option value="1" id="opt-parcela-1">1x (À vista)</option>
+                                    <option value="2" id="opt-parcela-2">2x</option>
                                 </select>
                             </div>
                         </div>
@@ -156,6 +156,11 @@
                         <strong>R$ {{ "%.2f"|format(item.subtotal)|replace('.', ',') }}</strong>
                     </div>
                     {% endfor %}
+
+                    <div class="resumo-item" id="container-taxa-mp" style="font-size: 0.85rem; color: #666; margin-top: 8px;">
+                        <span>Taxa de Processamento:</span>
+                        <strong id="taxa-display">R$ 0,00</strong>
+                    </div>
 
                     <hr>
                     <div class="resumo-total">
