@@ -24,11 +24,22 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from sqlalchemy import or_
 from flask_migrate import Migrate
+from flask_apscheduler import APScheduler
 
 # Carrega as variáveis de ambiente local (.env)
 load_dotenv()
 
 app = Flask(__name__)
+
+# --------------------------------------------------------------------------
+# Configuração do Agendador (APScheduler)
+# --------------------------------------------------------------------------
+class ConfigScheduler:
+    SCHEDULER_API_ENABLED = False  # Desativa a API REST interna do scheduler por segurança
+
+app.config.from_object(ConfigScheduler())
+
+scheduler = APScheduler()
 
 # --------------------------------------------------------------------------
 # Regra de Janela de Tempo das Vendas
@@ -60,6 +71,30 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Instanciação correta das extensões
 db = SQLAlchemy(app)
 migrate = Migrate(app, db, render_as_batch=True)
+
+# --------------------------------------------------------------------------
+# Tabela e Função de Cálculo de Taxas (Mercado Pago)
+# --------------------------------------------------------------------------
+TAXAS_MP = {
+    'pix': 0.0099,
+    'credit_card_1x': 0.0499,
+    'credit_card_2x': 0.1462
+}
+
+def calcular_valor_com_taxa_mp(valor_base, metodo_pagamento='pix', parcelas=1):
+    if valor_base <= 0:
+        return {'valor_final': 0.0, 'taxa': 0.0}
+    
+    if metodo_pagamento == 'pix':
+        taxa = TAXAS_MP['pix']
+    elif metodo_pagamento == 'credit_card':
+        taxa = TAXAS_MP['credit_card_2x'] if parcelas == 2 else TAXAS_MP['credit_card_1x']
+    else:
+        taxa = 0.0
+
+    valor_final = round(valor_base / (1 - taxa), 2)
+    taxa_val = round(valor_final - valor_base, 2)
+    return {'valor_final': valor_final, 'taxa': taxa_val}
 
 # --------------------------------------------------------------------------
 # Configuração do Mercado Pago
@@ -194,7 +229,7 @@ class ReservaCarrinho(db.Model):
     lote = db.relationship('Lote')
 
 def inicializar_banco():
-    """Garante dados iniciais no banco (admins e lotes padrão)."""
+    """Garante dados iniciais no banco (admins e novos lotes fracionados)."""
     with app.app_context():
         try:
             # Configura/Garante o usuário Administrador Principal
@@ -217,35 +252,34 @@ def inicializar_banco():
                     admin_user.is_admin = True
                     admin_user.email_verificado = True
 
-            # 1. Lote Promocional
-            lote_promo = Lote.query.filter(Lote.nome.ilike('%promocional%')).first()
-            if not lote_promo:
-                lote_promo = Lote(nome='Lote Promocional (Teste)', preco=1.00, quantidade_total=10, ativo=True)
-                db.session.add(lote_promo)
-            else:
-                lote_promo.nome = 'Lote Promocional (Teste)'
-                lote_promo.preco = 1.00
-                lote_promo.quantidade_total = 10
+            # Lista mapeada com os preços finais e regras para a nova estrutura
+            lotes_config = [
+                {"nome": "teste", "preco": 1.00, "quantidade_total": 10, "ativo": True},
+                {"nome": "Lote Promocional", "preco": 162.00, "quantidade_total": 10, "ativo": True},
+                {"nome": "1º Lote - Meia", "preco": 178.20, "quantidade_total": 16, "ativo": True},
+                {"nome": "1º Lote - Inteira", "preco": 194.40, "quantidade_total": 24, "ativo": True},
+                {"nome": "2º Lote - Meia", "preco": 194.40, "quantidade_total": 16, "ativo": False},
+                {"nome": "2º Lote - Inteira", "preco": 226.80, "quantidade_total": 24, "ativo": False},
+                # Lote exclusivo para emissão interna via Admin
+                {"nome": "Cortesia", "preco": 0.00, "quantidade_total": 10, "ativo": False},
+            ]
 
-            # 2. 1º Lote
-            lote_1 = Lote.query.filter(Lote.nome.ilike('%1º lote%')).first()
-            if not lote_1:
-                lote_1 = Lote(nome='1º Lote', preco=100.00, quantidade_total=10, ativo=False)
-                db.session.add(lote_1)
-            else:
-                lote_1.nome = '1º Lote'
-                lote_1.preco = 100.00
-                lote_1.quantidade_total = 10
-
-            # 3. 2º Lote
-            lote_2 = Lote.query.filter(Lote.nome.ilike('%2º lote%')).first()
-            if not lote_2:
-                lote_2 = Lote(nome='2º Lote', preco=200.00, quantidade_total=10, ativo=False)
-                db.session.add(lote_2)
-            else:
-                lote_2.nome = '2º Lote'
-                lote_2.preco = 200.00
-                lote_2.quantidade_total = 10
+            for cfg in lotes_config:
+                # Busca por correspondência exata do nome
+                lote_db = Lote.query.filter_by(nome=cfg["nome"]).first()
+                
+                if not lote_db:
+                    lote_db = Lote(
+                        nome=cfg["nome"],
+                        preco=cfg["preco"],
+                        quantidade_total=cfg["quantidade_total"],
+                        ativo=cfg["ativo"]
+                    )
+                    db.session.add(lote_db)
+                else:
+                    lote_db.preco = cfg["preco"]
+                    lote_db.quantidade_total = cfg["quantidade_total"]
+                    lote_db.ativo = cfg["ativo"]
 
             db.session.commit()
         except Exception as e:
@@ -431,6 +465,13 @@ def gerar_ingressos_para_pagamento(pagamento_id, usuario_id, lote_id, quantidade
         )
         db.session.add(novo_ingresso)
     
+    # 2. LIBERAÇÃO DA RESERVA TEMPORÁRIA
+    session_token = session.get('session_token')
+    if session_token:
+        ReservaCarrinho.query.filter_by(session_id=session_token, lote_id=lote_id).delete()
+    else:
+        ReservaCarrinho.query.filter_by(lote_id=lote_id).delete(synchronize_session=False)
+
     db.session.commit()
     return True
 
@@ -445,6 +486,7 @@ def gerar_ingressos_para_pedido(pedido_id, payment_id):
     pedido.status = 'approved'
     pedido.pagamento_id = str(payment_id)
 
+    # 1. Gera os ingressos definitivos
     for item in pedido.itens:
         evento_titulo = item.lote.evento.titulo if (item.lote and item.lote.evento and item.lote.evento.titulo) else "MaréVibes Halloween 2026"
         for _ in range(item.quantidade):
@@ -457,6 +499,21 @@ def gerar_ingressos_para_pedido(pedido_id, payment_id):
                 pagamento_id=str(payment_id)
             )
             db.session.add(novo_ingresso)
+
+    # 2. LIBERAÇÃO DA RESERVA TEMPORÁRIA
+    # Remove as reservas com base nos lotes do pedido
+    lote_ids = [item.lote_id for item in pedido.itens]
+    
+    # Se a sessão do usuário estiver ativa
+    session_token = session.get('session_token') if session else None
+    
+    if session_token:
+        ReservaCarrinho.query.filter_by(session_id=session_token).delete()
+    elif lote_ids:
+        # Apaga qualquer reserva pendente associada a esses lotes para o usuário do pedido
+        ReservaCarrinho.query.filter(
+            ReservaCarrinho.lote_id.in_(lote_ids)
+        ).delete(synchronize_session=False)
 
     db.session.commit()
     return True
@@ -494,6 +551,22 @@ def limpar_reservas_expiradas():
     agora = datetime.now(timezone.utc)
     ReservaCarrinho.query.filter(ReservaCarrinho.data_expiracao < agora).delete()
     db.session.commit()
+
+# --------------------------------------------------------------------------
+# Definição e Inicialização do Agendador de Tarefas (APScheduler)
+# --------------------------------------------------------------------------
+@scheduler.task('interval', id='limpar_reservas_job', minutes=1, misfire_grace_time=900)
+def job_limpar_reservas():
+    with app.app_context():
+        try:
+            limpar_reservas_expiradas()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[ERRO SCHEDULER]: Falha ao limpar reservas expiradas: {str(e)}")
+
+scheduler.init_app(app)
+scheduler.start()
 
 def obter_estoque_disponivel(lote_id, session_id_atual=None):
     limpar_reservas_expiradas()
@@ -533,7 +606,11 @@ def servicos():
 
 @app.route('/evento/marevibes-halloween')
 def evento_marevibes():
-    lotes = Lote.query.order_by(Lote.id.asc()).all()
+    # Retorna apenas os lotes públicos (excluindo Cortesia)
+    lotes = Lote.query.filter(
+        Lote.nome.ilike('%Cortesia%') == False
+    ).order_by(Lote.id.asc()).all()
+
     lote_ativo = Lote.query.filter_by(ativo=True).first()
     return render_template('eventos/marevibes_halloween.html', lote=lote_ativo, lotes=lotes)
 
@@ -812,11 +889,16 @@ def ver_carrinho():
 
 @app.route('/carrinho/adicionar-multiplo', methods=['POST'])
 def adicionar_carrinho_multiplo():
+    # Ler todos os campos enviados pelo formulário da página do evento
     qty_promo = int(request.form.get('qty_promocional', 0))
-    qty_lote1 = int(request.form.get('qty_lote1', 0))
-    qty_lote2 = int(request.form.get('qty_lote2', 0))
+    qty_lote1_meia = int(request.form.get('qty_lote1_meia', 0))
+    qty_lote1_inteira = int(request.form.get('qty_lote1_inteira', 0))
+    qty_lote2_meia = int(request.form.get('qty_lote2_meia', 0))
+    qty_lote2_inteira = int(request.form.get('qty_lote2_inteira', 0))
 
-    if (qty_promo + qty_lote1 + qty_lote2) <= 0:
+    total_qtd = qty_promo + qty_lote1_meia + qty_lote1_inteira + qty_lote2_meia + qty_lote2_inteira
+
+    if total_qtd <= 0:
         flash('Selecione ao menos um ingresso para continuar.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
@@ -826,14 +908,23 @@ def adicionar_carrinho_multiplo():
     session_id = session['session_token']
     carrinho = session.get('carrinho', {})
 
+    # Mapeamento exato com os nomes criados na função inicializar_banco()
     lotes_db = Lote.query.all()
     mapa_lotes = {
         'promo': next((l for l in lotes_db if 'promocional' in l.nome.lower()), None),
-        'lote1': next((l for l in lotes_db if '1º lote' in l.nome.lower()), None),
-        'lote2': next((l for l in lotes_db if '2º lote' in l.nome.lower()), None)
+        'lote1_meia': next((l for l in lotes_db if '1º lote - meia' in l.nome.lower()), None),
+        'lote1_inteira': next((l for l in lotes_db if '1º lote - inteira' in l.nome.lower()), None),
+        'lote2_meia': next((l for l in lotes_db if '2º lote - meia' in l.nome.lower()), None),
+        'lote2_inteira': next((l for l in lotes_db if '2º lote - inteira' in l.nome.lower()), None),
     }
 
-    quantidades = [('promo', qty_promo), ('lote1', qty_lote1), ('lote2', qty_lote2)]
+    quantidades = [
+        ('promo', qty_promo),
+        ('lote1_meia', qty_lote1_meia),
+        ('lote1_inteira', qty_lote1_inteira),
+        ('lote2_meia', qty_lote2_meia),
+        ('lote2_inteira', qty_lote2_inteira),
+    ]
 
     try:
         for chave, qtd in quantidades:
@@ -990,7 +1081,7 @@ Equipe Dissonante Experiências
 """
                                 threading.Thread(target=enviar_email_direto, args=(comprador.email, assunto_cliente, corpo_cliente)).start()
 
-            elif status in ["refunded", "charged_back", "cancelled"]:
+            elif status in ["refunded", "charged_back", "cancelled", "rejected"]:
                 ext_ref = payment_info.get("external_reference", "")
                 pedido = None
 
@@ -998,18 +1089,32 @@ Equipe Dissonante Experiências
                     pedido_id = int(ext_ref.split("_")[1])
                     pedido = Pedido.query.get(pedido_id)
 
-                ingressos_para_remover = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
+                # Busca os ingressos vinculados pelo payment_id ou pelo pedido_id
+                if pedido:
+                    ingressos_para_remover = Ingresso.query.filter(
+                        (Ingresso.pagamento_id == str(payment_id)) | (Ingresso.pedido_id == pedido.id)
+                    ).all()
+                else:
+                    ingressos_para_remover = Ingresso.query.filter_by(pagamento_id=str(payment_id)).all()
+
                 comprador = Usuario.query.get(pedido.usuario_id) if pedido else None
 
                 if not comprador and ingressos_para_remover:
                     comprador = Usuario.query.get(ingressos_para_remover[0].usuario_id)
 
+                # 1. Remove os ingressos se já tiverem sido gerados anteriormente
                 for ing in ingressos_para_remover:
                     db.session.delete(ing)
 
+                # 2. Atualiza o status do pedido e limpa as reservas de carrinho retidas
                 if pedido:
                     pedido.status = status
-                    
+                    lote_ids = [item.lote_id for item in pedido.itens]
+                    if lote_ids:
+                        ReservaCarrinho.query.filter(
+                            ReservaCarrinho.lote_id.in_(lote_ids)
+                        ).delete(synchronize_session=False)
+
                 db.session.commit()
 
                 if comprador:
@@ -1354,36 +1459,42 @@ def checkout():
 
         qtd_total_ingressos = sum(item['quantidade'] for item in ordem_compra)
 
-        try:
-            novo_pedido = Pedido(
-                usuario_id=usuario_atual.id,
-                total=float(total_pedido),
-                status='pending',
-                metodo_pagamento=metodo_pagamento
-            )
-            db.session.add(novo_pedido)
-            db.session.flush()
-
-            for item in ordem_compra:
-                item_pedido = ItemPedido(
-                    pedido_id=novo_pedido.id,
-                    lote_id=item['lote'].id,
-                    quantidade=item['quantidade'],
-                    preco_unitario=item['preco_unitario']
-                )
-                db.session.add(item_pedido)
-
-            db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            flash('Erro interno ao registrar o pedido. Tente novamente.', 'danger')
-            return redirect(url_for('evento_marevibes'))
-
+        # ------------------------------------------------------------------
+        # PAGAMENTO VIA PIX
+        # ------------------------------------------------------------------
         if metodo_pagamento == 'pix':
+            calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento='pix')
+            valor_com_taxa = calc_taxa['valor_final']
+
+            try:
+                novo_pedido = Pedido(
+                    usuario_id=usuario_atual.id,
+                    total=valor_com_taxa,
+                    status='pending',
+                    metodo_pagamento=metodo_pagamento
+                )
+                db.session.add(novo_pedido)
+                db.session.flush()
+
+                for item in ordem_compra:
+                    item_pedido = ItemPedido(
+                        pedido_id=novo_pedido.id,
+                        lote_id=item['lote'].id,
+                        quantidade=item['quantidade'],
+                        preco_unitario=item['preco_unitario']
+                    )
+                    db.session.add(item_pedido)
+
+                db.session.commit()
+
+            except Exception as e:
+                db.session.rollback()
+                flash('Erro interno ao registrar o pedido. Tente novamente.', 'danger')
+                return redirect(url_for('evento_marevibes'))
+
             data_expiracao = datetime.now(timezone.utc) + timedelta(minutes=15)
             payment_data = {
-                "transaction_amount": float(total_pedido),
+                "transaction_amount": valor_com_taxa,
                 "description": f"Pedido #{novo_pedido.id} - MaréVibes Halloween",
                 "payment_method_id": "pix",
                 "date_of_expiration": data_expiracao.strftime("%Y-%m-%dT%H:%M:%S.000+00:00"),
@@ -1406,11 +1517,12 @@ def checkout():
                         'metodo_pagamento': 'pix',
                         'payment_id': payment_id_str,
                         'pedido_id': novo_pedido.id,
-                        'total': float(total_pedido),
+                        'total': valor_com_taxa,
                         'quantidade': qtd_total_ingressos,
                         'qr_code': pix_info.get("qr_code"),
                         'qr_code_base64': pix_info.get("qr_code_base64")
                     }
+
                     session.pop('carrinho', None)
                     return redirect(url_for('pagamento'))
                 else:
@@ -1427,6 +1539,9 @@ def checkout():
                 flash('Falha de conexão com o Mercado Pago. Tente novamente.', 'danger')
                 return redirect(url_for('evento_marevibes'))
 
+        # ------------------------------------------------------------------
+        # PAGAMENTO VIA CARTÃO DE CRÉDITO
+        # ------------------------------------------------------------------
         elif metodo_pagamento == 'credit_card':
             token = request.form.get('token')
             installments = int(request.form.get('installments', 1))
@@ -1436,6 +1551,35 @@ def checkout():
             if installments > 2:
                 installments = 2
 
+            calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento='credit_card', parcelas=installments)
+            valor_com_taxa = calc_taxa['valor_final']
+
+            try:
+                novo_pedido = Pedido(
+                    usuario_id=usuario_atual.id,
+                    total=valor_com_taxa,
+                    status='pending',
+                    metodo_pagamento=metodo_pagamento
+                )
+                db.session.add(novo_pedido)
+                db.session.flush()
+
+                for item in ordem_compra:
+                    item_pedido = ItemPedido(
+                        pedido_id=novo_pedido.id,
+                        lote_id=item['lote'].id,
+                        quantidade=item['quantidade'],
+                        preco_unitario=item['preco_unitario']
+                    )
+                    db.session.add(item_pedido)
+
+                db.session.commit()
+
+            except Exception as e:
+                db.session.rollback()
+                flash('Erro interno ao registrar o pedido. Tente novamente.', 'danger')
+                return redirect(url_for('evento_marevibes'))
+
             if not token or not payment_method_id:
                 db.session.delete(novo_pedido)
                 db.session.commit()
@@ -1443,7 +1587,7 @@ def checkout():
                 return redirect(url_for('evento_marevibes'))
 
             payment_data = {
-                "transaction_amount": float(total_pedido),
+                "transaction_amount": valor_com_taxa,
                 "token": token,
                 "description": f"Pedido #{novo_pedido.id} - MaréVibes Halloween",
                 "installments": installments,
@@ -1473,7 +1617,7 @@ def checkout():
                     assunto_cliente = "[Dissonante Experiências] Seus ingressos estão prontos!"
                     corpo_cliente = f"""Olá, {usuario_atual.nome}!
 
-Seu pagamento via Cartão de Crédito referente ao Pedido #{novo_pedido.id} foi confirmed! 🎉
+Seu pagamento via Cartão de Crédito referente ao Pedido #{novo_pedido.id} foi confirmado! 🎉
 
 Detalhes do Pedido:
 --------------------------------------------------
@@ -1494,12 +1638,16 @@ Equipe Dissonante Experiências
                         'status': 'approved',
                         'payment_id': str(payment_id),
                         'pedido_id': novo_pedido.id,
-                        'total': float(total_pedido),
+                        'total': valor_com_taxa,
                         'quantidade': qtd_total_ingressos
                     }
 
-                    session.pop('carrinho', None)
+                    session_token = session.get('session_token')
+                    if session_token:
+                        ReservaCarrinho.query.filter_by(session_id=session_token).delete()
+                        db.session.commit()
 
+                    session.pop('carrinho', None)
                     flash('Pagamento aprovado com sucesso!', 'success')
                     return redirect(url_for('pagamento'))
 
@@ -1512,21 +1660,34 @@ Equipe Dissonante Experiências
                         'status': 'in_process',
                         'payment_id': str(payment_id),
                         'pedido_id': novo_pedido.id,
-                        'total': float(total_pedido),
+                        'total': valor_com_taxa,
                         'quantidade': qtd_total_ingressos
                     }
+
                     session.pop('carrinho', None)
                     flash('Pagamento em análise pela operadora do cartão.', 'info')
                     return redirect(url_for('pagamento'))
+
                 else:
                     db.session.delete(novo_pedido)
+
+                    session_token = session.get('session_token')
+                    if session_token:
+                        ReservaCarrinho.query.filter_by(session_id=session_token).delete()
+
                     db.session.commit()
+
                     status_detail = payment.get("status_detail", "Cartão recusado.")
                     flash(f'Transação não autorizada: {status_detail}.', 'danger')
                     return redirect(url_for('evento_marevibes'))
 
             except Exception as e:
                 db.session.delete(novo_pedido)
+
+                session_token = session.get('session_token')
+                if session_token:
+                    ReservaCarrinho.query.filter_by(session_id=session_token).delete()
+
                 db.session.commit()
                 flash('Falha na comunicação com a operadora do cartão.', 'danger')
                 return redirect(url_for('evento_marevibes'))
@@ -1547,10 +1708,6 @@ def pagamento():
         return redirect(url_for('index'))
         
     return render_template('pagamento.html', compra=compra)
-
-import threading
-
-import threading
 
 @app.route('/api/checar-status-pagamento/<payment_id>')
 @cliente_required
@@ -1581,7 +1738,7 @@ def checar_status_pagamento(payment_id):
                     pass
 
         if not pedido_id:
-            pedido_db = Pedido.query.filter_by(id_transacao=str(payment_id)).first()
+            pedido_db = Pedido.query.filter_by(pagamento_id=str(payment_id)).first()
             if pedido_db:
                 pedido_id = pedido_db.id
 
@@ -1729,8 +1886,6 @@ def painel_validacao():
 # --------------------------------------------------------------------------
 # Carga dos Dados Iniciais do Banco
 # --------------------------------------------------------------------------
-
-#inicializar_banco()
 
 if __name__ == '__main__':
     with app.app_context():
