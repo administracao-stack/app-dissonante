@@ -31,7 +31,7 @@
                 <div class="status-icon">⏳</div>
                 <h3 class="status-title status-pending">Processando Pagamento</h3>
                 
-                <div id="status-pix-badge" class="status-pix-badge">
+                <div id="status-payment-badge" class="status-payment-badge">
                     ⏳ Processando pagamento no cartão...
                 </div>
 
@@ -49,7 +49,7 @@
                 Escaneie o QR Code abaixo com o app do seu banco ou utilize o Pix Copia e Cola.
             </p>
 
-            <div id="status-pix-badge" class="status-pix-badge">
+            <div id="status-payment-badge" class="status-payment-badge">
                 ⏳ Checando pagamento automaticamente...
             </div>
 
@@ -101,6 +101,7 @@
     </div>
 </main>
 {% endblock %}
+
 {% block extra_js %}
     {% include 'includes/scripts/status_pagamento.html' %}
 {% endblock %}
