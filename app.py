@@ -890,95 +890,98 @@ def ver_carrinho():
 @app.route('/carrinho/adicionar-multiplo', methods=['POST'])
 def adicionar_carrinho_multiplo():
     # Ler todos os campos enviados pelo formulário da página do evento
+    qty_teste = int(request.form.get('qty_teste', 0))
     qty_promo = int(request.form.get('qty_promocional', 0))
     qty_lote1_meia = int(request.form.get('qty_lote1_meia', 0))
     qty_lote1_inteira = int(request.form.get('qty_lote1_inteira', 0))
     qty_lote2_meia = int(request.form.get('qty_lote2_meia', 0))
     qty_lote2_inteira = int(request.form.get('qty_lote2_inteira', 0))
 
-    total_qtd = qty_promo + qty_lote1_meia + qty_lote1_inteira + qty_lote2_meia + qty_lote2_inteira
+    total_qtd = qty_teste + qty_promo + qty_lote1_meia + qty_lote1_inteira + qty_lote2_meia + qty_lote2_inteira[cite: 20]
 
     if total_qtd <= 0:
-        flash('Selecione ao menos um ingresso para continuar.', 'warning')
-        return redirect(url_for('evento_marevibes'))
+        flash('Selecione ao menos um ingresso para continuar.', 'warning')[cite: 20]
+        return redirect(url_for('evento_marevibes'))[cite: 20]
 
     if 'session_token' not in session:
-        session['session_token'] = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+        session['session_token'] = ''.join(random.choices(string.ascii_letters + string.digits, k=32))[cite: 20]
     
-    session_id = session['session_token']
-    carrinho = session.get('carrinho', {})
+    session_id = session['session_token'][cite: 20]
+    carrinho = session.get('carrinho', {})[cite: 20]
 
-    # Mapeamento exato com os nomes criados na função inicializar_banco()
-    lotes_db = Lote.query.all()
+    # Mapeamento exato com os nomes de lotes_config
+    lotes_db = Lote.query.all()[cite: 20]
     mapa_lotes = {
-        'promo': next((l for l in lotes_db if 'promocional' in l.nome.lower()), None),
-        'lote1_meia': next((l for l in lotes_db if '1º lote - meia' in l.nome.lower()), None),
-        'lote1_inteira': next((l for l in lotes_db if '1º lote - inteira' in l.nome.lower()), None),
-        'lote2_meia': next((l for l in lotes_db if '2º lote - meia' in l.nome.lower()), None),
-        'lote2_inteira': next((l for l in lotes_db if '2º lote - inteira' in l.nome.lower()), None),
+        'teste': next((l for l in lotes_db if l.nome.lower() == 'teste'), None),
+        'promo': next((l for l in lotes_db if 'promocional' in l.nome.lower()), None),[cite: 20]
+        'lote1_meia': next((l for l in lotes_db if '1º lote - meia' in l.nome.lower()), None),[cite: 20]
+        'lote1_inteira': next((l for l in lotes_db if '1º lote - inteira' in l.nome.lower()), None),[cite: 20]
+        'lote2_meia': next((l for l in lotes_db if '2º lote - meia' in l.nome.lower()), None),[cite: 20]
+        'lote2_inteira': next((l for l in lotes_db if '2º lote - inteira' in l.nome.lower()), None),[cite: 20]
     }
 
     quantidades = [
-        ('promo', qty_promo),
-        ('lote1_meia', qty_lote1_meia),
-        ('lote1_inteira', qty_lote1_inteira),
-        ('lote2_meia', qty_lote2_meia),
-        ('lote2_inteira', qty_lote2_inteira),
+        ('teste', qty_teste),
+        ('promo', qty_promo),[cite: 20]
+        ('lote1_meia', qty_lote1_meia),[cite: 20]
+        ('lote1_inteira', qty_lote1_inteira),[cite: 20]
+        ('lote2_meia', qty_lote2_meia),[cite: 20]
+        ('lote2_inteira', qty_lote2_inteira),[cite: 20]
     ]
 
     try:
-        for chave, qtd in quantidades:
-            if qtd > 0:
-                lote = mapa_lotes.get(chave)
-                if not lote:
+        for chave, qtd in quantidades:[cite: 20]
+            if qtd > 0:[cite: 20]
+                lote = mapa_lotes.get(chave)[cite: 20]
+                if not lote or not lote.ativo:
                     continue
 
-                db.session.query(Lote).filter_by(id=lote.id).with_for_update().first()
+                db.session.query(Lote).filter_by(id=lote.id).with_for_update().first()[cite: 20]
 
-                disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
-                str_lote_id = str(lote.id)
+                disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)[cite: 20]
+                str_lote_id = str(lote.id)[cite: 20]
 
-                if qtd > disponiveis:
-                    db.session.rollback()
-                    flash(f'Desculpe, restam apenas {disponiveis} ingressos disponíveis/disponibilizados para o {lote.nome}.', 'danger')
-                    return redirect(url_for('evento_marevibes'))
+                if qtd > disponiveis:[cite: 20]
+                    db.session.rollback()[cite: 20]
+                    flash(f'Desculpe, restam apenas {disponiveis} ingressos disponíveis para o {lote.nome}.', 'danger')[cite: 20]
+                    return redirect(url_for('evento_marevibes'))[cite: 20]
 
-                expiracao = datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_RESERVA)
-                reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()
+                expiracao = datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_RESERVA)[cite: 20]
+                reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()[cite: 20]
 
-                if reserva:
-                    reserva.quantidade += qtd
-                    reserva.data_expiracao = expiracao
+                if reserva:[cite: 20]
+                    reserva.quantidade += qtd[cite: 20]
+                    reserva.data_expiracao = expiracao[cite: 20]
                 else:
-                    reserva = ReservaCarrinho(
-                        session_id=session_id,
-                        lote_id=lote.id,
-                        quantidade=qtd,
-                        data_expiracao=expiracao
+                    reserva = ReservaCarrinho([cite: 20]
+                        session_id=session_id,[cite: 20]
+                        lote_id=lote.id,[cite: 20]
+                        quantidade=qtd,[cite: 20]
+                        data_expiracao=expiracao[cite: 20]
                     )
-                    db.session.add(reserva)
+                    db.session.add(reserva)[cite: 20]
 
-                if str_lote_id in carrinho:
-                    carrinho[str_lote_id]['quantidade'] += qtd
+                if str_lote_id in carrinho:[cite: 20]
+                    carrinho[str_lote_id]['quantidade'] += qtd[cite: 20]
                 else:
-                    carrinho[str_lote_id] = {
-                        'lote_id': lote.id,
-                        'evento_nome': lote.evento.titulo if (hasattr(lote, 'evento') and lote.evento) else "MaréVibes Halloween 2026",
-                        'lote_nome': lote.nome,
-                        'preco': lote.preco,
-                        'quantidade': qtd
+                    carrinho[str_lote_id] = {[cite: 20]
+                        'lote_id': lote.id,[cite: 20]
+                        'evento_nome': lote.evento.titulo if (hasattr(lote, 'evento') and lote.evento) else "MaréVibes Halloween 2026",[cite: 20]
+                        'lote_nome': lote.nome,[cite: 20]
+                        'preco': lote.preco,[cite: 20]
+                        'quantidade': qtd[cite: 20]
                     }
 
-        db.session.commit()
-        session['carrinho'] = carrinho
-        session.modified = True
-        flash('Ingressos reservados e adicionados ao carrinho por 15 minutos!', 'success')
+        db.session.commit()[cite: 20]
+        session['carrinho'] = carrinho[cite: 20]
+        session.modified = True[cite: 20]
+        flash('Ingressos reservados e adicionados ao carrinho por 15 minutos!', 'success')[cite: 20]
 
-    except Exception as e:
-        db.session.rollback()
-        flash('Erro ao reservar os ingressos. Tente novamente.', 'danger')
+    except Exception as e:[cite: 20]
+        db.session.rollback()[cite: 20]
+        flash('Erro ao reservar os ingressos. Tente novamente.', 'danger')[cite: 20]
 
-    return redirect(url_for('ver_carrinho'))
+    return redirect(url_for('ver_carrinho'))[cite: 20]
 
 @app.route('/carrinho/remover/<int:lote_id>', methods=['POST'])
 def remover_carrinho(lote_id):
