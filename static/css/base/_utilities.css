@@ -1,3 +1,7 @@
+/* ==========================================================================
+   Utilitários Globais e Suporte Responsivo
+   ========================================================================== */
+
 .container {
     width: 90%;
     max-width: 1200px;
@@ -32,4 +36,34 @@
 
 .is-visible {
     display: flex !important;
+}
+
+/* --------------------------------------------------------------------------
+   Ajustes Responsivos de Espaçamento e Utilitários Móveis
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+    .container {
+        padding: 32px 0;
+        width: 92%;
+    }
+
+    .hide-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .container {
+        padding: 24px 0;
+        width: 94%;
+    }
+
+    .text-right {
+        text-align: left;
+    }
+
+    .hide-sm {
+        display: none !important;
+    }
 }
