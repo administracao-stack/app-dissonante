@@ -28,7 +28,7 @@
             <div class="event-details">
                 <div>📅 31 de Outubro, às 17h</div>
                 <div>📍 Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE</div>
-                <div>🔞 Classificação Indicativa: Strictly 18+</div>
+                <div>🔞 Classificação Indicativa: 18+</div>
             </div>
             
             <p class="about-text-highlight">
@@ -92,7 +92,7 @@
                         <div class="ticket-counter">
                             <button type="button" class="btn-qty" onclick="updateQty('promo', -1)">-</button>
                             <span id="qty-promo" class="qty-number">0</span>
-                            <input type="hidden" name="qty_promocional" id="input-promo" value="0">
+                            <input type="hidden" name="qty_promo" id="input-promo" value="0">
                             <button type="button" class="btn-qty" onclick="updateQty('promo', 1)">+</button>
                         </div>
                     </div>
@@ -247,6 +247,11 @@
 
     const MAX_QTY_PER_ITEM = 5;
 
+    // Helper para formatação monetária segura em BRL
+    function formatBRL(value) {
+        return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
     function toggleAccordion(id) {
         const content = document.getElementById(id);
         const arrow = document.getElementById(`arrow-${id}`);
@@ -282,9 +287,9 @@
             const totalCard2x = totalBase / (1 - TAXA_CREDITO_2X);
             const parcela2x = totalCard2x / 2;
 
-            document.getElementById('display-total-pix').innerHTML = `R$ ${totalPix.toFixed(2).replace('.', ',')} <span class="pix-badge-text">no Pix</span>`;
-            document.getElementById('display-total-card1x').innerText = `Cartão à vista: (R$ ${totalCard1x.toFixed(2).replace('.', ',')})`;
-            document.getElementById('display-total-card2x').innerText = `Cartão 2x: (R$ ${totalCard2x.toFixed(2).replace('.', ',')} ou 2x de R$ ${parcela2x.toFixed(2).replace('.', ',')})`;
+            document.getElementById('display-total-pix').innerHTML = `${formatBRL(totalPix)} <span class="pix-badge-text">no Pix</span>`;
+            document.getElementById('display-total-card1x').innerText = `Cartão à vista: (${formatBRL(totalCard1x)})`;
+            document.getElementById('display-total-card2x').innerText = `Cartão 2x: (${formatBRL(totalCard2x)} ou 2x de ${formatBRL(parcela2x)})`;
         } else {
             document.getElementById('display-total-pix').innerHTML = 'R$ 0,00 <span class="pix-badge-text">no Pix</span>';
             document.getElementById('display-total-card1x').innerText = 'Cartão à vista: (R$ 0,00)';
