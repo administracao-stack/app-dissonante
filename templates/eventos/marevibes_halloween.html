@@ -102,22 +102,13 @@
                         <div class="ticket-accordion-header" onclick="toggleAccordion('lote1-details')">
                             <div class="ticket-type-info">
                                 <strong class="ticket-name">1º Lote</strong>
-                                <span class="ticket-price-tax">
-                                    A partir de <strong>R$ 179,98 no Pix</strong> <small>(R$ 187,56 no cartão à vista)</small>
-                                </span>
+                                <span class="ticket-price-tax">A partir de <strong>R$ 179,98 no Pix</strong></span>
                             </div>
-                            <span class="accordion-arrow" id="arrow-lote1-details">▼</span>
                         </div>
-                        
-                        <div class="ticket-accordion-content" id="lote1-details">
-                            <!-- 1º Lote Meia -->
-                            <div class="ticket-sub-row">
-                                <div class="ticket-type-info">
-                                    <span class="sub-ticket-name">1º Lote - Meia</span>
-                                    <span class="ticket-price-tax">
-                                        <strong>R$ 179,98 no Pix</strong> <small>(R$ 187,56 no cartão à vista)</small>
-                                    </span>
-                                </div>
+                        <div id="lote1-details" class="ticket-accordion-content">
+                            <!-- 1º Lote - Meia -->
+                            <div class="ticket-type-subrow">
+                                <span>1º Lote - Meia Entrada</span>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_meia', -1)">-</button>
                                     <span id="qty-lote1_meia" class="qty-number">0</span>
@@ -125,15 +116,9 @@
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_meia', 1)">+</button>
                                 </div>
                             </div>
-
-                            <!-- 1º Lote Inteira -->
-                            <div class="ticket-sub-row">
-                                <div class="ticket-type-info">
-                                    <span class="sub-ticket-name">1º Lote - Inteira</span>
-                                    <span class="ticket-price-tax">
-                                        <strong>R$ 196,34 no Pix</strong> <small>(R$ 204,61 no cartão à vista)</small>
-                                    </span>
-                                </div>
+                            <!-- 1º Lote - Inteira -->
+                            <div class="ticket-type-subrow">
+                                <span>1º Lote - Inteira</span>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_inteira', -1)">-</button>
                                     <span id="qty-lote1_inteira" class="qty-number">0</span>
@@ -221,14 +206,14 @@
 
 {% if not vendas_encerradas %}
 <script>
-    // Tabela de Preços Base
+    // Tabela de Preços Base exata para bater com a exibição
     const prices = {
-        teste: 1.00,
-        promo: 162.00,
-        lote1_meia: 178.20,
-        lote1_inteira: 194.40,
-        lote2_meia: 194.40,
-        lote2_inteira: 226.80
+        teste: 1.01,
+        promo: 163.62,
+        lote1_meia: 179.98,
+        lote1_inteira: 196.34,
+        lote2_meia: 196.34,
+        lote2_inteira: 229.07
     };
 
     const quantities = {
@@ -240,14 +225,12 @@
         lote2_inteira: 0
     };
 
-    // Taxas da Plataforma (Mercado Pago)
-    const TAXA_PIX = 0.0099;       // 0,99%
-    const TAXA_CREDITO_1X = 0.0499; // 4,99%
-    const TAXA_CREDITO_2X = 0.0629; // 6,29%
+    // Fatores de acréscimo para exibição em Cartão (em relação ao valor base Pix)
+    const FATOR_CREDITO_1X = 1.0421; // ~4,21% sobre o Pix para bater com os R$ 187,56 do 1º lote
+    const FATOR_CREDITO_2X = 1.0833; // ~8,33% para parcelamento em 2x
 
     const MAX_QTY_PER_ITEM = 5;
 
-    // Helper para formatação monetária segura em BRL
     function formatBRL(value) {
         return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
@@ -255,12 +238,11 @@
     function toggleAccordion(id) {
         const content = document.getElementById(id);
         const arrow = document.getElementById(`arrow-${id}`);
-        if (content.classList.contains('open')) {
-            content.classList.remove('open');
-            arrow.classList.remove('rotated');
-        } else {
-            content.classList.add('open');
-            arrow.classList.add('rotated');
+        if (content) {
+            content.classList.toggle('open');
+        }
+        if (arrow) {
+            arrow.classList.toggle('rotated');
         }
     }
 
@@ -269,35 +251,42 @@
         
         if (newQty >= 0 && newQty <= MAX_QTY_PER_ITEM) {
             quantities[type] = newQty;
-            document.getElementById(`qty-${type}`).innerText = quantities[type];
-            document.getElementById(`input-${type}`).value = quantities[type];
+            
+            const qtyDisplay = document.getElementById(`qty-${type}`);
+            const inputField = document.getElementById(`input-${type}`);
+            
+            if (qtyDisplay) qtyDisplay.innerText = quantities[type];
+            if (inputField) inputField.value = quantities[type];
+            
             calculateTotal();
         }
     }
 
     function calculateTotal() {
-        let totalBase = 0;
+        let totalPix = 0;
         for (const key in quantities) {
-            totalBase += quantities[key] * prices[key];
+            totalPix += quantities[key] * prices[key];
         }
 
-        if (totalBase > 0) {
-            const totalPix = totalBase / (1 - TAXA_PIX);
-            const totalCard1x = totalBase / (1 - TAXA_CREDITO_1X);
-            const totalCard2x = totalBase / (1 - TAXA_CREDITO_2X);
+        const btnAddCart = document.getElementById('btn-add-cart');
+
+        if (totalPix > 0) {
+            const totalCard1x = totalPix * FATOR_CREDITO_1X;
+            const totalCard2x = totalPix * FATOR_CREDITO_2X;
             const parcela2x = totalCard2x / 2;
 
             document.getElementById('display-total-pix').innerHTML = `${formatBRL(totalPix)} <span class="pix-badge-text">no Pix</span>`;
             document.getElementById('display-total-card1x').innerText = `Cartão à vista: (${formatBRL(totalCard1x)})`;
             document.getElementById('display-total-card2x').innerText = `Cartão 2x: (${formatBRL(totalCard2x)} ou 2x de ${formatBRL(parcela2x)})`;
+            
+            if (btnAddCart) btnAddCart.disabled = false;
         } else {
             document.getElementById('display-total-pix').innerHTML = 'R$ 0,00 <span class="pix-badge-text">no Pix</span>';
             document.getElementById('display-total-card1x').innerText = 'Cartão à vista: (R$ 0,00)';
             document.getElementById('display-total-card2x').innerText = 'Cartão 2x: (R$ 0,00 ou 2x de R$ 0,00)';
+            
+            if (btnAddCart) btnAddCart.disabled = true;
         }
-        
-        const btnAddCart = document.getElementById('btn-add-cart');
-        btnAddCart.disabled = totalBase === 0;
     }
 
     document.getElementById('tickets-form').addEventListener('submit', function(e) {
@@ -309,6 +298,14 @@
         if (totalIngressos === 0) {
             e.preventDefault();
             alert('Selecione pelo menos um ingresso para adicionar ao carrinho.');
+            return;
+        }
+
+        // Trava o botão para evitar envios duplicados
+        const btnAddCart = document.getElementById('btn-add-cart');
+        if (btnAddCart) {
+            btnAddCart.disabled = true;
+            btnAddCart.innerText = '⏳ Adicionando...';
         }
     });
 </script>
