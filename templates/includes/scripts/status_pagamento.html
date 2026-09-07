@@ -77,8 +77,8 @@
                         badge.innerText = '❌ Pagamento não aprovado.';
                     }
                     
-                    alert(data.message || "Seu pagamento não foi aprovado. Por favor, tente novamente.");
-                    window.location.href = "{{ url_for('checkout') }}";
+                    alert(data.message || "Seu pagamento não foi aprovado. Por favor, tente novamente selecionando os ingressos.");
+                    window.location.href = "{{ url_for('evento_marevibes') }}";
                 }
                 else if (data.status === 'in_process') {
                     if (badge) {
