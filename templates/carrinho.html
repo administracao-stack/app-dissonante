@@ -6,9 +6,8 @@
 <main class="container profile-container cart-container">
     <div class="profile-card">
         <h2>Seu Carrinho de Ingressos</h2>
-        <p class="profile-sub">Revise seus itens antes de prosseguir para o pagamento.</p>
+        <p class="profile-sub">Revise seus itens e o valor final com as taxas inclusas.</p>
         
-        <!-- Aviso de cota por cliente -->
         <p class="cart-limit-notice">
             ℹ️ <strong>Aviso:</strong> Limite máximo de até 5 ingressos por lote por cliente para este evento.
         </p>
@@ -46,8 +45,33 @@
                 </tbody>
             </table>
 
+            <!-- Resumo Transparente das Taxas e Totais -->
+            <div class="cart-summary-box">
+                <div class="cart-summary-row">
+                    <span>Subtotal dos ingressos:</span>
+                    <strong>R$ {{ "%.2f"|format(resumo.subtotal)|replace('.', ',') }}</strong>
+                </div>
+                <div class="cart-summary-row cart-summary-fee">
+                    <span>Taxa de processamento de pagamento (Pix):</span>
+                    <span>+ R$ {{ "%.2f"|format(resumo.taxa_pix)|replace('.', ',') }}</span>
+                </div>
+                
+                <hr class="cart-summary-divider">
+                
+                <div class="cart-summary-total-row">
+                    <h3>Total a pagar (Pix):</h3>
+                    <span class="cart-total-price">
+                        R$ {{ "%.2f"|format(resumo.total_pix)|replace('.', ',') }}
+                    </span>
+                </div>
+
+                <div class="cart-summary-card-options">
+                    💳 No Cartão à vista: <strong>R$ {{ "%.2f"|format(resumo.total_cartao_1x)|replace('.', ',') }}</strong><br>
+                    💳 No Cartão em 2x: <strong>R$ {{ "%.2f"|format(resumo.total_cartao_2x)|replace('.', ',') }}</strong> (2x de R$ {{ "%.2f"|format(resumo.parcela_2x)|replace('.', ',') }})
+                </div>
+            </div>
+
             <div class="cart-footer-actions">
-            <h3>Total: <span class="cart-total-price">R$ {{ "%.2f"|format(total)|replace('.', ',') }}</span></h3>
                 <div class="cart-buttons-group">
                     <form action="{{ url_for('limpar_carrinho') }}" method="POST">
                         <button type="submit" class="btn-clear-cart" onclick="return confirm('Tem certeza que deseja esvaziar seu carrinho?');">
@@ -60,11 +84,13 @@
                         </button>
                     </form>
                 </div>
-                
-                {% else %}
-                    <p>Seu carrinho está vazio.</p>
-                {% endif %}
-
             </div>
+        {% else %}
+            <div class="cart-empty-state">
+                <p>Seu carrinho está vazio.</p>
+                <a href="{{ url_for('evento_marevibes') }}" class="btn-primary btn-empty-cart-action">Ver Ingressos Disponíveis</a>
+            </div>
+        {% endif %}
+    </div>
 </main>
 {% endblock %}
