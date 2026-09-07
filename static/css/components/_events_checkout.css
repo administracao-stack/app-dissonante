@@ -423,26 +423,66 @@
     color: #f87171;
 }
 
-.cart-footer-actions {
+/* Caixa de Resumo e Taxas */
+.cart-summary-box {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 20px;
+}
+
+.cart-summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    color: #ffffff;
+}
+
+.cart-summary-fee {
+    color: #aaa;
+    font-size: 0.9rem;
+}
+
+.cart-summary-divider {
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin: 14px 0;
+}
+
+.cart-summary-total-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 12px;
 }
 
-.cart-footer-actions h3 {
-    font-size: 1.2rem;
-    color: #ffffff;
+.cart-summary-total-row h3 {
     margin: 0;
+    font-size: 1.25rem;
+    color: #ffffff;
 }
 
 .cart-total-price {
-    color: var(--gold, #d4af37);
+    font-size: 1.6rem;
+    color: #28a745;
     font-weight: 800;
-    font-size: 1.4rem;
-    margin-left: 8px;
+}
+
+.cart-summary-card-options {
+    font-size: 0.85rem;
+    color: #bbb;
+    text-align: right;
+    line-height: 1.5;
+}
+
+/* Botões de Ação do Rodapé */
+.cart-footer-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 25px;
 }
 
 .cart-buttons-group {
