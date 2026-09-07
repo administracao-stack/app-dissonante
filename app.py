@@ -664,8 +664,27 @@ def redefinir_senha(token):
 @app.route('/carrinho')
 def ver_carrinho():
     carrinho_dict = session.get('carrinho', {})
-    total = sum(item['preco'] * item['quantidade'] for item in carrinho_dict.values())
-    return render_template('carrinho.html', carrinho=list(carrinho_dict.values()), total=total)
+    subtotal = sum(item['preco'] * item['quantidade'] for item in carrinho_dict.values())
+    
+    # Calcula as taxas reais sobre o valor do carrinho
+    calc_pix = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='pix')
+    calc_cartao_1x = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='credit_card', parcelas=1)
+    calc_cartao_2x = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='credit_card', parcelas=2)
+
+    resumo_financeiro = {
+        'subtotal': subtotal,
+        'taxa_pix': calc_pix['taxa'],
+        'total_pix': calc_pix['valor_final'],
+        'total_cartao_1x': calc_cartao_1x['valor_final'],
+        'total_cartao_2x': calc_cartao_2x['valor_final'],
+        'parcela_2x': round(calc_cartao_2x['valor_final'] / 2, 2)
+    }
+
+    return render_template(
+        'carrinho.html', 
+        carrinho=list(carrinho_dict.values()), 
+        resumo=resumo_financeiro
+    )
 
 @app.route('/carrinho/adicionar-multiplo', methods=['POST'])
 def adicionar_carrinho_multiplo():
