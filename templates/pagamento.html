@@ -83,9 +83,9 @@
             </div>
             <strong class="order-summary-price">
                 {% if compra %}
-                    {{ compra.quantidade | default(1) }}x Ingresso(s) — R$ {{ "%.2f"|format(compra.total | default(0.0))|replace('.', ',') }}
+                    Ingressos do Pedido #{% if compra.pedido_id %}{{ compra.pedido_id }}{% endif %} — Total: R$ {{ "%.2f"|format(compra.total | default(0.0))|replace('.', ',') }}
                 {% else %}
-                    1x Ingresso
+                    Resumo indisponível
                 {% endif %}
             </strong>
         </div>
