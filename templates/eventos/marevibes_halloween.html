@@ -102,13 +102,22 @@
                         <div class="ticket-accordion-header" onclick="toggleAccordion('lote1-details')">
                             <div class="ticket-type-info">
                                 <strong class="ticket-name">1º Lote</strong>
-                                <span class="ticket-price-tax">A partir de <strong>R$ 179,98 no Pix</strong></span>
+                                <span class="ticket-price-tax">
+                                    A partir de <strong>R$ 179,98 no Pix</strong> <small>(R$ 187,56 no cartão à vista)</small>
+                                </span>
                             </div>
+                            <span class="accordion-arrow" id="arrow-lote1-details">▼</span>
                         </div>
-                        <div id="lote1-details" class="ticket-accordion-content">
+                        
+                        <div class="ticket-accordion-content" id="lote1-details">
                             <!-- 1º Lote - Meia -->
-                            <div class="ticket-type-subrow">
-                                <span>1º Lote - Meia Entrada</span>
+                            <div class="ticket-sub-row">
+                                <div class="ticket-type-info">
+                                    <span class="sub-ticket-name">1º Lote - Meia Entrada</span>
+                                    <span class="ticket-price-tax">
+                                        <strong>R$ 179,98 no Pix</strong> <small>(R$ 187,56 no cartão à vista)</small>
+                                    </span>
+                                </div>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_meia', -1)">-</button>
                                     <span id="qty-lote1_meia" class="qty-number">0</span>
@@ -116,9 +125,15 @@
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_meia', 1)">+</button>
                                 </div>
                             </div>
+
                             <!-- 1º Lote - Inteira -->
-                            <div class="ticket-type-subrow">
-                                <span>1º Lote - Inteira</span>
+                            <div class="ticket-sub-row">
+                                <div class="ticket-type-info">
+                                    <span class="sub-ticket-name">1º Lote - Inteira</span>
+                                    <span class="ticket-price-tax">
+                                        <strong>R$ 196,34 no Pix</strong> <small>(R$ 204,61 no cartão à vista)</small>
+                                    </span>
+                                </div>
                                 <div class="ticket-counter">
                                     <button type="button" class="btn-qty" onclick="updateQty('lote1_inteira', -1)">-</button>
                                     <span id="qty-lote1_inteira" class="qty-number">0</span>
