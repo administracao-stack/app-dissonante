@@ -229,7 +229,7 @@
     const FATOR_CREDITO_1X = 1.0421; // ~4,21% sobre o Pix para bater com os R$ 187,56 do 1º lote
     const FATOR_CREDITO_2X = 1.0833; // ~8,33% para parcelamento em 2x
 
-    const MAX_QTY_PER_ITEM = 5;
+    const stockLimits = {{ estoques | tojson }};
 
     function formatBRL(value) {
         return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -247,9 +247,12 @@
     }
 
     function updateQty(type, change) {
-        const newQty = quantities[type] + change;
+        const currentQty = quantities[type];
+        // Recupera o limite máximo dinâmico do lote selecionado
+        const maxAllowed = stockLimits[type] !== undefined ? stockLimits[type] : 0;
+        const newQty = currentQty + change;
         
-        if (newQty >= 0 && newQty <= MAX_QTY_PER_ITEM) {
+        if (newQty >= 0 && newQty <= maxAllowed) {
             quantities[type] = newQty;
             
             const qtyDisplay = document.getElementById(`qty-${type}`);
@@ -259,6 +262,12 @@
             if (inputField) inputField.value = quantities[type];
             
             calculateTotal();
+        } else if (change > 0 && newQty > maxAllowed) {
+            if (maxAllowed === 0) {
+                alert('Este lote está esgotado no momento.');
+            } else {
+                alert(`Resta(m) apenas ${maxAllowed} ingresso(s) disponível(is) para este lote.`);
+            }
         }
     }
 
