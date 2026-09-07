@@ -410,7 +410,7 @@ MINUTOS_RESERVA = 15
 def limpar_reservas_expiradas():
     agora = datetime.now(timezone.utc)
     ReservaCarrinho.query.filter(ReservaCarrinho.data_expiracao < agora).delete(synchronize_session=False)
-    db.session.commit()
+    db.session.flush()
 
 def obter_estoque_disponivel(lote_id, session_id_atual=None):
     limpar_reservas_expiradas()
@@ -449,9 +449,29 @@ def servicos():
 
 @app.route('/evento/marevibes-halloween')
 def evento_marevibes():
+    session_id = session.get('session_token')
     lotes = Lote.query.filter(~Lote.nome.ilike('%Cortesia%')).order_by(Lote.id.asc()).all()
     lote_ativo = Lote.query.filter_by(ativo=True).first()
-    return render_template('eventos/marevibes_halloween.html', lote=lote_ativo, lotes=lotes)
+
+    # Mapeamento dos termos nos nomes dos lotes para as chaves do JavaScript
+    mapa_chaves = {
+        'teste': 'teste',
+        'promocional': 'promo',
+        '1º lote - meia': 'lote1_meia',
+        '1º lote - inteira': 'lote1_inteira',
+        '2º lote - meia': 'lote2_meia',
+        '2º lote - inteira': 'lote2_inteira'
+    }
+
+    estoques = {}
+    for lote in lotes:
+        for termo, chave in mapa_chaves.items():
+            if termo in lote.nome.lower():
+                # Considera o menor valor entre o limite padrão de compra (5) e o estoque real do banco
+                disponivel = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
+                estoques[chave] = min(5, disponivel) if lote.ativo else 0
+
+    return render_template('eventos/marevibes_halloween.html', lote=lote_ativo, lotes=lotes, estoques=estoques)
 
 @app.route('/termos-de-uso')
 def termos_de_uso():
@@ -954,7 +974,7 @@ def checkout():
                 session.pop('carrinho', None)
                 return redirect(url_for('pagamento'))
 
-            elif metodo == 'cartao':
+            elif metodo == 'credit_card':
                 card_token = request.form.get('token')
                 installments = int(request.form.get('installments', 1))
                 payment_method_id = request.form.get('payment_method_id')
@@ -972,11 +992,9 @@ def checkout():
                 res = sdk.payment().create(payment_data).get("response", {})
                 status_pagamento = res.get("status")
 
-                if status_pagamento in ["approved", "in_process", "pending"]:
-                    novo_pedido.pagamento_id = str(res.get("id"))
-                    if status_pagamento == "approved":
-                        novo_pedido.status = "approved"
-                        gerar_ingressos_para_pedido(novo_pedido)
+                if status_pagamento == "approved":
+                    novo_pedido.status = "approved"
+                    gerar_ingressos_para_pedido(novo_pedido.id, str(res.get("id")))
 
                     db.session.commit()
                     session.pop('carrinho', None)
