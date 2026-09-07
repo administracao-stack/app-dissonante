@@ -53,11 +53,6 @@
     {# Script para telas que contêm reCAPTCHA v3 #}
     {% include 'includes/scripts/recaptcha.html' %}
 
-    {# Script para a tela de Checkout #}
-    {% if request.endpoint == 'checkout' %}
-        {% include 'includes/scripts/checkout_script.html' %}
-    {% endif %}
-
     {# Bloco para scripts JS extras específicos de qualquer template estendido #}
     {% block extra_js %}{% endblock %}
 
