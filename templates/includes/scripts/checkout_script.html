@@ -108,25 +108,50 @@
             const metodo = metodoInput ? metodoInput.value : 'pix';
 
             if (metodo === 'pix') {
-                return;
+                return; // Envia o formulário normalmente para pagamento via PIX
             }
 
             e.preventDefault();
 
+            const btnSubmit = document.getElementById('btn-submit-checkout');
+            if (btnSubmit) btnSubmit.disabled = true;
+
             try {
-                const cardExpirationValue = document.getElementById('cardExpiration').value.split('/');
+                const rawExpiration = document.getElementById('cardExpiration').value.trim();
+                const expirationParts = rawExpiration.split('/');
+
+                if (expirationParts.length !== 2) {
+                    throw new Error('Data de validade do cartão inválida. Use o formato MM/AA.');
+                }
+
+                const month = expirationParts[0].trim();
+                let year = expirationParts[1].trim();
+                
+                // Formata o ano para 4 dígitos se enviado como YY
+                if (year.length === 2) {
+                    year = '20' + year;
+                }
+
                 const cardToken = await mp.createCardToken({
                     cardNumber: document.getElementById('cardNumber').value.replace(/\s+/g, ''),
-                    cardholderName: document.getElementById('cardholderName').value,
-                    cardExpirationMonth: cardExpirationValue[0],
-                    cardExpirationYear: '20' + cardExpirationValue[1],
-                    securityCode: document.getElementById('securityCode').value,
+                    cardholderName: document.getElementById('cardholderName').value.trim(),
+                    cardExpirationMonth: month,
+                    cardExpirationYear: year,
+                    securityCode: document.getElementById('securityCode').value.trim(),
                     identificationType: 'CPF',
                     identificationNumber: document.getElementById('cpf').value.replace(/\D/g, '')
                 });
 
+                if (!cardToken || !cardToken.id) {
+                    throw new Error('Não foi possível gerar o token do cartão de crédito.');
+                }
+
                 document.getElementById('token').value = cardToken.id;
-                document.getElementById('payment_method_id').value = cardToken.payment_method_id;
+
+                // Tenta resolver o método de pagamento dinamicamente se o SDK não trouxer preenchido
+                if (cardToken.payment_method_id) {
+                    document.getElementById('payment_method_id').value = cardToken.payment_method_id;
+                }
 
                 if (cardToken.issuer_id) {
                     document.getElementById('issuer_id').value = cardToken.issuer_id;
@@ -135,7 +160,17 @@
                 form.submit();
 
             } catch (error) {
-                alert('Erro ao validar os dados do cartão. Verifique os campos e tente novamente.');
+                console.error('Erro na tokenização do cartão:', error);
+                
+                let mensagemErro = 'Erro ao processar o cartão de crédito.';
+                if (Array.isArray(error) && error.length > 0) {
+                    mensagemErro = error[0].message || mensagemErro;
+                } else if (error.message) {
+                    mensagemErro = error.message;
+                }
+
+                alert(`Atenção: ${mensagemErro}\nVerifique se está utilizando os dados de cartão de teste do Mercado Pago.`);
+                if (btnSubmit) btnSubmit.disabled = false;
             }
         });
     });
