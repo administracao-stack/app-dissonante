@@ -1,5 +1,4 @@
 document.addEventListener("click", function (e) {
-    // Procura pelo botão .btn-favorite mais próximo do elemento clicado
     const btn = e.target.closest('.btn-favorite');
     if (!btn) return;
 
@@ -26,18 +25,17 @@ document.addEventListener("click", function (e) {
         if (data && data.status === 'success') {
             btn.classList.toggle('active', data.favoritado);
             
-            // Atualiza o contador de favoritos no header
-            const badge = document.querySelector('.btn-icon-header .badge');
+            // Seleciona especificamente o badge de favoritos
+            const badge = document.querySelector('.badge-favoritos');
             if (badge && data.total_favoritos !== undefined) {
                 badge.textContent = data.total_favoritos;
             }
 
-            // Se estiver na página de meus favoritos e o evento for desfavoritado, remove o card
+            // Tratamento dinâmico para remoção do card na tela de favoritos
             if (!data.favoritado && window.location.pathname.includes('/meus-favoritos')) {
                 const card = btn.closest('.ticket-card');
                 if (card) card.remove();
                 
-                // Se não houver mais cards visíveis, recarrega a página para exibir o Empty State do Jinja
                 if (document.querySelectorAll('.ticket-card').length === 0) {
                     window.location.reload();
                 }
