@@ -63,6 +63,21 @@ TAXAS_MP = {
     'credit_card_2x': 0.1462
 }
 
+MENSAGENS_ERRO_MP = {
+    'cc_rejected_bad_filled_other': 'Dados do cartão incorretos. Verifique os dados digitados.',
+    'cc_rejected_bad_filled_card_number': 'Número do cartão inválido.',
+    'cc_rejected_bad_filled_date': 'Data de expiração do cartão inválida.',
+    'cc_rejected_bad_filled_security_code': 'Código de segurança (CVV) inválido.',
+    'cc_rejected_insufficient_amount': 'Saldo ou limite insuficiente no cartão.',
+    'cc_rejected_card_disabled': 'O cartão está bloqueado ou desativado. Entre em contato com a emissora.',
+    'cc_rejected_max_attempts_exceeded': 'Você excedeu o limite de tentativas permitidas. Tente mais tarde.',
+    'cc_rejected_call_for_authorize': 'Você precisa autorizar o pagamento junto ao seu banco/emissora.',
+    'cc_rejected_high_risk': 'Pagamento recusado por motivos de segurança.',
+    'cc_rejected_by_issuer': 'Pagamento recusado pela operadora do cartão.',
+    'cc_rejected_invalid_installments': 'O número de parcelas selecionado não é aceito por este cartão.',
+    'invalid_installments': 'O número de parcelas selecionado não é válido para este tipo de cartão.'
+}
+
 def calcular_valor_com_taxa_mp(valor_base, metodo_pagamento='pix', parcelas=1):
     if valor_base <= 0:
         return {'valor_final': 0.0, 'taxa': 0.0}
@@ -943,19 +958,33 @@ def checkout():
         if lote_obj:
             subtotal = item_data.get('quantidade', 0) * lote_obj.preco
             total_pedido += subtotal
-            ordem_compra.append({'lote': lote_obj, 'quantidade': item_data.get('quantidade', 0), 'preco_unitario': lote_obj.preco})
+            ordem_compra.append({
+                'lote': lote_obj,
+                'quantidade': item_data.get('quantidade', 0),
+                'preco_unitario': lote_obj.preco
+            })
 
     if request.method == 'POST' and sdk:
         metodo = request.form.get('metodo_pagamento', 'pix')
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo)
         valor_final = calc_taxa['valor_final']
 
-        novo_pedido = Pedido(usuario_id=usuario_atual.id, total=valor_final, status='pending', metodo_pagamento=metodo)
+        novo_pedido = Pedido(
+            usuario_id=usuario_atual.id,
+            total=valor_final,
+            status='pending',
+            metodo_pagamento=metodo
+        )
         db.session.add(novo_pedido)
         db.session.flush()
 
         for item in ordem_compra:
-            db.session.add(ItemPedido(pedido_id=novo_pedido.id, lote_id=item['lote'].id, quantidade=item['quantidade'], preco_unitario=item['preco_unitario']))
+            db.session.add(ItemPedido(
+                pedido_id=novo_pedido.id,
+                lote_id=item['lote'].id,
+                quantidade=item['quantidade'],
+                preco_unitario=item['preco_unitario']
+            ))
 
         db.session.commit()
 
@@ -996,7 +1025,14 @@ def checkout():
             elif metodo == 'credit_card':
                 card_token = request.form.get('token')
                 installments = int(request.form.get('installments', 1))
-                payment_method_id = request.form.get('payment_method_id')
+                payment_method_id = request.form.get('payment_method_id', '')
+
+                # Trava de Segurança Backend para Cartões Pré-Pagos
+                is_prepaid = 'prepaid' in payment_method_id.lower() or request.form.get('payment_type_id') == 'prepaid_card'
+                if is_prepaid and installments > 1:
+                    db.session.rollback()
+                    flash('Cartões pré-pagos não suportam parcelamento. Por favor, selecione 1x (à vista).', 'warning')
+                    return redirect(url_for('checkout'))
 
                 payment_data = {
                     "transaction_amount": valor_final,
@@ -1010,6 +1046,7 @@ def checkout():
 
                 res = sdk.payment().create(payment_data).get("response", {})
                 status_pagamento = res.get("status")
+                status_detail = res.get("status_detail")
 
                 if status_pagamento == "approved":
                     novo_pedido.status = "approved"
@@ -1021,12 +1058,17 @@ def checkout():
                     return redirect(url_for('meus_ingressos'))
                 else:
                     db.session.rollback()
-                    flash('Pagamento recusado pela operadora do cartão. Tente novamente.', 'danger')
-                    return redirect(url_for('checkout'))
+                    msg_erro = MENSAGENS_ERRO_MP.get(
+                        status_detail,
+                        'Pagamento recusado. Verifique os dados do cartão ou selecione outra opção.',
+                    )
+                    flash(f"Falha no pagamento: {msg_erro}", "danger")
+                    return redirect(url_for("checkout"))
 
         except Exception as e:
             db.session.rollback()
-            flash('Erro ao processar o pagamento com o gateway.', 'danger')
+            print(f"[ERRO NO CHECKOUT]: {str(e)}")
+            flash('Erro técnico ao processar o pagamento com o gateway. Tente novamente mais tarde.', 'danger')
             return redirect(url_for('checkout'))
 
     return render_template('checkout.html', usuario=usuario_atual, ordem_compra=ordem_compra, total_pedido=total_pedido)
