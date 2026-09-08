@@ -93,8 +93,8 @@ def calcular_valor_com_taxa_mp(valor_base, metodo_pagamento='pix', parcelas=1):
     taxa_val = round(valor_final - valor_base, 2)
     return {'valor_final': valor_final, 'taxa': taxa_val}
 
-MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN', '')
-MP_PUBLIC_KEY = os.getenv('MP_PUBLIC_KEY', '')
+MMERCADOPAGO_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN_TEST', '')
+MP_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY_TEST', '')
 MP_WEBHOOK_SECRET = os.getenv('MP_WEBHOOK_SECRET', '')
 sdk = mercadopago.SDK(MERCADOPAGO_TOKEN) if MERCADOPAGO_TOKEN else None
 
