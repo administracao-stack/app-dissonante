@@ -937,7 +937,13 @@ def favoritar():
 
     session['favoritos'] = favoritos
     session.modified = True
-    return jsonify({'status': 'success', 'favoritado': favoritado})
+    
+    # Retorna o total atualizado da lista de favoritos
+    return jsonify({
+        'status': 'success', 
+        'favoritado': favoritado,
+        'total_favoritos': len(favoritos)
+    })
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
