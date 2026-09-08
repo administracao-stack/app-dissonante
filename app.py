@@ -109,7 +109,10 @@ def inject_globals():
         'local': 'Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE',
         'descricao': 'Prepare-se para a noite mais misteriosa do ano.'
     }
-    ambiente_teste = not MERCADOPAGO_TOKEN or MERCADOPAGO_TOKEN.startswith('TEST-')
+    
+    # Com os novos tokens APP_USR, controlamos o modo sandbox via .env
+    is_sandbox = os.getenv('MERCADOPAGO_SANDBOX', 'true').lower() in ['true', '1', 't']
+    ambiente_teste = not MERCADOPAGO_TOKEN or is_sandbox
     recaptcha_site_key = os.getenv('RECAPTCHA_SITE_KEY', '')
     
     return dict(
@@ -163,7 +166,7 @@ class Pedido(db.Model):
     __tablename__ = 'pedidos'
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    pagamento_id = db.Column(db.String(100), unique=True, nullable=True)
+    pagamento_id = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(20), default='pending')
     total = db.Column(db.Float, nullable=False)
     metodo_pagamento = db.Column(db.String(20), nullable=True)
