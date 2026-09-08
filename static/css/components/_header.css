@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Header & Navegação (Público e Admin)
+   Header & Navegação (Público e Logado)
    ========================================================================== */
 
 .site-header {
@@ -22,11 +22,43 @@
     width: 100%;
 }
 
-/* Brand / Logo */
+/* --------------------------------------------------------------------------
+   Estilização de Ícones SVG Globais da Header
+   -------------------------------------------------------------------------- */
+.nav-icon {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.logout-icon {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.whatsapp-icon {
+    width: 16px;
+    height: 16px;
+    fill: var(--text-light);
+}
+
+/* --------------------------------------------------------------------------
+   Brand / Logo
+   -------------------------------------------------------------------------- */
 .brand-logo {
     display: flex;
     align-items: center;
     gap: 14px;
+    text-decoration: none;
 }
 
 .navbar-logo-icon {
@@ -59,7 +91,9 @@
     text-transform: uppercase;
 }
 
-/* Menu Central */
+/* --------------------------------------------------------------------------
+   Menu Central
+   -------------------------------------------------------------------------- */
 .nav-menu {
     display: flex;
     gap: 28px;
@@ -70,6 +104,8 @@
     color: #b3b3b3;
     font-size: 0.95rem;
     font-weight: 500;
+    text-decoration: none;
+    transition: var(--transition-fast);
 }
 
 .nav-menu a:hover {
@@ -78,40 +114,38 @@
 
 /* Botão WhatsApp */
 .nav-menu .btn-whatsapp {
-    background-color: var(--whatsapp-green) !important;
-    color: var(--text-light) !important;
+    background-color: var(--whatsapp-green);
+    color: var(--text-light);
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 0.82rem;
     font-weight: 700;
-    display: inline-flex !important;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     box-shadow: 0 0 10px rgba(37, 211, 102, 0.35);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    transition: var(--transition-fast);
 }
 
 .nav-menu .btn-whatsapp:hover {
-    background-color: var(--whatsapp-hover) !important;
+    background-color: var(--whatsapp-hover);
     box-shadow: 0 0 18px rgba(37, 211, 102, 0.65);
     transform: translateY(-1px);
 }
 
-.nav-menu .btn-whatsapp svg {
-    width: 16px !important;
-    height: 16px !important;
-    fill: var(--text-light) !important;
-}
-
-/* Ações do Usuário & Atalhos */
+/* --------------------------------------------------------------------------
+   Ações do Usuário & Atalhos (CTA)
+   -------------------------------------------------------------------------- */
 .header-cta {
     display: flex;
     align-items: center;
     gap: 20px;
 }
 
+/* Botões com Ícone e Badge (Favoritos e Carrinho) */
 .btn-icon-header {
     position: relative;
     color: var(--text-light);
@@ -130,27 +164,38 @@
     position: absolute;
     top: -6px;
     right: -8px;
-    background-color: var(--danger-color);
     color: var(--text-light);
     font-size: 0.7rem;
     font-weight: 700;
     border-radius: 50%;
     padding: 2px 6px;
     line-height: 1;
+    min-width: 18px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
+/* Badge de Favoritos */
+.btn-icon-header .badge-favoritos {
+    background-color: var(--danger-color, #ef4444);
+}
+
+/* Badge de Carrinho */
 .btn-icon-header .badge-accent {
-    background-color: var(--success-color);
+    background-color: var(--success-color, #10b981);
 }
 
+/* Botão Área do Cliente / Entrar */
 .btn-cliente {
     background: linear-gradient(90deg, var(--primary) 0%, var(--accent-purple) 100%);
-    color: var(--text-light) !important;
+    color: var(--text-light);
     padding: 8px 18px;
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 600;
+    text-decoration: none;
     box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+    transition: var(--transition-fast);
 }
 
 .btn-cliente:hover {
@@ -159,12 +204,12 @@
     transform: translateY(-1px);
 }
 
-/* Logout */
+/* Botão Sair / Logout */
 .btn-logout-header,
 .btn-logout {
-    background: rgba(239, 68, 68, 0.12) !important;
-    border: 1px solid rgba(239, 68, 68, 0.35) !important;
-    color: #f87171 !important;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
     padding: 8px 18px;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -180,9 +225,9 @@
 
 .btn-logout-header:hover,
 .btn-logout:hover {
-    background: rgba(239, 68, 68, 0.25) !important;
-    border-color: rgba(239, 68, 68, 0.6) !important;
-    color: #fca5a5 !important;
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.6);
+    color: #fca5a5;
     box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
     transform: translateY(-1px);
 }
