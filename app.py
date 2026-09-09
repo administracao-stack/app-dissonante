@@ -967,7 +967,7 @@ def checkout():
             })
 
     if request.method == 'POST':
-        # Se não houver usuário logado, obter ou criar o usuário a partir do formulário de checkout
+        # Cria ou recupera o usuário convidado
         if not usuario_atual:
             nome_form = request.form.get('nome', '').strip()
             email_form = request.form.get('email', '').strip().lower()
@@ -1000,7 +1000,6 @@ def checkout():
                 
                 db.session.commit()
 
-                # Salva a sessão permanentemente para não perder a referência do convidado
                 session.permanent = True
                 session['usuario_id'] = usuario_atual.id
                 session['usuario_nome'] = usuario_atual.nome
@@ -1019,7 +1018,7 @@ def checkout():
 
         metodo = request.form.get('metodo_pagamento', 'pix')
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo)
-        valor_final = calc_taxa['valor_final']
+        valor_final = round(float(calc_taxa['valor_final']), 2)
 
         try:
             novo_pedido = Pedido(
@@ -1065,25 +1064,36 @@ def checkout():
                     "payer": payer
                 }
                 res = sdk.payment().create(payment_data).get("response", {})
-                novo_pedido.pagamento_id = str(res.get("id"))
-                db.session.commit()
+                
+                if res.get("status") in ["pending", "in_process", "approved"]:
+                    novo_pedido.pagamento_id = str(res.get("id"))
+                    db.session.commit()
 
-                pix_info = res.get("point_of_interaction", {}).get("transaction_data", {})
-                session['compra_atual'] = {
-                    'metodo_pagamento': 'pix',
-                    'payment_id': str(res.get("id")),
-                    'pedido_id': novo_pedido.id,
-                    'total': valor_final,
-                    'qr_code': pix_info.get("qr_code"),
-                    'qr_code_base64': pix_info.get("qr_code_base64")
-                }
-                session.pop('carrinho', None)
-                return redirect(url_for('pagamento'))
+                    pix_info = res.get("point_of_interaction", {}).get("transaction_data", {})
+                    session['compra_atual'] = {
+                        'metodo_pagamento': 'pix',
+                        'payment_id': str(res.get("id")),
+                        'pedido_id': novo_pedido.id,
+                        'total': valor_final,
+                        'qr_code': pix_info.get("qr_code"),
+                        'qr_code_base64': pix_info.get("qr_code_base64")
+                    }
+                    session.pop('carrinho', None)
+                    return redirect(url_for('pagamento'))
+                else:
+                    print(f"[ERRO PIX MP]: {res}")
+                    flash('Não foi possível gerar a chave PIX. Tente novamente.', 'danger')
+                    return redirect(url_for('checkout'))
 
             elif metodo == 'credit_card':
                 card_token = request.form.get('token')
-                installments = int(request.form.get('installments', 1))
                 payment_method_id = request.form.get('payment_method_id', '')
+                issuer_id = request.form.get('issuer_id')
+                installments = int(request.form.get('installments', 1))
+
+                if not card_token:
+                    flash('Falha ao processar dados do cartão. Tente novamente.', 'warning')
+                    return redirect(url_for('checkout'))
 
                 is_prepaid = 'prepaid' in payment_method_id.lower() or request.form.get('payment_type_id') == 'prepaid_card'
                 if is_prepaid and installments > 1:
@@ -1100,12 +1110,20 @@ def checkout():
                     "payer": payer
                 }
 
-                res = sdk.payment().create(payment_data).get("response", {})
+                if issuer_id and issuer_id != 'null' and issuer_id != 'undefined':
+                    payment_data["issuer_id"] = str(issuer_id)
+
+                payment_response = sdk.payment().create(payment_data)
+                res = payment_response.get("response", {})
+
                 status_pagamento = res.get("status")
                 status_detail = res.get("status_detail")
 
+                print(f"[MP RESPONSE] Status: {status_pagamento} | Detail: {status_detail} | Body: {res}")
+
                 if status_pagamento == "approved":
                     novo_pedido.status = "approved"
+                    novo_pedido.pagamento_id = str(res.get("id"))
                     gerar_ingressos_para_pedido(novo_pedido.id, str(res.get("id")))
                     db.session.commit()
                     session.pop('carrinho', None)
@@ -1114,13 +1132,13 @@ def checkout():
                 else:
                     msg_erro = MENSAGENS_ERRO_MP.get(
                         status_detail,
-                        'Pagamento recusado. Verifique os dados do cartão ou selecione outra opção.',
+                        f'Pagamento recusado ({status_detail or "motivo desconhecido"}). Verifique os dados ou utilize outro cartão.'
                     )
                     flash(f"Falha no pagamento: {msg_erro}", "danger")
                     return redirect(url_for("checkout"))
 
         except Exception as e:
-            print(f"[ERRO MERCADO PAGO]: {str(e)}")
+            print(f"[ERRO MERCADO PAGO EXCECAO]: {str(e)}")
             flash('Erro técnico ao processar o pagamento. Tente novamente.', 'danger')
             return redirect(url_for('checkout'))
 
