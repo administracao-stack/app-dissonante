@@ -73,7 +73,7 @@
 
         const interval = setInterval(() => {
             const minutos = Math.floor(tempoRestante / 60);
-            const segundos = tempoRestante % 60;
+            const segundos = Math.floor(tempoRestante % 60);
 
             display.textContent = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
 
@@ -99,10 +99,40 @@
         const mpPublicKey = "{{ mp_public_key }}";
         if (!mpPublicKey) {
             console.warn('A chave MP_PUBLIC_KEY não está configurada no ambiente.');
+            return;
         }
 
-        const mp = new MercadoPago(mpPublicKey);
+        const mp = new MercadoPago(mpPublicKey, { locale: 'pt-BR' });
 
+        // Identificação Automática da Bandeira e Emissor pelo BIN (6 primeiros dígitos)
+        const cardNumberInput = document.getElementById('cardNumber');
+        if (cardNumberInput) {
+            cardNumberInput.addEventListener('input', async function () {
+                const bin = this.value.replace(/\D/g, '').substring(0, 6);
+                
+                if (bin.length === 6) {
+                    try {
+                        const paymentMethods = await mp.getPaymentMethods({ bin });
+                        if (paymentMethods.results && paymentMethods.results.length > 0) {
+                            const method = paymentMethods.results[0];
+                            document.getElementById('payment_method_id').value = method.id;
+                            console.log("[MP FRONT] Bandeira identificada:", method.id);
+
+                            // Busca o banco emissor (Issuer)
+                            const issuers = await mp.getIssuers({ paymentMethodId: method.id, bin });
+                            if (issuers && issuers.length > 0) {
+                                document.getElementById('issuer_id').value = issuers[0].id;
+                                console.log("[MP FRONT] Emissor identificado:", issuers[0].id);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("[MP FRONT] Erro ao identificar bandeira:", err);
+                    }
+                }
+            });
+        }
+
+        // Intercepta a Submissão do Formulário
         form.addEventListener('submit', async function (e) {
             const metodoInput = document.querySelector('input[name="metodo_pagamento"]:checked');
             const metodo = metodoInput ? metodoInput.value : 'pix';
@@ -126,14 +156,13 @@
 
                 const month = expirationParts[0].trim();
                 let year = expirationParts[1].trim();
-                
-                // Formata o ano para 4 dígitos se enviado como YY
                 if (year.length === 2) {
                     year = '20' + year;
                 }
 
+                // Criação do Token de Cartão
                 const cardToken = await mp.createCardToken({
-                    cardNumber: document.getElementById('cardNumber').value.replace(/\s+/g, ''),
+                    cardNumber: document.getElementById('cardNumber').value.replace(/\D/g, ''),
                     cardholderName: document.getElementById('cardholderName').value.trim(),
                     cardExpirationMonth: month,
                     cardExpirationYear: year,
@@ -148,15 +177,16 @@
 
                 document.getElementById('token').value = cardToken.id;
 
-                // Tenta resolver o método de pagamento dinamicamente se o SDK não trouxer preenchido
-                if (cardToken.payment_method_id) {
-                    document.getElementById('payment_method_id').value = cardToken.payment_method_id;
+                // Caso a bandeira não tenha sido pega dinamicamente pelo evento input
+                if (!document.getElementById('payment_method_id').value && cardNumberInput) {
+                    const bin = cardNumberInput.value.replace(/\D/g, '').substring(0, 6);
+                    const paymentMethods = await mp.getPaymentMethods({ bin });
+                    if (paymentMethods.results && paymentMethods.results.length > 0) {
+                        document.getElementById('payment_method_id').value = paymentMethods.results[0].id;
+                    }
                 }
 
-                if (cardToken.issuer_id) {
-                    document.getElementById('issuer_id').value = cardToken.issuer_id;
-                }
-
+                // Submete o formulário com todos os campos populados
                 form.submit();
 
             } catch (error) {
