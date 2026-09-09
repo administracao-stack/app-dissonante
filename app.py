@@ -110,7 +110,6 @@ def inject_globals():
         'descricao': 'Prepare-se para a noite mais misteriosa do ano.'
     }
     
-    # Com os novos tokens APP_USR, controlamos o modo sandbox via .env
     is_sandbox = os.getenv('MERCADOPAGO_SANDBOX', 'true').lower() in ['true', '1', 't']
     ambiente_teste = not MERCADOPAGO_TOKEN or is_sandbox
     recaptcha_site_key = os.getenv('RECAPTCHA_SITE_KEY', '')
@@ -471,7 +470,6 @@ def evento_marevibes():
     lotes = Lote.query.filter(~Lote.nome.ilike('%Cortesia%')).order_by(Lote.id.asc()).all()
     lote_ativo = Lote.query.filter_by(ativo=True).first()
 
-    # Mapeamento dos termos nos nomes dos lotes para as chaves do JavaScript
     mapa_chaves = {
         'teste': 'teste',
         'promocional': 'promo',
@@ -485,7 +483,6 @@ def evento_marevibes():
     for lote in lotes:
         for termo, chave in mapa_chaves.items():
             if termo in lote.nome.lower():
-                # Considera o menor valor entre o limite padrão de compra (5) e o estoque real do banco
                 disponivel = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
                 estoques[chave] = min(5, disponivel) if lote.ativo else 0
 
@@ -684,7 +681,6 @@ def ver_carrinho():
     carrinho_dict = session.get('carrinho', {})
     subtotal = sum(item['preco'] * item['quantidade'] for item in carrinho_dict.values())
     
-    # Calcula as taxas reais sobre o valor do carrinho
     calc_pix = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='pix')
     calc_cartao_1x = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='credit_card', parcelas=1)
     calc_cartao_2x = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='credit_card', parcelas=2)
@@ -838,7 +834,7 @@ def webhook_mercadopago():
     return jsonify({"status": "ok"}), 200
 
 # ==========================================================================
-# ROTAS AUTENTICADAS DO CLIENTE
+# ROTAS AUTENTICADAS DO CLIENTE E CHECKOUT PÚBLICO
 # ==========================================================================
 
 LIMITE_MAXIMO_LOTE = 5
@@ -941,7 +937,6 @@ def favoritar():
     session['favoritos'] = favoritos
     session.modified = True
     
-    # Retorna o total atualizado da lista de favoritos
     return jsonify({
         'status': 'success', 
         'favoritado': favoritado,
@@ -950,10 +945,8 @@ def favoritar():
 
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
-    if 'usuario_id' not in session:
-        return redirect(url_for('login'))
-
-    usuario_atual = Usuario.query.get(session['usuario_id'])
+    # Carrega usuário logado se existir
+    usuario_atual = Usuario.query.get(session['usuario_id']) if 'usuario_id' in session else None
     carrinho = session.get('carrinho', {})
 
     if not carrinho or vendas_encerradas():
@@ -974,6 +967,46 @@ def checkout():
             })
 
     if request.method == 'POST' and sdk:
+        # Se não houver usuário logado, obter ou criar o usuário a partir do formulário de checkout
+        if not usuario_atual:
+            nome_form = request.form.get('nome', '').strip()
+            email_form = request.form.get('email', '').strip().lower()
+            cpf_form = re.sub(r'\D', '', request.form.get('cpf', ''))
+            telefone_form = re.sub(r'\D', '', request.form.get('telefone', ''))
+
+            if not nome_form or not email_form or not cpf_form:
+                flash('Por favor, informe seu nome, e-mail e CPF para concluir a compra.', 'warning')
+                return redirect(url_for('checkout'))
+
+            usuario_existente = Usuario.query.filter_by(email=email_form).first()
+            if usuario_existente:
+                usuario_atual = usuario_existente
+                if cpf_form and not usuario_atual.cpf:
+                    usuario_atual.cpf = cpf_form
+                if telefone_form and not usuario_atual.telefone:
+                    usuario_atual.telefone = telefone_form
+                db.session.commit()
+            else:
+                # Cria uma conta rápida para o comprador convidado
+                senha_temp = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+                usuario_atual = Usuario(
+                    nome=nome_form,
+                    email=email_form,
+                    cpf=cpf_form,
+                    telefone=telefone_form,
+                    senha_hash=generate_password_hash(senha_temp),
+                    email_verificado=True
+                )
+                db.session.add(usuario_atual)
+                db.session.commit()
+
+            # Salva na sessão para manter o usuário logado
+            session.permanent = True
+            session['usuario_id'] = usuario_atual.id
+            session['usuario_nome'] = usuario_atual.nome
+            session['usuario_email'] = usuario_atual.email
+            session['is_admin'] = usuario_atual.is_admin
+
         metodo = request.form.get('metodo_pagamento', 'pix')
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo)
         valor_final = calc_taxa['valor_final']
@@ -1036,7 +1069,6 @@ def checkout():
                 installments = int(request.form.get('installments', 1))
                 payment_method_id = request.form.get('payment_method_id', '')
 
-                # Trava de Segurança Backend para Cartões Pré-Pagos
                 is_prepaid = 'prepaid' in payment_method_id.lower() or request.form.get('payment_type_id') == 'prepaid_card'
                 if is_prepaid and installments > 1:
                     db.session.rollback()
@@ -1083,7 +1115,6 @@ def checkout():
     return render_template('checkout.html', usuario=usuario_atual, ordem_compra=ordem_compra, total_pedido=total_pedido)
 
 @app.route('/pagamento')
-@cliente_required
 def pagamento():
     compra = session.get('compra_atual')
     if not compra:
@@ -1091,7 +1122,6 @@ def pagamento():
     return render_template('pagamento.html', compra=compra)
 
 @app.route('/api/checar-status-pagamento/<payment_id>')
-@cliente_required
 def checar_status_pagamento(payment_id):
     if not sdk:
         return jsonify({'status': 'error', 'message': 'Mercado Pago não configurado'}), 500
