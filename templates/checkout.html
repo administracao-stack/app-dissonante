@@ -2,11 +2,6 @@
 
 {% block title %}Checkout - Marevibes Halloween 2026 | Dissonante{% endblock %}
 
-{% block extra_head %}
-    <!-- Mercado Pago SDK v2 -->
-    <script src="https://sdk.mercadopago.com/js/v2"></script>
-{% endblock %}
-
 {% block content %}
 <main class="checkout-main">
     <div class="container">
@@ -170,5 +165,9 @@
 {% endblock %}
 
 {% block extra_js %}
+    <!-- 1. Carrega primeiro o SDK do Mercado Pago -->
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
+
+    <!-- 2. Depois inclui o script com a lógica do checkout -->
     {% include 'includes/scripts/checkout_script.html' %}
 {% endblock %}
