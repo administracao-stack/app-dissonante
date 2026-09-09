@@ -966,7 +966,7 @@ def checkout():
                 'preco_unitario': lote_obj.preco
             })
 
-    if request.method == 'POST' and sdk:
+    if request.method == 'POST':
         # Se não houver usuário logado, obter ou criar o usuário a partir do formulário de checkout
         if not usuario_atual:
             nome_form = request.form.get('nome', '').strip()
@@ -978,57 +978,73 @@ def checkout():
                 flash('Por favor, informe seu nome, e-mail e CPF para concluir a compra.', 'warning')
                 return redirect(url_for('checkout'))
 
-            usuario_existente = Usuario.query.filter_by(email=email_form).first()
-            if usuario_existente:
-                usuario_atual = usuario_existente
-                if cpf_form and not usuario_atual.cpf:
-                    usuario_atual.cpf = cpf_form
-                if telefone_form and not usuario_atual.telefone:
-                    usuario_atual.telefone = telefone_form
-                db.session.commit()
-            else:
-                # Cria uma conta rápida para o comprador convidado
-                senha_temp = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-                usuario_atual = Usuario(
-                    nome=nome_form,
-                    email=email_form,
-                    cpf=cpf_form,
-                    telefone=telefone_form,
-                    senha_hash=generate_password_hash(senha_temp),
-                    email_verificado=True
-                )
-                db.session.add(usuario_atual)
+            try:
+                usuario_existente = Usuario.query.filter_by(email=email_form).first()
+                if usuario_existente:
+                    usuario_atual = usuario_existente
+                    if cpf_form and not usuario_atual.cpf:
+                        usuario_atual.cpf = cpf_form
+                    if telefone_form and not usuario_atual.telefone:
+                        usuario_atual.telefone = telefone_form
+                else:
+                    senha_temp = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+                    usuario_atual = Usuario(
+                        nome=nome_form,
+                        email=email_form,
+                        cpf=cpf_form,
+                        telefone=telefone_form,
+                        senha_hash=generate_password_hash(senha_temp),
+                        email_verificado=True
+                    )
+                    db.session.add(usuario_atual)
+                
                 db.session.commit()
 
-            # Salva na sessão para manter o usuário logado
-            session.permanent = True
-            session['usuario_id'] = usuario_atual.id
-            session['usuario_nome'] = usuario_atual.nome
-            session['usuario_email'] = usuario_atual.email
-            session['is_admin'] = usuario_atual.is_admin
+                # Salva a sessão permanentemente para não perder a referência do convidado
+                session.permanent = True
+                session['usuario_id'] = usuario_atual.id
+                session['usuario_nome'] = usuario_atual.nome
+                session['usuario_email'] = usuario_atual.email
+                session['is_admin'] = usuario_atual.is_admin
+
+            except Exception as e:
+                db.session.rollback()
+                print(f"[ERRO CADASTRO GUEST]: {str(e)}")
+                flash('Erro ao registrar os dados do comprador. Tente novamente.', 'danger')
+                return redirect(url_for('checkout'))
+
+        if not sdk:
+            flash('Sistema de pagamentos temporariamente indisponível.', 'danger')
+            return redirect(url_for('checkout'))
 
         metodo = request.form.get('metodo_pagamento', 'pix')
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo)
         valor_final = calc_taxa['valor_final']
 
-        novo_pedido = Pedido(
-            usuario_id=usuario_atual.id,
-            total=valor_final,
-            status='pending',
-            metodo_pagamento=metodo
-        )
-        db.session.add(novo_pedido)
-        db.session.flush()
+        try:
+            novo_pedido = Pedido(
+                usuario_id=usuario_atual.id,
+                total=valor_final,
+                status='pending',
+                metodo_pagamento=metodo
+            )
+            db.session.add(novo_pedido)
+            db.session.flush()
 
-        for item in ordem_compra:
-            db.session.add(ItemPedido(
-                pedido_id=novo_pedido.id,
-                lote_id=item['lote'].id,
-                quantidade=item['quantidade'],
-                preco_unitario=item['preco_unitario']
-            ))
+            for item in ordem_compra:
+                db.session.add(ItemPedido(
+                    pedido_id=novo_pedido.id,
+                    lote_id=item['lote'].id,
+                    quantidade=item['quantidade'],
+                    preco_unitario=item['preco_unitario']
+                ))
 
-        db.session.commit()
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"[ERRO CRIACAO PEDIDO]: {str(e)}")
+            flash('Erro ao gerar o pedido. Tente novamente.', 'danger')
+            return redirect(url_for('checkout'))
 
         ddd, num = extrair_ddd_e_numero(usuario_atual.telefone)
         payer = {
@@ -1071,8 +1087,7 @@ def checkout():
 
                 is_prepaid = 'prepaid' in payment_method_id.lower() or request.form.get('payment_type_id') == 'prepaid_card'
                 if is_prepaid and installments > 1:
-                    db.session.rollback()
-                    flash('Cartões pré-pagos não suportam parcelamento. Por favor, selecione 1x (à vista).', 'warning')
+                    flash('Cartões pré-pagos não suportam parcelamento. Selecione 1x (à vista).', 'warning')
                     return redirect(url_for('checkout'))
 
                 payment_data = {
@@ -1092,13 +1107,11 @@ def checkout():
                 if status_pagamento == "approved":
                     novo_pedido.status = "approved"
                     gerar_ingressos_para_pedido(novo_pedido.id, str(res.get("id")))
-
                     db.session.commit()
                     session.pop('carrinho', None)
                     flash('Pagamento processado com sucesso!', 'success')
                     return redirect(url_for('meus_ingressos'))
                 else:
-                    db.session.rollback()
                     msg_erro = MENSAGENS_ERRO_MP.get(
                         status_detail,
                         'Pagamento recusado. Verifique os dados do cartão ou selecione outra opção.',
@@ -1107,9 +1120,8 @@ def checkout():
                     return redirect(url_for("checkout"))
 
         except Exception as e:
-            db.session.rollback()
-            print(f"[ERRO NO CHECKOUT]: {str(e)}")
-            flash('Erro técnico ao processar o pagamento com o gateway. Tente novamente mais tarde.', 'danger')
+            print(f"[ERRO MERCADO PAGO]: {str(e)}")
+            flash('Erro técnico ao processar o pagamento. Tente novamente.', 'danger')
             return redirect(url_for('checkout'))
 
     return render_template('checkout.html', usuario=usuario_atual, ordem_compra=ordem_compra, total_pedido=total_pedido)
