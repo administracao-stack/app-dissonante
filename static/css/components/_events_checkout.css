@@ -551,7 +551,7 @@
 }
 
 /* ==========================================================================
-   Página de Checkout & Formulário de Pagamento (Produção)
+   Página de Checkout & Formulário de Pagamento
    ========================================================================== */
 
 .checkout-main {
@@ -609,6 +609,10 @@
     margin-bottom: 16px;
 }
 
+.form-group-sm {
+    margin-bottom: 12px;
+}
+
 .form-group label, 
 .form-label {
     font-size: 0.88rem;
@@ -626,6 +630,17 @@
     font-size: 0.95rem;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Garante estilo apropriado para selects no tema escuro */
+select.form-control {
+    background-color: #1f2937;
+    color: #ffffff;
+}
+
+select.form-control option {
+    background-color: #111827;
+    color: #ffffff;
 }
 
 .form-control:focus {
