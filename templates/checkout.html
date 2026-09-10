@@ -41,15 +41,6 @@
                                        value="{{ usuario.cpf if usuario and usuario.cpf else '' }}">
                             </div>
                         </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="telefone">WhatsApp / Telefone:</label>
-                                <input type="tel" id="telefone" name="telefone" required class="form-control" 
-                                       placeholder="(85) 90000-0000" maxlength="15" 
-                                       value="{{ usuario.telefone if usuario and usuario.telefone else '' }}">
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Etapa 2: Forma de Pagamento -->
@@ -125,7 +116,6 @@
 
             <!-- Resumo do Pedido -->
             <div class="checkout-resumo">
-                <!-- Timer de Reserva Sincronizado com o tempo_restante_segundos do Carrinho -->
                 <div class="resumo-timer-card" data-tempo-restante="{{ tempo_restante_segundos|default(900) }}">
                     <span class="timer-label">⏱️ Reserva garantida por:</span>
                     <span id="timer-reserva" class="timer-display">--:--</span>
