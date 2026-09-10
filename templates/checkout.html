@@ -127,6 +127,12 @@
 
             <!-- Resumo do Pedido -->
             <div class="checkout-resumo">
+                <!-- Timer de Reserva Sincronizado -->
+                <div class="resumo-timer-card" data-tempo-restante="{{ tempo_restante_sessao|default(600) }}">
+                    <span class="timer-label">⏱️ Reserva garantida por:</span>
+                    <span id="timer-reserva" class="timer-display">--:--</span>
+                </div>
+
                 <div class="resumo-card">
                     <h3>Resumo do Pedido</h3>
                     <div class="resumo-item">
