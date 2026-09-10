@@ -7,6 +7,7 @@ import smtplib
 import hmac
 import hashlib
 import json
+import uuid
 import urllib.request
 import urllib.parse
 from email.mime.text import MIMEText
@@ -107,7 +108,8 @@ class MercadoPagoOrdersAPI:
     def _headers(self, request_id=None):
         headers = {
             "Authorization": f"Bearer {self.access_token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "X-Idempotency-Key": str(uuid.uuid4())
         }
         if request_id:
             headers["X-Request-Id"] = request_id
