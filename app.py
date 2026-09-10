@@ -1216,9 +1216,13 @@ def checkout():
                     return redirect(url_for('checkout'))
 
             # --------------------------------------------------------------
-            # CAMINHO 2: CARTÃO DE CRÉDITO USANDO A PAYMENTS API (/v1/payments)
+            # CAMINHO 2: CARTÃO DE CRÉDITO USANDO A ORDERS API (/v1/orders)
             # --------------------------------------------------------------
             elif metodo == 'credit_card':
+                if not orders_api:
+                    flash('Erro de integração Mercado Pago.', 'danger')
+                    return redirect(url_for('checkout'))
+
                 payment_method_id = request.form.get('payment_method_id', '')
                 card_token = request.form.get('token')
 
@@ -1231,13 +1235,12 @@ def checkout():
                     flash('Cartões pré-pagos não suportam parcelamento. Selecione 1x (à vista).', 'warning')
                     return redirect(url_for('checkout'))
 
-                payment_data = {
-                    "transaction_amount": valor_final_float,
-                    "token": card_token,
-                    "description": f"Ingressos - Pedido #{novo_pedido.id}",
-                    "installments": installments,
-                    "payment_method_id": payment_method_id,
+                # Payload estruturado para a Orders API com transação de cartão e card_token (Modo Automático)
+                order_payload = {
+                    "type": "online",
+                    "processing_mode": "automatic",
                     "external_reference": f"PEDIDO_{novo_pedido.id}",
+                    "total_amount": valor_final_str,
                     "payer": {
                         "email": usuario_atual.email,
                         "first_name": first_name,
@@ -1247,27 +1250,39 @@ def checkout():
                             "number": cpf_limpo
                         }
                     },
-                    "additional_info": {
-                        "items": items_payments_payload
+                    "items": items_orders_payload,
+                    "transactions": {
+                        "payments": [
+                            {
+                                "amount": valor_final_str,
+                                "token": card_token,
+                                "installments": installments,
+                                "payment_method": {
+                                    "id": payment_method_id,
+                                    "type": "credit_card"
+                                }
+                            }
+                        ]
                     }
                 }
 
-                # Executa o pagamento via SDK nativo /v1/payments
-                payment_response = sdk.payment().create(payment_data)
-                res = payment_response.get("response", {})
-                status_code = payment_response.get("status", 500)
+                res, status_code = orders_api.create_order(order_payload)
 
                 if status_code in [200, 201]:
-                    payment_id = str(res.get("id"))
-                    payment_status = res.get("status")
-                    status_detail = res.get("status_detail", "")
+                    order_id = str(res.get("id"))
+                    order_status = res.get("status")
+                    
+                    payments = res.get("transactions", {}).get("payments", [])
+                    primary_payment = payments[0] if payments else {}
+                    payment_status = primary_payment.get("status")
+                    status_detail = primary_payment.get("status_detail", "")
 
-                    print(f"[PAYMENTS API RESPONSE] ID: {payment_id} | Status: {payment_status} | Detail: {status_detail}")
+                    print(f"[ORDERS API RESPONSE] Order ID: {order_id} | Order Status: {order_status} | Payment Status: {payment_status} | Detail: {status_detail}")
 
-                    if payment_status in ["approved", "accredited"]:
+                    if order_status in ["processed", "accredited"] or payment_status in ["approved", "accredited"]:
                         novo_pedido.status = "approved"
-                        novo_pedido.pagamento_id = payment_id
-                        gerar_ingressos_para_pedido(novo_pedido.id, payment_id)
+                        novo_pedido.pagamento_id = order_id
+                        gerar_ingressos_para_pedido(novo_pedido.id, order_id)
                         db.session.commit()
                         session.pop('carrinho', None)
                         flash('Pagamento processado com sucesso!', 'success')
@@ -1280,7 +1295,7 @@ def checkout():
                         flash(f"Falha no pagamento: {msg_erro}", "danger")
                         return redirect(url_for("checkout"))
                 else:
-                    print(f"[ERRO CARD PAYMENTS API]: Code {status_code} - {res}")
+                    print(f"[ERRO CARD ORDERS API]: Code {status_code} - {res}")
                     flash('Erro ao processar o pagamento do cartão. Verifique os dados informados.', 'danger')
                     return redirect(url_for('checkout'))
 
