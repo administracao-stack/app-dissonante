@@ -1085,6 +1085,7 @@ def checkout():
             })
             items_orders_payload.append({
                 "title": f"Ingresso {lote_obj.nome}",
+                "category_id": "tickets",  # Categoria do produto[cite: 12]
                 "quantity": item_data.get('quantidade', 0),
                 "unit_price": f"{lote_obj.preco:.2f}"
             })
@@ -1138,7 +1139,6 @@ def checkout():
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo)
         valor_final_str = f"{calc_taxa['valor_final']:.2f}"
         valor_final_float = float(calc_taxa['valor_final'])
-        taxa_adicional = calc_taxa['taxa']
 
         try:
             novo_pedido = Pedido(
@@ -1166,27 +1166,39 @@ def checkout():
             return redirect(url_for('checkout'))
 
         try:
-            # Copia a lista base de itens do carrinho
-            payload_items = list(items_orders_payload)
+            # Separação de Nome e Sobrenome para o Payer
+            partes_nome = usuario_atual.nome.strip().split(' ', 1) if usuario_atual.nome else ["Cliente", ""]
+            first_name = partes_nome[0]
+            last_name = partes_nome[1] if len(partes_nome) > 1 and partes_nome[1] else "MaréVibes"
 
-            # Adiciona a taxa de serviço aos itens se houver acréscimo
-            if taxa_adicional > 0:
-                payload_items.append({
-                    "title": "Taxa de Processamento / Serviço",
-                    "quantity": 1,
-                    "unit_price": f"{taxa_adicional:.2f}"
-                })
+            # Formatação do CPF limpo
+            cpf_limpo = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual.cpf else ""
 
-            # Estrutura final enviada para a API
+            # Data de registro do usuário em formato ISO 8601
+            reg_date = usuario_atual.data_criacao.isoformat() if hasattr(usuario_atual, 'data_criacao') and usuario_atual.data_criacao else datetime.now(timezone.utc).isoformat()
+
+            # Estrutura base otimizada para aprovação e prevenção de estornos
             order_payload = {
                 "type": "online",
                 "processing_mode": "automatic",
+                "statement_descriptor": "DISSONANTE",  # Fatura do cartão[cite: 12]
                 "external_reference": f"PEDIDO_{novo_pedido.id}",
                 "total_amount": valor_final_str,
                 "payer": {
-                    "email": usuario_atual.email
+                    "email": usuario_atual.email,
+                    "first_name": first_name,  # Nome do comprador[cite: 12]
+                    "last_name": last_name,    # Sobrenome do comprador[cite: 12]
+                    "identification": {       # Identificação do comprador[cite: 12]
+                        "type": "CPF",
+                        "number": cpf_limpo
+                    }
                 },
-                "items": payload_items
+                "additional_info": {
+                    "payer": {
+                        "registration_date": reg_date  # Data de registro do pagador[cite: 12]
+                    }
+                },
+                "items": items_orders_payload
             }
 
             if metodo == 'pix':
