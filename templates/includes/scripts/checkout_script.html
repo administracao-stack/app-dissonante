@@ -19,7 +19,6 @@
         return 'R$ ' + valor.toFixed(2).replace('.', ',');
     }
 
-    // Alterna o container e recalcula o resumo com base no método selecionado
     function atualizarValoresCheckout(metodo) {
         const creditCardContainer = document.getElementById('credit-card-container');
         const labelPix = document.getElementById('label_pix');
@@ -48,7 +47,6 @@
             taxaAplicada = TAXAS_MP.pix;
         }
 
-        // Atualizar as labels do Select de Parcelas
         const calc1x = calcularValorComTaxa(VALOR_BASE_TOTAL, TAXAS_MP.credit_card_1x);
         const calc2x = calcularValorComTaxa(VALOR_BASE_TOTAL, TAXAS_MP.credit_card_2x);
 
@@ -58,19 +56,16 @@
         if (opt1) opt1.textContent = `1x de ${formatarMoeda(calc1x.final)} (À vista)`;
         if (opt2) opt2.textContent = `2x de ${formatarMoeda(calc2x.final / 2)} (Total: ${formatarMoeda(calc2x.final)})`;
 
-        // Atualizar o resumo visual
         const resultado = calcularValorComTaxa(VALOR_BASE_TOTAL, taxaAplicada);
         if (totalDisplay) totalDisplay.textContent = formatarMoeda(resultado.final);
         if (taxaDisplay) taxaDisplay.textContent = formatarMoeda(resultado.taxaVal);
     }
 
-    // Cronômetro de Trava dos Ingressos sincronizado com o Servidor
     function iniciarTimerReserva() {
         const display = document.getElementById('timer-reserva');
         const timerContainer = document.querySelector('.resumo-timer-card');
         if (!display || !timerContainer) return;
 
-        // Obtém os segundos calculados dinamicamente no backend Flask
         let tempoRestante = parseInt(timerContainer.getAttribute('data-tempo-restante')) || 0;
 
         function atualizarDisplay() {
@@ -96,11 +91,9 @@
         }
     }
 
-    // Inicialização da Página
     document.addEventListener('DOMContentLoaded', function () {
         iniciarTimerReserva();
         
-        // Recalcula o valor inicial padrão (PIX)
         const metodoInicial = document.querySelector('input[name="metodo_pagamento"]:checked')?.value || 'pix';
         atualizarValoresCheckout(metodoInicial);
 
@@ -115,7 +108,6 @@
 
         const mp = new MercadoPago(mpPublicKey, { locale: 'pt-BR' });
 
-        // Identificação Automática da Bandeira e Emissor pelo BIN (6 primeiros dígitos)
         const cardNumberInput = document.getElementById('cardNumber');
         if (cardNumberInput) {
             cardNumberInput.addEventListener('input', async function () {
@@ -127,13 +119,11 @@
                         if (paymentMethods.results && paymentMethods.results.length > 0) {
                             const method = paymentMethods.results[0];
                             document.getElementById('payment_method_id').value = method.id;
-                            console.log("[MP FRONT] Bandeira identificada:", method.id);
+                            document.getElementById('payment_type_id').value = method.payment_type_id || '';
 
-                            // Busca o banco emissor (Issuer)
                             const issuers = await mp.getIssuers({ paymentMethodId: method.id, bin });
                             if (issuers && issuers.length > 0) {
                                 document.getElementById('issuer_id').value = issuers[0].id;
-                                console.log("[MP FRONT] Emissor identificado:", issuers[0].id);
                             }
                         }
                     } catch (err) {
@@ -143,13 +133,12 @@
             });
         }
 
-        // Intercepta a Submissão do Formulário
         form.addEventListener('submit', async function (e) {
             const metodoInput = document.querySelector('input[name="metodo_pagamento"]:checked');
             const metodo = metodoInput ? metodoInput.value : 'pix';
 
             if (metodo === 'pix') {
-                return; // Envia o formulário normalmente para pagamento via PIX
+                return; // Envia o formulário diretamente para geração do PIX no backend
             }
 
             e.preventDefault();
@@ -171,7 +160,7 @@
                     year = '20' + year;
                 }
 
-                // Criação do Token de Cartão
+                // Criação do token via MercadoPago SDK JS
                 const cardToken = await mp.createCardToken({
                     cardNumber: document.getElementById('cardNumber').value.replace(/\D/g, ''),
                     cardholderName: document.getElementById('cardholderName').value.trim(),
@@ -188,16 +177,15 @@
 
                 document.getElementById('token').value = cardToken.id;
 
-                // Caso a bandeira não tenha sido pega dinamicamente pelo evento input
                 if (!document.getElementById('payment_method_id').value && cardNumberInput) {
                     const bin = cardNumberInput.value.replace(/\D/g, '').substring(0, 6);
                     const paymentMethods = await mp.getPaymentMethods({ bin });
                     if (paymentMethods.results && paymentMethods.results.length > 0) {
                         document.getElementById('payment_method_id').value = paymentMethods.results[0].id;
+                        document.getElementById('payment_type_id').value = paymentMethods.results[0].payment_type_id || '';
                     }
                 }
 
-                // Submete o formulário com todos os campos populados
                 form.submit();
 
             } catch (error) {
@@ -210,7 +198,7 @@
                     mensagemErro = error.message;
                 }
 
-                alert(`Atenção: ${mensagemErro}\nVerifique se está utilizando os dados de cartão de teste do Mercado Pago.`);
+                alert(`Atenção: ${mensagemErro}`);
                 if (btnSubmit) btnSubmit.disabled = false;
             }
         });
