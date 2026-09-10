@@ -551,7 +551,7 @@
 }
 
 /* ==========================================================================
-   Página de Checkout & Formulário de Pagamento
+   Página de Checkout & Formulário de Pagamento (Produção)
    ========================================================================== */
 
 .checkout-main {
@@ -574,12 +574,6 @@
     margin-bottom: 24px;
 }
 
-.demo-alert {
-    background-color: rgba(234, 179, 8, 0.12) !important;
-    color: #facc15 !important;
-    border: 1px dashed rgba(234, 179, 8, 0.4) !important;
-}
-
 .checkout-form-container {
     background-color: var(--bg-card, #111827);
     border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
@@ -592,6 +586,12 @@
     margin-bottom: 32px;
     padding-bottom: 24px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkout-step:last-of-type,
+.checkout-step-block:last-of-type {
+    border-bottom: none;
+    margin-bottom: 16px;
 }
 
 .checkout-step h2, 
@@ -740,13 +740,17 @@
     box-shadow: none;
 }
 
+/* Coluna de Resumo com fixação no topo */
+.checkout-resumo {
+    position: sticky;
+    top: 24px;
+}
+
 .resumo-card {
     background-color: var(--bg-card, #111827);
     border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 24px;
-    position: sticky;
-    top: 24px;
 }
 
 .resumo-card h3 {
@@ -1027,7 +1031,12 @@
         gap: 24px;
     }
 
-    /* Anula o posicionamento sticky no layout empilhado */
+    .checkout-resumo {
+        order: -1;
+        position: static;
+        top: auto;
+    }
+
     .resumo-card {
         position: static;
         top: auto;
@@ -1049,7 +1058,6 @@
         padding: 20px;
     }
 
-    /* Tratamento para tabelas de carrinho em telas médias/pequenas */
     .cart-table, 
     .cart-table tbody, 
     .cart-table tr, 
@@ -1059,7 +1067,7 @@
     }
 
     .cart-table-header-row {
-        display: none; /* Oculta cabeçalhos em mobile */
+        display: none;
     }
 
     .cart-table-row {
