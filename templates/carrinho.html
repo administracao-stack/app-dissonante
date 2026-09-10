@@ -7,6 +7,14 @@
     <div class="profile-card">
         <h2>Seu Carrinho de Ingressos</h2>
         <p class="profile-sub">Revise seus itens e o valor final com as taxas inclusas.</p>
+
+        {% if carrinho %}
+            <!-- Contador Regressivo do Servidor -->
+            <div class="cart-timer-box">
+                <span>⏱️ Os ingressos do seu carrinho estão reservados por:</span>
+                <strong id="timer-display" class="cart-timer-display">--:--</strong>
+            </div>
+        {% endif %}
         
         <p class="cart-limit-notice">
             ℹ️ <strong>Aviso:</strong> Limite máximo de até 5 ingressos por lote por cliente para este evento.
@@ -93,4 +101,39 @@
         {% endif %}
     </div>
 </main>
+
+{% if carrinho %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let tempoRestante = {{ tempo_restante_segundos|default(0) }};
+        const timerDisplay = document.getElementById("timer-display");
+
+        function atualizarCronometro() {
+            if (tempoRestante <= 0) {
+                if (timerDisplay) timerDisplay.textContent = "00:00";
+                alert("O tempo limite de reserva dos seus ingressos expirou!");
+                window.location.reload();
+                return;
+            }
+
+            const minutos = Math.floor(tempoRestante / 60);
+            const segundos = tempoRestante % 60;
+
+            if (timerDisplay) {
+                timerDisplay.textContent = 
+                    String(minutos).padStart(2, '0') + ":" + String(segundos).padStart(2, '0');
+            }
+
+            tempoRestante--;
+        }
+
+        if (tempoRestante > 0) {
+            atualizarCronometro();
+            setInterval(atualizarCronometro, 1000);
+        } else if (timerDisplay) {
+            timerDisplay.textContent = "Expirado";
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}
