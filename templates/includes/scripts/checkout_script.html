@@ -64,25 +64,36 @@
         if (taxaDisplay) taxaDisplay.textContent = formatarMoeda(resultado.taxaVal);
     }
 
-    // Cronômetro de Trava dos Ingressos (15 minutos)
+    // Cronômetro de Trava dos Ingressos sincronizado com o Servidor
     function iniciarTimerReserva() {
         const display = document.getElementById('timer-reserva');
-        if (!display) return;
+        const timerContainer = document.querySelector('.resumo-timer-card');
+        if (!display || !timerContainer) return;
 
-        let tempoRestante = 15 * 60;
+        // Obtém os segundos calculados dinamicamente no backend Flask
+        let tempoRestante = parseInt(timerContainer.getAttribute('data-tempo-restante')) || 0;
 
-        const interval = setInterval(() => {
+        function atualizarDisplay() {
+            if (tempoRestante <= 0) {
+                display.textContent = '00:00';
+                alert('O tempo de reserva dos seus ingressos expirou!');
+                window.location.reload();
+                return;
+            }
+
             const minutos = Math.floor(tempoRestante / 60);
             const segundos = Math.floor(tempoRestante % 60);
 
             display.textContent = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+            tempoRestante--;
+        }
 
-            if (--tempoRestante < 0) {
-                clearInterval(interval);
-                alert('O tempo de reserva dos seus ingressos expirou! A página será recarregada.');
-                window.location.reload();
-            }
-        }, 1000);
+        if (tempoRestante > 0) {
+            atualizarDisplay();
+            setInterval(atualizarDisplay, 1000);
+        } else {
+            display.textContent = 'Expirado';
+        }
     }
 
     // Inicialização da Página
