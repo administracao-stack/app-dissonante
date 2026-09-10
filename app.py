@@ -1235,7 +1235,7 @@ def checkout():
                     flash('Cartões pré-pagos não suportam parcelamento. Selecione 1x (à vista).', 'warning')
                     return redirect(url_for('checkout'))
 
-                # Payload estruturado para a Orders API com transação de cartão e card_token (Modo Automático)
+                # Payload corrigido para a Orders API
                 order_payload = {
                     "type": "online",
                     "processing_mode": "automatic",
@@ -1255,11 +1255,11 @@ def checkout():
                         "payments": [
                             {
                                 "amount": valor_final_str,
-                                "token": card_token,
-                                "installments": installments,
                                 "payment_method": {
                                     "id": payment_method_id,
-                                    "type": "credit_card"
+                                    "type": "credit_card",
+                                    "token": card_token,
+                                    "installments": int(installments)
                                 }
                             }
                         ]
