@@ -422,12 +422,6 @@ def gerar_codigo_ingresso():
         if not Ingresso.query.filter_by(codigo_qr=codigo).first():
             return codigo
 
-def extrair_ddd_e_numero(telefone_raw):
-    numeros = re.sub(r'\D', '', str(telefone_raw or ''))
-    if len(numeros) >= 10:
-        return numeros[:2], numeros[2:]
-    return "85", numeros if numeros else "999999999"
-
 def gerar_ingressos_para_pedido(pedido_id, payment_id):
     pedido = Pedido.query.get(pedido_id)
     if not pedido or Ingresso.query.filter_by(pedido_id=pedido.id).count() > 0:
@@ -1100,7 +1094,6 @@ def checkout():
             nome_form = request.form.get('nome', '').strip()
             email_form = request.form.get('email', '').strip().lower()
             cpf_form = re.sub(r'\D', '', request.form.get('cpf', ''))
-            telefone_form = re.sub(r'\D', '', request.form.get('telefone', ''))
 
             if not nome_form or not email_form or not cpf_form:
                 flash('Por favor, informe seu nome, e-mail e CPF para concluir a compra.', 'warning')
@@ -1112,15 +1105,12 @@ def checkout():
                     usuario_atual = usuario_existente
                     if cpf_form and not usuario_atual.cpf:
                         usuario_atual.cpf = cpf_form
-                    if telefone_form and not usuario_atual.telefone:
-                        usuario_atual.telefone = telefone_form
                 else:
                     senha_temp = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
                     usuario_atual = Usuario(
                         nome=nome_form,
                         email=email_form,
                         cpf=cpf_form,
-                        telefone=telefone_form,
                         senha_hash=generate_password_hash(senha_temp),
                         email_verificado=True
                     )
@@ -1207,7 +1197,6 @@ def checkout():
                     novo_pedido.pagamento_id = str(order_id)
                     db.session.commit()
 
-                    # Na Orders API os dados do PIX vêm na primeira transação de pagamentos
                     payments = res.get("transactions", {}).get("payments", [])
                     pix_info = payments[0].get("point_of_interaction", {}).get("transaction_data", {}) if payments else {}
 
