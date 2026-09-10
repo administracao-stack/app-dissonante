@@ -208,7 +208,7 @@ class Pedido(db.Model):
     __tablename__ = 'pedidos'
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    pagamento_id = db.Column(db.String(100), nullable=True) # Guarda o ID da Order / Transação MP
+    pagamento_id = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(20), default='pending')
     total = db.Column(db.Float, nullable=False)
     metodo_pagamento = db.Column(db.String(20), nullable=True)
@@ -917,7 +917,6 @@ def webhook_mercadopago():
 
     if topic in ["order", "merchant_order", "payment"] and order_id:
         try:
-            # Consulta as informações do Pedido usando a Orders API
             order_info, status_code = orders_api.get_order(order_id)
             if status_code != 200:
                 return jsonify({"status": "order_not_found"}), 404
@@ -925,7 +924,6 @@ def webhook_mercadopago():
             order_status = order_info.get("status")
             ext_ref = order_info.get("external_reference", "")
             
-            # Recupera a primeira transação de pagamento, se existente
             payments = order_info.get("transactions", {}).get("payments", [])
             primary_payment = payments[0] if payments else {}
             payment_status = primary_payment.get("status") or order_status
@@ -1084,11 +1082,12 @@ def checkout():
                 'quantidade': item_data.get('quantidade', 0),
                 'preco_unitario': lote_obj.preco
             })
+            # A Orders API exige unit_price formatado como string
             items_orders_payload.append({
                 "title": f"Ingresso {lote_obj.nome}",
                 "category_id": "tickets",
                 "quantity": item_data.get('quantidade', 0),
-                "unit_price": float(round(lote_obj.preco, 2))
+                "unit_price": f"{lote_obj.preco:.2f}"
             })
 
     if request.method == 'POST':
@@ -1188,11 +1187,9 @@ def checkout():
                     return redirect(url_for('checkout'))
 
             elif metodo == 'credit_card':
-                # Leitura dos campos do formulário
                 payment_method_id = request.form.get('payment_method_id', '')
                 card_token = request.form.get('token')
                 installments = int(request.form.get('installments', 1))
-                issuer_id = request.form.get('issuer_id')
 
                 if not card_token:
                     flash('Falha ao processar dados do cartão. Tente novamente.', 'warning')
@@ -1203,7 +1200,7 @@ def checkout():
                     flash('Cartões pré-pagos não suportam parcelamento. Selecione 1x (à vista).', 'warning')
                     return redirect(url_for('checkout'))
 
-                # Montagem do método de pagamento
+                # Removemos issuer_id para evitar o erro additionalProperties em payment_method
                 payment_method_data = {
                     "id": payment_method_id,
                     "type": "credit_card",
@@ -1211,10 +1208,7 @@ def checkout():
                     "installments": installments
                 }
 
-                # Adiciona o issuer_id caso ele tenha sido enviado pelo formulário
-                if issuer_id and str(issuer_id).strip():
-                    payment_method_data["issuer_id"] = str(issuer_id).strip()
-
+                # Removemos statement_descriptor do payment individual para evitar rejeição da API
                 order_payload = {
                     "type": "online",
                     "processing_mode": "automatic",
@@ -1234,7 +1228,6 @@ def checkout():
                         "payments": [
                             {
                                 "amount": valor_final_str,
-                                "statement_descriptor": "DISSONANTE",
                                 "payment_method": payment_method_data
                             }
                         ]
