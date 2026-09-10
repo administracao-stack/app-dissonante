@@ -93,8 +93,8 @@ def calcular_valor_com_taxa_mp(valor_base, metodo_pagamento='pix', parcelas=1):
     taxa_val = round(valor_final - valor_base, 2)
     return {'valor_final': valor_final, 'taxa': taxa_val}
 
-MERCADOPAGO_TOKEN = os.getenv('MERCADOPAGO_ACCESS_TOKEN_TEST', '')
-MP_PUBLIC_KEY = os.getenv('MERCADOPAGO_PUBLIC_KEY_TEST', '')
+MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN', '')
+MP_PUBLIC_KEY = os.getenv('MP_PUBLIC_KEY', '')
 MP_WEBHOOK_SECRET = os.getenv('MP_WEBHOOK_SECRET', '')
 sdk = mercadopago.SDK(MERCADOPAGO_TOKEN) if MERCADOPAGO_TOKEN else None
 
@@ -109,9 +109,7 @@ def inject_globals():
         'local': 'Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE',
         'descricao': 'Prepare-se para a noite mais misteriosa do ano.'
     }
-    
-    is_sandbox = os.getenv('MERCADOPAGO_SANDBOX', 'true').lower() in ['true', '1', 't']
-    ambiente_teste = not MERCADOPAGO_TOKEN or is_sandbox
+    ambiente_teste = not MERCADOPAGO_TOKEN or MERCADOPAGO_TOKEN.startswith('TEST-')
     recaptcha_site_key = os.getenv('RECAPTCHA_SITE_KEY', '')
     
     return dict(
@@ -207,6 +205,10 @@ class ReservaCarrinho(db.Model):
 def inicializar_banco():
     with app.app_context():
         try:
+            # 1. Criação de tabelas no banco caso não existam
+            db.create_all()
+
+            # 2. Criação do usuário Administrador padrão
             email_admin = "administracao@dissonanteexperiencias.com"
             admin_user = Usuario.query.filter_by(email=email_admin).first()
 
@@ -223,6 +225,19 @@ def inicializar_banco():
                 )
                 db.session.add(admin_user)
 
+            # 3. Criação ou recuperação do Evento principal
+            evento_db = Evento.query.filter_by(slug='marevibes-halloween-2026').first()
+            if not evento_db:
+                evento_db = Evento(
+                    slug='marevibes-halloween-2026',
+                    titulo='MaréVibes Halloween 2026',
+                    data_hora=datetime(2026, 10, 31, 17, 0, tzinfo=TZ_BRASILIA),
+                    local='Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE'
+                )
+                db.session.add(evento_db)
+                db.session.flush()  # Garante a geração do evento_db.id sem dar commit antecipado
+
+            # 4. Configuração dos Lotes associados ao Evento
             lotes_config = [
                 {"nome": "teste", "preco": 1.00, "quantidade_total": 10, "ativo": True},
                 {"nome": "Lote Promocional", "preco": 162.00, "quantidade_total": 10, "ativo": True},
@@ -237,14 +252,19 @@ def inicializar_banco():
                 lote_db = Lote.query.filter_by(nome=cfg["nome"]).first()
                 if not lote_db:
                     lote_db = Lote(
+                        evento_id=evento_db.id,
                         nome=cfg["nome"],
                         preco=cfg["preco"],
                         quantidade_total=cfg["quantidade_total"],
                         ativo=cfg["ativo"]
                     )
                     db.session.add(lote_db)
+                elif lote_db.evento_id is None:
+                    # Atualiza a chave estrangeira caso o lote tenha sido criado sem evento no passado
+                    lote_db.evento_id = evento_db.id
 
             db.session.commit()
+
         except Exception as e:
             db.session.rollback()
             print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar dados padrão: {str(e)}")
@@ -356,8 +376,11 @@ def enviar_email_confirmacao(usuario_email, usuario_nome, token):
         return False
 
 def gerar_codigo_ingresso():
-    hash_aleatorio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-    return f"DISSONANTE-HLW-{hash_aleatorio}"
+    while True:
+        hash_aleatorio = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+        codigo = f"DISSONANTE-HLW-{hash_aleatorio}"
+        if not Ingresso.query.filter_by(codigo_qr=codigo).first():
+            return codigo
 
 def extrair_ddd_e_numero(telefone_raw):
     numeros = re.sub(r'\D', '', str(telefone_raw or ''))
@@ -416,9 +439,18 @@ def validar_assinatura_mercadopago(req):
     if not ts or not v1:
         return False
 
-    data_id = req.args.get('data.id') or (req.get_json() or {}).get('data', {}).get('id')
-    manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
+    body_json = req.get_json(silent=True) or {}
+    data_id = (
+        req.args.get('data.id') or 
+        req.args.get('id') or 
+        body_json.get('data', {}).get('id') or 
+        body_json.get('id')
+    )
 
+    if not data_id:
+        return False
+
+    manifest = f"id:{data_id};request-id:{x_request_id};ts:{ts};"
     hmac_obj = hmac.new(MP_WEBHOOK_SECRET.encode('utf-8'), manifest.encode('utf-8'), hashlib.sha256)
     return hmac_obj.hexdigest() == v1
 
@@ -447,6 +479,13 @@ def obter_estoque_disponivel(lote_id, session_id_atual=None):
 
     reservados = query_reservas.scalar() or 0
     return max(0, lote.quantidade_total - vendidos - reservados)
+
+def converter_int_seguro(valor, padrao=0):
+    try:
+        val = int(valor)
+        return max(0, val)
+    except (ValueError, TypeError):
+        return padrao
 
 @app.route('/style.css')
 def style_fallback():
@@ -678,9 +717,33 @@ def redefinir_senha(token):
 
 @app.route('/carrinho')
 def ver_carrinho():
+    session_id = session.get('session_token')
     carrinho_dict = session.get('carrinho', {})
+    tempo_restante_segundos = 0
+    agora = datetime.now(timezone.utc)
+
+    # 1. Consulta e sincronização de expiração da reserva
+    if session_id and carrinho_dict:
+        primeira_reserva = ReservaCarrinho.query.filter(
+            ReservaCarrinho.session_id == session_id,
+            ReservaCarrinho.data_expiracao > agora
+        ).order_by(ReservaCarrinho.data_expiracao.asc()).first()
+
+        if primeira_reserva:
+            expiracao = primeira_reserva.data_expiracao
+            if expiracao.tzinfo is None:
+                expiracao = expiracao.replace(tzinfo=timezone.utc)
+
+            delta = (expiracao - agora).total_seconds()
+            tempo_restante_segundos = max(0, int(delta))
+        else:
+            # Limpa a sessão se o tempo acabou no banco e o worker ainda não rodou
+            session.pop('carrinho', None)
+            carrinho_dict = {}
+
+    # 2. Cálculo dos valores financeiros
     subtotal = sum(item['preco'] * item['quantidade'] for item in carrinho_dict.values())
-    
+
     calc_pix = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='pix')
     calc_cartao_1x = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='credit_card', parcelas=1)
     calc_cartao_2x = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='credit_card', parcelas=2)
@@ -697,7 +760,8 @@ def ver_carrinho():
     return render_template(
         'carrinho.html', 
         carrinho=list(carrinho_dict.values()), 
-        resumo=resumo_financeiro
+        resumo=resumo_financeiro,
+        tempo_restante_segundos=tempo_restante_segundos
     )
 
 @app.route('/carrinho/adicionar-multiplo', methods=['POST'])
@@ -714,16 +778,18 @@ def adicionar_carrinho_multiplo():
     lotes_db = Lote.query.all()
 
     quantidades = [
-        ('teste', int(request.form.get('qty_teste', 0))),
-        ('promocional', int(request.form.get('qty_promo', 0))),
-        ('1º lote - meia', int(request.form.get('qty_lote1_meia', 0))),
-        ('1º lote - inteira', int(request.form.get('qty_lote1_inteira', 0))),
-        ('2º lote - meia', int(request.form.get('qty_lote2_meia', 0))),
-        ('2º lote - inteira', int(request.form.get('qty_lote2_inteira', 0)))
+        ('teste', converter_int_seguro(request.form.get('qty_teste'))),
+        ('promocional', converter_int_seguro(request.form.get('qty_promo'))),
+        ('1º lote - meia', converter_int_seguro(request.form.get('qty_lote1_meia'))),
+        ('1º lote - inteira', converter_int_seguro(request.form.get('qty_lote1_inteira'))),
+        ('2º lote - meia', converter_int_seguro(request.form.get('qty_lote2_meia'))),
+        ('2º lote - inteira', converter_int_seguro(request.form.get('qty_lote2_inteira')))
     ]
 
     try:
         itens_adicionados = 0
+        agora = datetime.now(timezone.utc)
+
         for termo, qtd in quantidades:
             if qtd > 0:
                 lote_map = next((l for l in lotes_db if termo in l.nome.lower()), None)
@@ -734,20 +800,39 @@ def adicionar_carrinho_multiplo():
                 disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
                 str_lote_id = str(lote.id)
 
+                # 1. Validação de estoque disponível no banco
                 if qtd > disponiveis:
                     db.session.rollback()
                     flash(f'Restam apenas {disponiveis} ingressos no lote {lote.nome}.', 'danger')
                     return redirect(url_for('evento_marevibes'))
 
-                expiracao = datetime.now(timezone.utc) + timedelta(minutes=MINUTOS_RESERVA)
+                # 2. Validação do limite máximo global por lote (ex: 5 ingressos)
+                qtd_atual_carrinho = carrinho.get(str_lote_id, {}).get('quantidade', 0)
+                if qtd_atual_carrinho + qtd > LIMITE_MAXIMO_LOTE:
+                    db.session.rollback()
+                    flash(f'Você só pode adicionar no máximo {LIMITE_MAXIMO_LOTE} ingressos do lote {lote.nome}.', 'warning')
+                    return redirect(url_for('evento_marevibes'))
+
+                expiracao = agora + timedelta(minutes=MINUTOS_RESERVA)
                 reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()
 
+                # 3. Tratamento de renovação/criação da reserva
                 if reserva:
-                    reserva.quantidade += qtd
-                    reserva.data_expiracao = expiracao
+                    # Se a reserva existente no banco já expirou, renova a data e substitui a quantidade
+                    if reserva.data_expiracao < agora:
+                        reserva.quantidade = qtd
+                        reserva.data_expiracao = expiracao
+                    else:
+                        reserva.quantidade += qtd
                 else:
-                    db.session.add(ReservaCarrinho(session_id=session_id, lote_id=lote.id, quantidade=qtd, data_expiracao=expiracao))
+                    db.session.add(ReservaCarrinho(
+                        session_id=session_id, 
+                        lote_id=lote.id, 
+                        quantidade=qtd, 
+                        data_expiracao=expiracao
+                    ))
 
+                # 4. Atualização do estado do carrinho na sessão
                 if str_lote_id in carrinho:
                     carrinho[str_lote_id]['quantidade'] += qtd
                 else:
@@ -806,7 +891,7 @@ def webhook_mercadopago():
     if not sdk or not validar_assinatura_mercadopago(request):
         return jsonify({"status": "unauthorized"}), 401
 
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     topic = data.get("type") or request.args.get("topic")
     payment_id = data.get("data", {}).get("id") or request.args.get("id")
 
@@ -986,6 +1071,7 @@ def checkout():
                         usuario_atual.cpf = cpf_form
                     if telefone_form and not usuario_atual.telefone:
                         usuario_atual.telefone = telefone_form
+
                 else:
                     senha_temp = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
                     usuario_atual = Usuario(
@@ -999,6 +1085,7 @@ def checkout():
                     db.session.add(usuario_atual)
                 
                 db.session.commit()
+                db.session.refresh(usuario_atual) # Garante sincronia do id gerado
 
                 session.permanent = True
                 session['usuario_id'] = usuario_atual.id
@@ -1153,25 +1240,34 @@ def pagamento():
 
 @app.route('/api/checar-status-pagamento/<payment_id>')
 def checar_status_pagamento(payment_id):
+    # 1. Verificação inicial da instância do SDK
     if not sdk:
         return jsonify({'status': 'error', 'message': 'Mercado Pago não configurado'}), 500
 
     try:
-        payment_info = sdk.payment().get(payment_id).get("response", {})
+        # 2. Chamada segura da API do Mercado Pago
+        res_raw = sdk.payment().get(payment_id)
+        payment_info = (res_raw.get("response") or {}) if isinstance(res_raw, dict) else {}
         status = payment_info.get("status")
 
+        # 3. Processamento do pagamento aprovado
         if status == 'approved':
             ext_ref = payment_info.get("external_reference", "")
-            if ext_ref.startswith("PEDIDO_"):
-                pedido_id = int(ext_ref.split("_")[1])
-                gerar_ingressos_para_pedido(pedido_id, payment_id)
+            if ext_ref and ext_ref.startswith("PEDIDO_"):
+                try:
+                    pedido_id = int(ext_ref.split("_")[1])
+                    gerar_ingressos_para_pedido(pedido_id, payment_id)
+                except (ValueError, IndexError):
+                    pass
 
             if 'compra_atual' in session:
                 session['compra_atual']['status'] = 'approved'
+                session.modified = True  # Força o Flask a salvar alterações em dicionários aninhados
 
             return jsonify({'status': 'approved', 'redirect_url': url_for('meus_ingressos')})
 
         return jsonify({'status': status})
+
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
