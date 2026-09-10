@@ -1062,8 +1062,9 @@ def favoritar():
 # ==========================================================================
 
 @app.route('/checkout', methods=['GET', 'POST'])
+@cliente_required
 def checkout():
-    usuario_atual = Usuario.query.get(session['usuario_id']) if 'usuario_id' in session else None
+    usuario_atual = Usuario.query.get(session['usuario_id'])
     carrinho = session.get('carrinho', {})
 
     if not carrinho or vendas_encerradas():
@@ -1085,52 +1086,12 @@ def checkout():
             })
             items_orders_payload.append({
                 "title": f"Ingresso {lote_obj.nome}",
-                "category_id": "tickets",  # Categoria do produto[cite: 12]
+                "category_id": "tickets",
                 "quantity": item_data.get('quantidade', 0),
-                "unit_price": f"{lote_obj.preco:.2f}"
+                "unit_price": float(round(lote_obj.preco, 2))
             })
 
     if request.method == 'POST':
-        if not usuario_atual:
-            nome_form = request.form.get('nome', '').strip()
-            email_form = request.form.get('email', '').strip().lower()
-            cpf_form = re.sub(r'\D', '', request.form.get('cpf', ''))
-
-            if not nome_form or not email_form or not cpf_form:
-                flash('Por favor, informe seu nome, e-mail e CPF para concluir a compra.', 'warning')
-                return redirect(url_for('checkout'))
-
-            try:
-                usuario_existente = Usuario.query.filter_by(email=email_form).first()
-                if usuario_existente:
-                    usuario_atual = usuario_existente
-                    if cpf_form and not usuario_atual.cpf:
-                        usuario_atual.cpf = cpf_form
-                else:
-                    senha_temp = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
-                    usuario_atual = Usuario(
-                        nome=nome_form,
-                        email=email_form,
-                        cpf=cpf_form,
-                        senha_hash=generate_password_hash(senha_temp),
-                        email_verificado=True
-                    )
-                    db.session.add(usuario_atual)
-                
-                db.session.commit()
-
-                session.permanent = True
-                session['usuario_id'] = usuario_atual.id
-                session['usuario_nome'] = usuario_atual.nome
-                session['usuario_email'] = usuario_atual.email
-                session['is_admin'] = usuario_atual.is_admin
-
-            except Exception as e:
-                db.session.rollback()
-                print(f"[ERRO CADASTRO GUEST]: {str(e)}")
-                flash('Erro ao registrar os dados do comprador. Tente novamente.', 'danger')
-                return redirect(url_for('checkout'))
-
         if not orders_api:
             flash('Sistema de pagamentos temporariamente indisponível.', 'danger')
             return redirect(url_for('checkout'))
@@ -1166,52 +1127,39 @@ def checkout():
             return redirect(url_for('checkout'))
 
         try:
-            # Separação de Nome e Sobrenome para o Payer
             partes_nome = usuario_atual.nome.strip().split(' ', 1) if usuario_atual.nome else ["Cliente", ""]
             first_name = partes_nome[0]
             last_name = partes_nome[1] if len(partes_nome) > 1 and partes_nome[1] else "MaréVibes"
 
-            # Formatação do CPF limpo
             cpf_limpo = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual.cpf else ""
 
-            # Data de registro do usuário em formato ISO 8601
-            reg_date = usuario_atual.data_criacao.isoformat() if hasattr(usuario_atual, 'data_criacao') and usuario_atual.data_criacao else datetime.now(timezone.utc).isoformat()
-
-            # Estrutura base otimizada para aprovação e prevenção de estornos
-            order_payload = {
-                "type": "online",
-                "processing_mode": "automatic",
-                "statement_descriptor": "DISSONANTE",  # Fatura do cartão[cite: 12]
-                "external_reference": f"PEDIDO_{novo_pedido.id}",
-                "total_amount": valor_final_str,
-                "payer": {
-                    "email": usuario_atual.email,
-                    "first_name": first_name,  # Nome do comprador[cite: 12]
-                    "last_name": last_name,    # Sobrenome do comprador[cite: 12]
-                    "identification": {       # Identificação do comprador[cite: 12]
-                        "type": "CPF",
-                        "number": cpf_limpo
-                    }
-                },
-                "additional_info": {
-                    "payer": {
-                        "registration_date": reg_date  # Data de registro do pagador[cite: 12]
-                    }
-                },
-                "items": items_orders_payload
-            }
-
             if metodo == 'pix':
-                order_payload["transactions"] = {
-                    "payments": [
-                        {
-                            "amount": valor_final_str,
-                            "payment_method": {
-                                "id": "pix",
-                                "type": "bank_transfer"
-                            }
+                order_payload = {
+                    "type": "online",
+                    "processing_mode": "automatic",
+                    "external_reference": f"PEDIDO_{novo_pedido.id}",
+                    "total_amount": valor_final_str,
+                    "payer": {
+                        "email": usuario_atual.email,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "identification": {
+                            "type": "CPF",
+                            "number": cpf_limpo
                         }
-                    ]
+                    },
+                    "items": items_orders_payload,
+                    "transactions": {
+                        "payments": [
+                            {
+                                "amount": valor_final_str,
+                                "payment_method": {
+                                    "id": "pix",
+                                    "type": "bank_transfer"
+                                }
+                            }
+                        ]
+                    }
                 }
                 
                 res, status_code = orders_api.create_order(order_payload)
@@ -1240,9 +1188,11 @@ def checkout():
                     return redirect(url_for('checkout'))
 
             elif metodo == 'credit_card':
-                card_token = request.form.get('token')
+                # Leitura dos campos do formulário
                 payment_method_id = request.form.get('payment_method_id', '')
+                card_token = request.form.get('token')
                 installments = int(request.form.get('installments', 1))
+                issuer_id = request.form.get('issuer_id')
 
                 if not card_token:
                     flash('Falha ao processar dados do cartão. Tente novamente.', 'warning')
@@ -1253,18 +1203,42 @@ def checkout():
                     flash('Cartões pré-pagos não suportam parcelamento. Selecione 1x (à vista).', 'warning')
                     return redirect(url_for('checkout'))
 
-                order_payload["transactions"] = {
-                    "payments": [
-                        {
-                            "amount": valor_final_str,
-                            "payment_method": {
-                                "id": payment_method_id,
-                                "type": "credit_card",
-                                "token": card_token,
-                                "installments": installments
-                            }
+                # Montagem do método de pagamento
+                payment_method_data = {
+                    "id": payment_method_id,
+                    "type": "credit_card",
+                    "token": card_token,
+                    "installments": installments
+                }
+
+                # Adiciona o issuer_id caso ele tenha sido enviado pelo formulário
+                if issuer_id and str(issuer_id).strip():
+                    payment_method_data["issuer_id"] = str(issuer_id).strip()
+
+                order_payload = {
+                    "type": "online",
+                    "processing_mode": "automatic",
+                    "external_reference": f"PEDIDO_{novo_pedido.id}",
+                    "total_amount": valor_final_str,
+                    "payer": {
+                        "email": usuario_atual.email,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "identification": {
+                            "type": "CPF",
+                            "number": cpf_limpo
                         }
-                    ]
+                    },
+                    "items": items_orders_payload,
+                    "transactions": {
+                        "payments": [
+                            {
+                                "amount": valor_final_str,
+                                "statement_descriptor": "DISSONANTE",
+                                "payment_method": payment_method_data
+                            }
+                        ]
+                    }
                 }
 
                 res, status_code = orders_api.create_order(order_payload)
@@ -1308,6 +1282,7 @@ def checkout():
     return render_template('checkout.html', usuario=usuario_atual, ordem_compra=ordem_compra, total_pedido=total_pedido)
 
 @app.route('/pagamento')
+@cliente_required
 def pagamento():
     compra = session.get('compra_atual')
     if not compra:
@@ -1315,6 +1290,7 @@ def pagamento():
     return render_template('pagamento.html', compra=compra)
 
 @app.route('/api/checar-status-pagamento/<payment_id>')
+@cliente_required
 def checar_status_pagamento(payment_id):
     if not orders_api:
         return jsonify({'status': 'error', 'message': 'Mercado Pago não configurado'}), 500
