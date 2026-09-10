@@ -1138,6 +1138,7 @@ def checkout():
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo)
         valor_final_str = f"{calc_taxa['valor_final']:.2f}"
         valor_final_float = float(calc_taxa['valor_final'])
+        taxa_adicional = calc_taxa['taxa']
 
         try:
             novo_pedido = Pedido(
@@ -1165,7 +1166,18 @@ def checkout():
             return redirect(url_for('checkout'))
 
         try:
-            # Estrutura base da Orders API no modo Automático
+            # Copia a lista base de itens do carrinho
+            payload_items = list(items_orders_payload)
+
+            # Adiciona a taxa de serviço aos itens se houver acréscimo
+            if taxa_adicional > 0:
+                payload_items.append({
+                    "title": "Taxa de Processamento / Serviço",
+                    "quantity": 1,
+                    "unit_price": f"{taxa_adicional:.2f}"
+                })
+
+            # Estrutura final enviada para a API
             order_payload = {
                 "type": "online",
                 "processing_mode": "automatic",
@@ -1174,7 +1186,7 @@ def checkout():
                 "payer": {
                     "email": usuario_atual.email
                 },
-                "items": items_orders_payload
+                "items": payload_items
             }
 
             if metodo == 'pix':
