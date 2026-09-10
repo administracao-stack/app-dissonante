@@ -55,7 +55,7 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db, render_as_batch=True)
 
 # --------------------------------------------------------------------------
-# Mercado Pago e Taxas
+# Mercado Pago & Orders API Client Extendido
 # --------------------------------------------------------------------------
 TAXAS_MP = {
     'pix': 0.0099,
@@ -97,6 +97,49 @@ MERCADOPAGO_TOKEN = os.getenv('MP_ACCESS_TOKEN', '')
 MP_PUBLIC_KEY = os.getenv('MP_PUBLIC_KEY', '')
 MP_WEBHOOK_SECRET = os.getenv('MP_WEBHOOK_SECRET', '')
 sdk = mercadopago.SDK(MERCADOPAGO_TOKEN) if MERCADOPAGO_TOKEN else None
+
+class MercadoPagoOrdersAPI:
+    """Classe auxiliar para comunicação direta com a nova Orders API (/v1/orders) do Mercado Pago"""
+    def __init__(self, access_token):
+        self.access_token = access_token
+        self.base_url = "https://api.mercadopago.com/v1/orders"
+
+    def _headers(self, request_id=None):
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Content-Type": "application/json"
+        }
+        if request_id:
+            headers["X-Request-Id"] = request_id
+        return headers
+
+    def create_order(self, order_data, request_id=None):
+        data = json.dumps(order_data).encode('utf-8')
+        req = urllib.request.Request(self.base_url, data=data, headers=self._headers(request_id), method='POST')
+        try:
+            with urllib.request.urlopen(req) as response:
+                return json.loads(response.read().decode('utf-8')), response.status
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8')
+            try:
+                return json.loads(error_body), e.code
+            except Exception:
+                return {"error": error_body}, e.code
+
+    def get_order(self, order_id):
+        url = f"{self.base_url}/{order_id}"
+        req = urllib.request.Request(url, headers=self._headers(), method='GET')
+        try:
+            with urllib.request.urlopen(req) as response:
+                return json.loads(response.read().decode('utf-8')), response.status
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8')
+            try:
+                return json.loads(error_body), e.code
+            except Exception:
+                return {"error": error_body}, e.code
+
+orders_api = MercadoPagoOrdersAPI(MERCADOPAGO_TOKEN) if MERCADOPAGO_TOKEN else None
 
 # --------------------------------------------------------------------------
 # Injeção de Contexto Global (Templates)
@@ -163,7 +206,7 @@ class Pedido(db.Model):
     __tablename__ = 'pedidos'
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    pagamento_id = db.Column(db.String(100), nullable=True)
+    pagamento_id = db.Column(db.String(100), nullable=True) # Guarda o ID da Order / Transação MP
     status = db.Column(db.String(20), default='pending')
     total = db.Column(db.Float, nullable=False)
     metodo_pagamento = db.Column(db.String(20), nullable=True)
@@ -205,10 +248,8 @@ class ReservaCarrinho(db.Model):
 def inicializar_banco():
     with app.app_context():
         try:
-            # 1. Criação de tabelas no banco caso não existam
             db.create_all()
 
-            # 2. Criação do usuário Administrador padrão
             email_admin = "administracao@dissonanteexperiencias.com"
             admin_user = Usuario.query.filter_by(email=email_admin).first()
 
@@ -225,7 +266,6 @@ def inicializar_banco():
                 )
                 db.session.add(admin_user)
 
-            # 3. Criação ou recuperação do Evento principal
             evento_db = Evento.query.filter_by(slug='marevibes-halloween-2026').first()
             if not evento_db:
                 evento_db = Evento(
@@ -235,9 +275,8 @@ def inicializar_banco():
                     local='Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE'
                 )
                 db.session.add(evento_db)
-                db.session.flush()  # Garante a geração do evento_db.id sem dar commit antecipado
+                db.session.flush()
 
-            # 4. Configuração dos Lotes associados ao Evento
             lotes_config = [
                 {"nome": "teste", "preco": 1.00, "quantidade_total": 10, "ativo": True},
                 {"nome": "Lote Promocional", "preco": 162.00, "quantidade_total": 10, "ativo": True},
@@ -260,7 +299,6 @@ def inicializar_banco():
                     )
                     db.session.add(lote_db)
                 elif lote_db.evento_id is None:
-                    # Atualiza a chave estrangeira caso o lote tenha sido criado sem evento no passado
                     lote_db.evento_id = evento_db.id
 
             db.session.commit()
@@ -387,16 +425,6 @@ def extrair_ddd_e_numero(telefone_raw):
     if len(numeros) >= 10:
         return numeros[:2], numeros[2:]
     return "85", numeros if numeros else "999999999"
-
-def extrair_ref_externa(ext_ref):
-    try:
-        if ext_ref and "|" in ext_ref:
-            partes = ext_ref.split("|")
-            if len(partes) == 3:
-                return int(partes[0]), int(partes[1]), int(partes[2])
-    except (ValueError, TypeError):
-        pass
-    return None, None, None
 
 def gerar_ingressos_para_pedido(pedido_id, payment_id):
     pedido = Pedido.query.get(pedido_id)
@@ -722,7 +750,6 @@ def ver_carrinho():
     tempo_restante_segundos = 0
     agora = datetime.now(timezone.utc)
 
-    # 1. Consulta e sincronização de expiração da reserva
     if session_id and carrinho_dict:
         primeira_reserva = ReservaCarrinho.query.filter(
             ReservaCarrinho.session_id == session_id,
@@ -737,11 +764,9 @@ def ver_carrinho():
             delta = (expiracao - agora).total_seconds()
             tempo_restante_segundos = max(0, int(delta))
         else:
-            # Limpa a sessão se o tempo acabou no banco e o worker ainda não rodou
             session.pop('carrinho', None)
             carrinho_dict = {}
 
-    # 2. Cálculo dos valores financeiros
     subtotal = sum(item['preco'] * item['quantidade'] for item in carrinho_dict.values())
 
     calc_pix = calcular_valor_com_taxa_mp(subtotal, metodo_pagamento='pix')
@@ -800,13 +825,11 @@ def adicionar_carrinho_multiplo():
                 disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
                 str_lote_id = str(lote.id)
 
-                # 1. Validação de estoque disponível no banco
                 if qtd > disponiveis:
                     db.session.rollback()
                     flash(f'Restam apenas {disponiveis} ingressos no lote {lote.nome}.', 'danger')
                     return redirect(url_for('evento_marevibes'))
 
-                # 2. Validação do limite máximo global por lote (ex: 5 ingressos)
                 qtd_atual_carrinho = carrinho.get(str_lote_id, {}).get('quantidade', 0)
                 if qtd_atual_carrinho + qtd > LIMITE_MAXIMO_LOTE:
                     db.session.rollback()
@@ -816,9 +839,7 @@ def adicionar_carrinho_multiplo():
                 expiracao = agora + timedelta(minutes=MINUTOS_RESERVA)
                 reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()
 
-                # 3. Tratamento de renovação/criação da reserva
                 if reserva:
-                    # Se a reserva existente no banco já expirou, renova a data e substitui a quantidade
                     if reserva.data_expiracao < agora:
                         reserva.quantidade = qtd
                         reserva.data_expiracao = expiracao
@@ -832,7 +853,6 @@ def adicionar_carrinho_multiplo():
                         data_expiracao=expiracao
                     ))
 
-                # 4. Atualização do estado do carrinho na sessão
                 if str_lote_id in carrinho:
                     carrinho[str_lote_id]['quantidade'] += qtd
                 else:
@@ -886,35 +906,48 @@ def limpar_carrinho():
     session.pop('carrinho', None)
     return redirect(url_for('ver_carrinho'))
 
+# ==========================================================================
+# WEBHOOK ATUALIZADO PARA ORDERS API
+# ==========================================================================
+
 @app.route('/webhook/mercadopago', methods=['POST'])
 def webhook_mercadopago():
-    if not sdk or not validar_assinatura_mercadopago(request):
+    if not orders_api or not validar_assinatura_mercadopago(request):
         return jsonify({"status": "unauthorized"}), 401
 
     data = request.get_json(silent=True) or {}
     topic = data.get("type") or request.args.get("topic")
-    payment_id = data.get("data", {}).get("id") or request.args.get("id")
+    order_id = data.get("data", {}).get("id") or request.args.get("id")
 
-    if topic in ["payment", "merchant_order"] and payment_id:
+    if topic in ["order", "merchant_order", "payment"] and order_id:
         try:
-            payment_info = sdk.payment().get(payment_id).get("response", {})
-            status = payment_info.get("status")
-            ext_ref = payment_info.get("external_reference", "")
+            # Consulta as informações do Pedido usando a Orders API
+            order_info, status_code = orders_api.get_order(order_id)
+            if status_code != 200:
+                return jsonify({"status": "order_not_found"}), 404
 
-            if status == "approved" and ext_ref.startswith("PEDIDO_"):
+            order_status = order_info.get("status")
+            ext_ref = order_info.get("external_reference", "")
+            
+            # Recupera a primeira transação de pagamento, se existente
+            payments = order_info.get("transactions", {}).get("payments", [])
+            primary_payment = payments[0] if payments else {}
+            payment_status = primary_payment.get("status") or order_status
+
+            if ext_ref.startswith("PEDIDO_"):
                 pedido_id = int(ext_ref.split("_")[1])
-                gerar_ingressos_para_pedido(pedido_id, payment_id)
 
-            elif status in ["refunded", "charged_back", "cancelled", "rejected"]:
-                if ext_ref.startswith("PEDIDO_"):
-                    pedido_id = int(ext_ref.split("_")[1])
+                if order_status in ["processed", "accredited"] or payment_status in ["processed", "accredited", "approved"]:
+                    gerar_ingressos_para_pedido(pedido_id, order_id)
+
+                elif order_status in ["cancelled", "refunded", "rejected"] or payment_status in ["cancelled", "refunded", "rejected"]:
                     Ingresso.query.filter_by(pedido_id=pedido_id).delete()
-                    Pedido.query.filter_by(id=pedido_id).update({'status': status})
+                    Pedido.query.filter_by(id=pedido_id).update({'status': order_status})
                     db.session.commit()
 
         except Exception as e:
             db.session.rollback()
-            print(f"[ERRO WEBHOOK]: {str(e)}")
+            print(f"[ERRO WEBHOOK ORDERS API]: {str(e)}")
 
     return jsonify({"status": "ok"}), 200
 
@@ -1028,9 +1061,12 @@ def favoritar():
         'total_favoritos': len(favoritos)
     })
 
+# ==========================================================================
+# CHECKOUT INTEGRADO VIA ORDERS API (AUTOMATIC MODE)
+# ==========================================================================
+
 @app.route('/checkout', methods=['GET', 'POST'])
 def checkout():
-    # Carrega usuário logado se existir
     usuario_atual = Usuario.query.get(session['usuario_id']) if 'usuario_id' in session else None
     carrinho = session.get('carrinho', {})
 
@@ -1039,6 +1075,7 @@ def checkout():
 
     ordem_compra = []
     total_pedido = 0.0
+    items_orders_payload = []
 
     for item_data in carrinho.values():
         lote_obj = Lote.query.get(item_data.get('lote_id'))
@@ -1050,9 +1087,13 @@ def checkout():
                 'quantidade': item_data.get('quantidade', 0),
                 'preco_unitario': lote_obj.preco
             })
+            items_orders_payload.append({
+                "title": f"Ingresso {lote_obj.nome}",
+                "quantity": item_data.get('quantidade', 0),
+                "unit_price": f"{lote_obj.preco:.2f}"
+            })
 
     if request.method == 'POST':
-        # Cria ou recupera o usuário convidado
         if not usuario_atual:
             nome_form = request.form.get('nome', '').strip()
             email_form = request.form.get('email', '').strip().lower()
@@ -1071,7 +1112,6 @@ def checkout():
                         usuario_atual.cpf = cpf_form
                     if telefone_form and not usuario_atual.telefone:
                         usuario_atual.telefone = telefone_form
-
                 else:
                     senha_temp = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
                     usuario_atual = Usuario(
@@ -1085,7 +1125,6 @@ def checkout():
                     db.session.add(usuario_atual)
                 
                 db.session.commit()
-                db.session.refresh(usuario_atual) # Garante sincronia do id gerado
 
                 session.permanent = True
                 session['usuario_id'] = usuario_atual.id
@@ -1099,18 +1138,19 @@ def checkout():
                 flash('Erro ao registrar os dados do comprador. Tente novamente.', 'danger')
                 return redirect(url_for('checkout'))
 
-        if not sdk:
+        if not orders_api:
             flash('Sistema de pagamentos temporariamente indisponível.', 'danger')
             return redirect(url_for('checkout'))
 
         metodo = request.form.get('metodo_pagamento', 'pix')
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo)
-        valor_final = round(float(calc_taxa['valor_final']), 2)
+        valor_final_str = f"{calc_taxa['valor_final']:.2f}"
+        valor_final_float = float(calc_taxa['valor_final'])
 
         try:
             novo_pedido = Pedido(
                 usuario_id=usuario_atual.id,
-                total=valor_final,
+                total=valor_final_float,
                 status='pending',
                 metodo_pagamento=metodo
             )
@@ -1132,50 +1172,61 @@ def checkout():
             flash('Erro ao gerar o pedido. Tente novamente.', 'danger')
             return redirect(url_for('checkout'))
 
-        ddd, num = extrair_ddd_e_numero(usuario_atual.telefone)
-        payer = {
-            "email": usuario_atual.email,
-            "first_name": usuario_atual.nome.split()[0],
-            "last_name": usuario_atual.nome.split()[-1] if ' ' in usuario_atual.nome else "Silva",
-            "phone": {"area_code": ddd, "number": num},
-            "identification": {"type": "CPF", "number": re.sub(r'\D', '', usuario_atual.cpf or '')}
-        }
-
         try:
+            # Estrutura base da Orders API no modo Automático
+            order_payload = {
+                "type": "online",
+                "processing_mode": "automatic",
+                "external_reference": f"PEDIDO_{novo_pedido.id}",
+                "total_amount": valor_final_str,
+                "payer": {
+                    "email": usuario_atual.email
+                },
+                "items": items_orders_payload
+            }
+
             if metodo == 'pix':
-                payment_data = {
-                    "transaction_amount": valor_final,
-                    "description": f"Pedido #{novo_pedido.id}",
-                    "payment_method_id": "pix",
-                    "external_reference": f"PEDIDO_{novo_pedido.id}",
-                    "payer": payer
+                order_payload["transactions"] = {
+                    "payments": [
+                        {
+                            "amount": valor_final_str,
+                            "payment_method": {
+                                "id": "pix",
+                                "type": "bank_transfer"
+                            }
+                        }
+                    ]
                 }
-                res = sdk.payment().create(payment_data).get("response", {})
                 
-                if res.get("status") in ["pending", "in_process", "approved"]:
-                    novo_pedido.pagamento_id = str(res.get("id"))
+                res, status_code = orders_api.create_order(order_payload)
+
+                if status_code in [200, 201]:
+                    order_id = res.get("id")
+                    novo_pedido.pagamento_id = str(order_id)
                     db.session.commit()
 
-                    pix_info = res.get("point_of_interaction", {}).get("transaction_data", {})
+                    # Na Orders API os dados do PIX vêm na primeira transação de pagamentos
+                    payments = res.get("transactions", {}).get("payments", [])
+                    pix_info = payments[0].get("point_of_interaction", {}).get("transaction_data", {}) if payments else {}
+
                     session['compra_atual'] = {
                         'metodo_pagamento': 'pix',
-                        'payment_id': str(res.get("id")),
+                        'payment_id': str(order_id),
                         'pedido_id': novo_pedido.id,
-                        'total': valor_final,
+                        'total': valor_final_float,
                         'qr_code': pix_info.get("qr_code"),
                         'qr_code_base64': pix_info.get("qr_code_base64")
                     }
                     session.pop('carrinho', None)
                     return redirect(url_for('pagamento'))
                 else:
-                    print(f"[ERRO PIX MP]: {res}")
+                    print(f"[ERRO PIX ORDERS API]: Code {status_code} - {res}")
                     flash('Não foi possível gerar a chave PIX. Tente novamente.', 'danger')
                     return redirect(url_for('checkout'))
 
             elif metodo == 'credit_card':
                 card_token = request.form.get('token')
                 payment_method_id = request.form.get('payment_method_id', '')
-                issuer_id = request.form.get('issuer_id')
                 installments = int(request.form.get('installments', 1))
 
                 if not card_token:
@@ -1187,42 +1238,52 @@ def checkout():
                     flash('Cartões pré-pagos não suportam parcelamento. Selecione 1x (à vista).', 'warning')
                     return redirect(url_for('checkout'))
 
-                payment_data = {
-                    "transaction_amount": valor_final,
-                    "token": card_token,
-                    "description": f"Pedido #{novo_pedido.id}",
-                    "installments": installments,
-                    "payment_method_id": payment_method_id,
-                    "external_reference": f"PEDIDO_{novo_pedido.id}",
-                    "payer": payer
+                order_payload["transactions"] = {
+                    "payments": [
+                        {
+                            "amount": valor_final_str,
+                            "payment_method": {
+                                "id": payment_method_id,
+                                "type": "credit_card",
+                                "token": card_token,
+                                "installments": installments
+                            }
+                        }
+                    ]
                 }
 
-                if issuer_id and issuer_id != 'null' and issuer_id != 'undefined':
-                    payment_data["issuer_id"] = str(issuer_id)
+                res, status_code = orders_api.create_order(order_payload)
+                
+                if status_code in [200, 201]:
+                    order_id = res.get("id")
+                    order_status = res.get("status")
+                    
+                    payments = res.get("transactions", {}).get("payments", [])
+                    primary_payment = payments[0] if payments else {}
+                    payment_status = primary_payment.get("status") or order_status
+                    status_detail = primary_payment.get("status_detail", "")
 
-                payment_response = sdk.payment().create(payment_data)
-                res = payment_response.get("response", {})
+                    print(f"[ORDERS API RESPONSE] Order Status: {order_status} | Payment Status: {payment_status} | Detail: {status_detail}")
 
-                status_pagamento = res.get("status")
-                status_detail = res.get("status_detail")
-
-                print(f"[MP RESPONSE] Status: {status_pagamento} | Detail: {status_detail} | Body: {res}")
-
-                if status_pagamento == "approved":
-                    novo_pedido.status = "approved"
-                    novo_pedido.pagamento_id = str(res.get("id"))
-                    gerar_ingressos_para_pedido(novo_pedido.id, str(res.get("id")))
-                    db.session.commit()
-                    session.pop('carrinho', None)
-                    flash('Pagamento processado com sucesso!', 'success')
-                    return redirect(url_for('meus_ingressos'))
+                    if order_status in ["processed", "accredited"] or payment_status in ["processed", "accredited", "approved"]:
+                        novo_pedido.status = "approved"
+                        novo_pedido.pagamento_id = str(order_id)
+                        gerar_ingressos_para_pedido(novo_pedido.id, str(order_id))
+                        db.session.commit()
+                        session.pop('carrinho', None)
+                        flash('Pagamento processado com sucesso!', 'success')
+                        return redirect(url_for('meus_ingressos'))
+                    else:
+                        msg_erro = MENSAGENS_ERRO_MP.get(
+                            status_detail,
+                            f'Pagamento recusado ({status_detail or "motivo desconhecido"}). Verifique os dados ou utilize outro cartão.'
+                        )
+                        flash(f"Falha no pagamento: {msg_erro}", "danger")
+                        return redirect(url_for("checkout"))
                 else:
-                    msg_erro = MENSAGENS_ERRO_MP.get(
-                        status_detail,
-                        f'Pagamento recusado ({status_detail or "motivo desconhecido"}). Verifique os dados ou utilize outro cartão.'
-                    )
-                    flash(f"Falha no pagamento: {msg_erro}", "danger")
-                    return redirect(url_for("checkout"))
+                    print(f"[ERRO CARD ORDERS API]: Code {status_code} - {res}")
+                    flash('Erro ao processar o pagamento do cartão. Verifique os dados informados.', 'danger')
+                    return redirect(url_for('checkout'))
 
         except Exception as e:
             print(f"[ERRO MERCADO PAGO EXCECAO]: {str(e)}")
@@ -1240,19 +1301,21 @@ def pagamento():
 
 @app.route('/api/checar-status-pagamento/<payment_id>')
 def checar_status_pagamento(payment_id):
-    # 1. Verificação inicial da instância do SDK
-    if not sdk:
+    if not orders_api:
         return jsonify({'status': 'error', 'message': 'Mercado Pago não configurado'}), 500
 
     try:
-        # 2. Chamada segura da API do Mercado Pago
-        res_raw = sdk.payment().get(payment_id)
-        payment_info = (res_raw.get("response") or {}) if isinstance(res_raw, dict) else {}
-        status = payment_info.get("status")
+        res, status_code = orders_api.get_order(payment_id)
+        if status_code != 200:
+            return jsonify({'status': 'error', 'message': 'Pedido não encontrado'}), 404
 
-        # 3. Processamento do pagamento aprovado
-        if status == 'approved':
-            ext_ref = payment_info.get("external_reference", "")
+        order_status = res.get("status")
+        payments = res.get("transactions", {}).get("payments", [])
+        primary_payment = payments[0] if payments else {}
+        payment_status = primary_payment.get("status") or order_status
+
+        if order_status in ['processed', 'accredited'] or payment_status in ['processed', 'accredited', 'approved']:
+            ext_ref = res.get("external_reference", "")
             if ext_ref and ext_ref.startswith("PEDIDO_"):
                 try:
                     pedido_id = int(ext_ref.split("_")[1])
@@ -1262,11 +1325,11 @@ def checar_status_pagamento(payment_id):
 
             if 'compra_atual' in session:
                 session['compra_atual']['status'] = 'approved'
-                session.modified = True  # Força o Flask a salvar alterações em dicionários aninhados
+                session.modified = True
 
             return jsonify({'status': 'approved', 'redirect_url': url_for('meus_ingressos')})
 
-        return jsonify({'status': status})
+        return jsonify({'status': payment_status})
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
