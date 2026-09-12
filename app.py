@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 import mercadopago
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func, or_, not_
+from sqlalchemy import func, not_
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from flask_migrate import Migrate
@@ -129,21 +129,7 @@ class MercadoPagoOrdersAPI:
         data = json.dumps(order_data).encode('utf-8')
         req = urllib.request.Request(self.base_url, data=data, headers=self._headers(request_id), method='POST')
         try:
-            with urllib.request.urlopen(req) as response:
-                return json.loads(response.read().decode('utf-8')), response.status
-        except urllib.error.HTTPError as e:
-            error_body = e.read().decode('utf-8')
-            try:
-                return json.loads(error_body), e.code
-            except Exception:
-                return {"error": error_body}, e.code
-
-    def process_order(self, order_id, process_data, request_id=None):
-        url = f"{self.base_url}/{order_id}/process-order"
-        data = json.dumps(process_data).encode('utf-8')
-        req = urllib.request.Request(url, data=data, headers=self._headers(request_id), method='POST')
-        try:
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, timeout=10) as response:
                 return json.loads(response.read().decode('utf-8')), response.status
         except urllib.error.HTTPError as e:
             error_body = e.read().decode('utf-8')
@@ -156,7 +142,7 @@ class MercadoPagoOrdersAPI:
         url = f"{self.base_url}/{order_id}"
         req = urllib.request.Request(url, headers=self._headers(), method='GET')
         try:
-            with urllib.request.urlopen(req) as response:
+            with urllib.request.urlopen(req, timeout=10) as response:
                 return json.loads(response.read().decode('utf-8')), response.status
         except urllib.error.HTTPError as e:
             error_body = e.read().decode('utf-8')
@@ -272,66 +258,61 @@ class ReservaCarrinho(db.Model):
     lote = db.relationship('Lote')
 
 def inicializar_banco():
-    with app.app_context():
-        try:
-            db.create_all()
+    try:
+        email_admin = "administracao@dissonanteexperiencias.com"
+        admin_user = Usuario.query.filter_by(email=email_admin).first()
 
-            email_admin = "administracao@dissonanteexperiencias.com"
-            admin_user = Usuario.query.filter_by(email=email_admin).first()
+        if not admin_user:
+            senha_padrao = os.environ.get('ADMIN_DEFAULT_PASSWORD', 'DevOnlyAdmin123!')
+            admin_user = Usuario(
+                nome="Administrador",
+                email=email_admin,
+                cpf="00000000000",
+                telefone="85999999999",
+                senha_hash=generate_password_hash(senha_padrao),
+                is_admin=True,
+                email_verificado=True
+            )
+            db.session.add(admin_user)
 
-            if not admin_user:
-                senha_padrao = os.environ.get('ADMIN_DEFAULT_PASSWORD', 'DevOnlyAdmin123!')
-                admin_user = Usuario(
-                    nome="Administrador",
-                    email=email_admin,
-                    cpf="00000000000",
-                    telefone="85999999999",
-                    senha_hash=generate_password_hash(senha_padrao),
-                    is_admin=True,
-                    email_verificado=True
+        evento_db = Evento.query.filter_by(slug='marevibes-halloween-2026').first()
+        if not evento_db:
+            evento_db = Evento(
+                slug='marevibes-halloween-2026',
+                titulo='MaréVibes Halloween 2026',
+                data_hora=datetime(2026, 10, 31, 20, 0, 0), # Salvo em UTC naive
+                local='Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE'
+            )
+            db.session.add(evento_db)
+            db.session.flush()
+
+        lotes_config = [
+            {"nome": "teste", "preco": Decimal('1.00'), "quantidade_total": 10, "ativo": True},
+            {"nome": "Lote Promocional", "preco": Decimal('162.00'), "quantidade_total": 10, "ativo": True},
+            {"nome": "1º Lote - Meia", "preco": Decimal('178.20'), "quantidade_total": 16, "ativo": True},
+            {"nome": "1º Lote - Inteira", "preco": Decimal('194.40'), "quantidade_total": 24, "ativo": True},
+            {"nome": "2º Lote - Meia", "preco": Decimal('194.40'), "quantidade_total": 16, "ativo": False},
+            {"nome": "2º Lote - Inteira", "preco": Decimal('226.80'), "quantidade_total": 24, "ativo": False},
+            {"nome": "Cortesia", "preco": Decimal('0.00'), "quantidade_total": 10, "ativo": False},
+        ]
+
+        for cfg in lotes_config:
+            lote_db = Lote.query.filter_by(evento_id=evento_db.id, nome=cfg["nome"]).first()
+            if not lote_db:
+                lote_db = Lote(
+                    evento_id=evento_db.id,
+                    nome=cfg["nome"],
+                    preco=cfg["preco"],
+                    quantidade_total=cfg["quantidade_total"],
+                    ativo=cfg["ativo"]
                 )
-                db.session.add(admin_user)
+                db.session.add(lote_db)
 
-            evento_db = Evento.query.filter_by(slug='marevibes-halloween-2026').first()
-            if not evento_db:
-                evento_db = Evento(
-                    slug='marevibes-halloween-2026',
-                    titulo='MaréVibes Halloween 2026',
-                    data_hora=datetime(2026, 10, 31, 17, 0, tzinfo=TZ_BRASILIA),
-                    local='Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE'
-                )
-                db.session.add(evento_db)
-                db.session.flush()
+        db.session.commit()
 
-            lotes_config = [
-                {"nome": "teste", "preco": Decimal('1.00'), "quantidade_total": 10, "ativo": True},
-                {"nome": "Lote Promocional", "preco": Decimal('162.00'), "quantidade_total": 10, "ativo": True},
-                {"nome": "1º Lote - Meia", "preco": Decimal('178.20'), "quantidade_total": 16, "ativo": True},
-                {"nome": "1º Lote - Inteira", "preco": Decimal('194.40'), "quantidade_total": 24, "ativo": True},
-                {"nome": "2º Lote - Meia", "preco": Decimal('194.40'), "quantidade_total": 16, "ativo": False},
-                {"nome": "2º Lote - Inteira", "preco": Decimal('226.80'), "quantidade_total": 24, "ativo": False},
-                {"nome": "Cortesia", "preco": Decimal('0.00'), "quantidade_total": 10, "ativo": False},
-            ]
-
-            for cfg in lotes_config:
-                lote_db = Lote.query.filter_by(nome=cfg["nome"]).first()
-                if not lote_db:
-                    lote_db = Lote(
-                        evento_id=evento_db.id,
-                        nome=cfg["nome"],
-                        preco=cfg["preco"],
-                        quantidade_total=cfg["quantidade_total"],
-                        ativo=cfg["ativo"]
-                    )
-                    db.session.add(lote_db)
-                elif lote_db.evento_id is None:
-                    lote_db.evento_id = evento_db.id
-
-            db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar dados padrão: {str(e)}")
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar dados padrão: {str(e)}")
 
 # --------------------------------------------------------------------------
 # Funções Auxiliares e Segurança
@@ -349,7 +330,7 @@ def validar_recaptcha(token, action_esperada=None):
 
     try:
         req = urllib.request.Request(url, data=data)
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=5) as response:
             res_data = json.loads(response.read().decode('utf-8'))
             if action_esperada and res_data.get('action') != action_esperada:
                 return False
@@ -1121,7 +1102,7 @@ def checkout():
             })
 
     if request.method == 'POST':
-        if not sdk or not orders_api:
+        if not orders_api:
             flash('Sistema de pagamentos temporariamente indisponível.', 'danger')
             return redirect(url_for('checkout'))
 
@@ -1134,6 +1115,7 @@ def checkout():
         valor_final_dec = calc_taxa['valor_final']
         valor_final_float = float(valor_final_dec)
 
+        # 1. Montagem da lista de itens desmembrando ingresso e taxas
         items_payments_payload = []
         for item in ordem_compra:
             items_payments_payload.append({
@@ -1149,6 +1131,7 @@ def checkout():
                 "unit_price": float(calc_taxa['taxa'])
             })
 
+        # 2. Criação do Pedido no Banco Local
         novo_pedido = None
         try:
             novo_pedido = Pedido(
@@ -1181,9 +1164,33 @@ def checkout():
             last_name = partes_nome[1] if len(partes_nome) > 1 and partes_nome[1] else "MaréVibes"
             cpf_limpo = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual.cpf else ""
 
+            # 3. Construção do Payment Method
+            if metodo == 'pix':
+                payment_method_object = {
+                    "id": "pix",
+                    "type": "bank_transfer"
+                }
+            elif metodo == 'credit_card':
+                payment_method_id = request.form.get('payment_method_id', '')
+                card_token = request.form.get('token')
+
+                if not card_token:
+                    novo_pedido.status = 'failed'
+                    db.session.commit()
+                    flash('Falha ao processar dados do cartão. Tente novamente.', 'warning')
+                    return redirect(url_for('checkout'))
+
+                payment_method_object = {
+                    "id": payment_method_id,
+                    "type": "credit_card",
+                    "token": card_token,
+                    "installments": installments
+                }
+
+            # 4. Payload com modelo AUTOMATIC (One-Shot)
             order_payload = {
                 "type": "online",
-                "processing_mode": "manual",
+                "processing_mode": "automatic",
                 "external_reference": f"PEDIDO_{novo_pedido.id}",
                 "total_amount": valor_final_float,
                 "payer": {
@@ -1195,117 +1202,71 @@ def checkout():
                         "number": cpf_limpo
                     }
                 },
-                "items": items_payments_payload
+                "items": items_payments_payload,
+                "transactions": {
+                    "payments": [
+                        {
+                            "amount": valor_final_float,
+                            "payment_method": payment_method_object
+                        }
+                    ]
+                }
             }
 
+            # Executa a requisição única de criação e processamento
             res_order, status_order = orders_api.create_order(order_payload)
 
             if status_order not in [200, 201]:
-                print(f"[ERRO CRIACAO ORDEM MANUAL]: Code {status_order} - {res_order}")
+                print(f"[ERRO ORDERS API AUTOMATIC]: Code {status_order} - {res_order}")
                 novo_pedido.status = 'failed'
                 db.session.commit()
-                flash('Não foi possível registrar a ordem de pagamento. Tente novamente.', 'danger')
+                flash('Não foi possível processar a ordem de pagamento. Tente novamente.', 'danger')
                 return redirect(url_for('checkout'))
 
             order_id = res_order.get("id")
+            order_status = res_order.get("status")
+            payments = res_order.get("transactions", {}).get("payments", [])
+            primary_payment = payments[0] if payments else {}
+            payment_status = primary_payment.get("status")
+            status_detail = primary_payment.get("status_detail", "")
 
+            # 5. Tratamento para PIX
             if metodo == 'pix':
-                process_payload = {
-                    "transactions": {
-                        "payments": [
-                            {
-                                "amount": valor_final_float,
-                                "payment_method": {
-                                    "id": "pix",
-                                    "type": "bank_transfer"
-                                }
-                            }
-                        ]
-                    }
+                novo_pedido.pagamento_id = str(order_id)
+                db.session.commit()
+
+                pix_info = primary_payment.get("point_of_interaction", {}).get("transaction_data", {})
+
+                session['compra_atual'] = {
+                    'metodo_pagamento': 'pix',
+                    'payment_id': str(order_id),
+                    'pedido_id': novo_pedido.id,
+                    'total': float(valor_final_dec),
+                    'qr_code': pix_info.get("qr_code"),
+                    'qr_code_base64': pix_info.get("qr_code_base64")
                 }
-                
-                res_proc, status_proc = orders_api.process_order(order_id, process_payload)
+                session.pop('carrinho', None)
+                return redirect(url_for('pagamento'))
 
-                if status_proc in [200, 201]:
-                    novo_pedido.pagamento_id = str(order_id)
-                    db.session.commit()
-
-                    payments = res_proc.get("transactions", {}).get("payments", [])
-                    pix_info = payments[0].get("point_of_interaction", {}).get("transaction_data", {}) if payments else {}
-
-                    session['compra_atual'] = {
-                        'metodo_pagamento': 'pix',
-                        'payment_id': str(order_id),
-                        'pedido_id': novo_pedido.id,
-                        'total': float(valor_final_dec),
-                        'qr_code': pix_info.get("qr_code"),
-                        'qr_code_base64': pix_info.get("qr_code_base64")
-                    }
-                    session.pop('carrinho', None)
-                    return redirect(url_for('pagamento'))
-                else:
-                    novo_pedido.status = 'failed'
-                    db.session.commit()
-                    flash('Não foi possível gerar a chave PIX. Tente novamente.', 'danger')
-                    return redirect(url_for('checkout'))
-
+            # 6. Tratamento para CARTÃO DE CRÉDITO
             elif metodo == 'credit_card':
-                payment_method_id = request.form.get('payment_method_id', '')
-                card_token = request.form.get('token')
-
-                if not card_token:
-                    novo_pedido.status = 'failed'
+                if order_status in ["processed", "accredited"] or payment_status in ["approved", "accredited"]:
+                    novo_pedido.status = "approved"
+                    novo_pedido.pagamento_id = str(order_id)
+                    gerar_ingressos_para_pedido(novo_pedido.id, order_id)
                     db.session.commit()
-                    flash('Falha ao processar dados do cartão. Tente novamente.', 'warning')
-                    return redirect(url_for('checkout'))
-
-                process_payload = {
-                    "transactions": {
-                        "payments": [
-                            {
-                                "amount": valor_final_float,
-                                "payment_method": {
-                                    "id": payment_method_id,
-                                    "type": "credit_card",
-                                    "token": card_token,
-                                    "installments": installments
-                                }
-                            }
-                        ]
-                    }
-                }
-
-                res_proc, status_proc = orders_api.process_order(order_id, process_payload)
-
-                if status_proc in [200, 201]:
-                    order_status = res_proc.get("status")
-                    payments = res_proc.get("transactions", {}).get("payments", [])
-                    primary_payment = payments[0] if payments else {}
-                    payment_status = primary_payment.get("status")
-                    status_detail = primary_payment.get("status_detail", "")
-
-                    if order_status in ["processed", "accredited"] or payment_status in ["approved", "accredited"]:
-                        novo_pedido.status = "approved"
-                        novo_pedido.pagamento_id = str(order_id)
-                        gerar_ingressos_para_pedido(novo_pedido.id, order_id)
-                        db.session.commit()
-                        session.pop('carrinho', None)
-                        flash('Pagamento processado com sucesso!', 'success')
-                        return redirect(url_for('meus_ingressos'))
-                    else:
-                        novo_pedido.status = payment_status or 'rejected'
-                        db.session.commit()
-                        msg_erro = MENSAGENS_ERRO_MP.get(
-                            status_detail,
-                            f'Pagamento recusado ({status_detail or "motivo desconhecido"}). Verifique os dados ou utilize outro cartão.'
-                        )
-                        flash(f"Falha no pagamento: {msg_erro}", "danger")
-                        return redirect(url_for("checkout"))
+                    session.pop('carrinho', None)
+                    flash('Pagamento processado com sucesso!', 'success')
+                    return redirect(url_for('meus_ingressos'))
                 else:
-                    novo_pedido.status = 'failed'
+                    novo_pedido.status = payment_status or 'rejected'
                     db.session.commit()
-                    flash('Erro ao processar o pagamento do cartão. Verifique os dados informados.', 'danger')
-                    return redirect(url_for('checkout'))
+                    msg_erro = MENSAGENS_ERRO_MP.get(
+                        status_detail,
+                        f'Pagamento recusado ({status_detail or "motivo desconhecido"}). Verifique os dados ou utilize outro cartão.'
+                    )
+                    flash(f"Falha no pagamento: {msg_erro}", "danger")
+                    return redirect(url_for("checkout"))
 
         except Exception as e:
             print(f"[ERRO MERCADO PAGO EXCECAO]: {str(e)}")
