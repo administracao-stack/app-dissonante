@@ -1136,22 +1136,22 @@ def checkout():
 
         calc_taxa = calcular_valor_com_taxa_mp(total_pedido, metodo_pagamento=metodo, parcelas=installments)
         valor_final_dec = calc_taxa['valor_final']
-        valor_final_float = float(valor_final_dec)
+        valor_final_str = f"{float(valor_final_dec):.2f}"
 
-        # 1. Montagem da lista de itens desmembrando ingresso e taxas
+        # 1. Montagem da lista de itens desmembrando ingresso e taxas (Valores como STRING)
         items_payments_payload = []
         for item in ordem_compra:
             items_payments_payload.append({
                 "title": f"Ingresso {item['lote'].nome}",
                 "quantity": item['quantidade'],
-                "unit_price": float(item['preco_unitario'])
+                "unit_price": f"{float(item['preco_unitario']):.2f}"
             })
 
         if calc_taxa['taxa'] > Decimal('0.00'):
             items_payments_payload.append({
                 "title": "Taxa de Processamento / Serviços",
                 "quantity": 1,
-                "unit_price": float(calc_taxa['taxa'])
+                "unit_price": f"{float(calc_taxa['taxa']):.2f}"
             })
 
         # 2. Criação do Pedido no Banco Local
@@ -1210,12 +1210,12 @@ def checkout():
                     "installments": installments
                 }
 
-            # 4. Payload com modelo AUTOMATIC (One-Shot)
+            # 4. Payload com modelo AUTOMATIC (One-Shot) - Valores monetários em STRING
             order_payload = {
                 "type": "online",
                 "processing_mode": "automatic",
                 "external_reference": f"PEDIDO_{novo_pedido.id}",
-                "total_amount": valor_final_float,
+                "total_amount": valor_final_str,
                 "payer": {
                     "email": usuario_atual.email,
                     "first_name": first_name,
@@ -1229,7 +1229,7 @@ def checkout():
                 "transactions": {
                     "payments": [
                         {
-                            "amount": valor_final_float,
+                            "amount": valor_final_str,
                             "payment_method": payment_method_object
                         }
                     ]
