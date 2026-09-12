@@ -36,8 +36,11 @@ DATA_LIMITE_VENDAS = datetime(2026, 10, 31, 19, 0, 0, tzinfo=TZ_BRASILIA)
 MINUTOS_RESERVA = 15
 LIMITE_MAXIMO_LOTE = 5
 
+def agora_brasilia():
+    return datetime.now(TZ_BRASILIA)
+
 def vendas_encerradas():
-    return datetime.now(TZ_BRASILIA) >= DATA_LIMITE_VENDAS
+    return agora_brasilia() >= DATA_LIMITE_VENDAS
 
 # --------------------------------------------------------------------------
 # Configurações do App e Banco de Dados
@@ -257,6 +260,14 @@ class ReservaCarrinho(db.Model):
     data_expiracao = db.Column(db.DateTime, nullable=False, index=True)
     lote = db.relationship('Lote')
 
+class FilaEmail(db.Model):
+    __tablename__ = 'fila_emails'
+    id = db.Column(db.Integer, primary_key=True)
+    destinatario = db.Column(db.String(120), nullable=False)
+    assunto = db.Column(db.String(200), nullable=False)
+    corpo = db.Column(db.Text, nullable=False)
+    reply_to = db.Column(db.String(120), nullable=True)
+
 def inicializar_banco():
     try:
         email_admin = "administracao@dissonanteexperiencias.com"
@@ -280,7 +291,7 @@ def inicializar_banco():
             evento_db = Evento(
                 slug='marevibes-halloween-2026',
                 titulo='MaréVibes Halloween 2026',
-                data_hora=datetime(2026, 10, 31, 20, 0, 0), # Salvo em UTC naive
+                data_hora=datetime(2026, 10, 31, 20, 0, 0),
                 local='Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE'
             )
             db.session.add(evento_db)
@@ -411,11 +422,21 @@ def enviar_email_direto(destinatario, assunto, corpo_texto, reply_to=None):
         print(f"[ERRO DE ENVIO DE E-MAIL]: {str(e)}")
         return False
 
+def enfileirar_email(destinatario, assunto, corpo, reply_to=None):
+    novo_email = FilaEmail(
+        destinatario=destinatario,
+        assunto=assunto,
+        corpo=corpo,
+        reply_to=reply_to
+    )
+    db.session.add(novo_email)
+    db.session.commit()
+
 def enviar_email_confirmacao(usuario_email, usuario_nome, token):
     try:
         link = url_for('validar_email', token=token, _external=True)
         corpo = f"Olá {usuario_nome}!\n\nConfirme seu e-mail no link abaixo:\n{link}"
-        threading.Thread(target=lambda: enviar_email_direto(usuario_email, "[Dissonante] Validação de E-mail", corpo)).start()
+        enfileirar_email(usuario_email, "[Dissonante] Validação de E-mail", corpo)
         return True
     except Exception:
         return False
@@ -428,7 +449,8 @@ def gerar_codigo_ingresso():
             return codigo
 
 def gerar_ingressos_para_pedido(pedido_id, payment_id):
-    pedido = Pedido.query.get(pedido_id)
+    # Proteção contra race condition com bloqueio de linha
+    pedido = db.session.query(Pedido).filter_by(id=pedido_id).with_for_update().first()
     if not pedido or Ingresso.query.filter_by(pedido_id=pedido.id).count() > 0:
         return False
 
@@ -606,7 +628,7 @@ def contato():
 
         if email_empresa:
             corpo = f"Nome: {nome}\nEmail: {email_cliente}\nAssunto: {assunto}\n\nMensagem:\n{mensagem}"
-            threading.Thread(target=lambda: enviar_email_direto(email_empresa, f"[Contato] {assunto}", corpo, email_cliente)).start()
+            enfileirar_email(email_empresa, f"[Contato] {assunto}", corpo, reply_to=email_cliente)
             flash('Mensagem enviada com sucesso!', 'success')
 
         return redirect(url_for('contato'))
@@ -716,7 +738,7 @@ def esqueci_senha():
             token = gerar_token_recuperacao(usuario.email)
             link = url_for('redefinir_senha', token=token, _external=True)
             corpo = f"Olá {usuario.nome}!\n\nRedefina sua senha acessando:\n{link}"
-            threading.Thread(target=lambda: enviar_email_direto(usuario.email, "[Dissonante] Instruções de Senha", corpo)).start()
+            enfileirar_email(usuario.email, "[Dissonante] Instruções de Senha", corpo)
 
         flash(f'Enviamos as instruções para o e-mail informado.', 'info')
         return redirect(url_for('esqueci_senha', email=email, enviado='1'))
@@ -1082,6 +1104,7 @@ def checkout():
     carrinho = session.get('carrinho', {})
 
     if not carrinho or vendas_encerradas():
+        flash('Sessão expirada ou vendas encerradas.', 'warning')
         return redirect(url_for('evento_marevibes'))
 
     ordem_compra = []
@@ -1269,6 +1292,7 @@ def checkout():
                     return redirect(url_for("checkout"))
 
         except Exception as e:
+            db.session.rollback()
             print(f"[ERRO MERCADO PAGO EXCECAO]: {str(e)}")
             if novo_pedido:
                 novo_pedido.status = 'failed'
