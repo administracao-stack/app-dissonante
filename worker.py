@@ -8,17 +8,18 @@ def processar_fila_emails():
         if sucesso:
             db.session.delete(item)
             
-    if emails:  # Executa o commit apenas se houver registros processados
+    if emails:
         db.session.commit()
 
 if __name__ == '__main__':
-    print("[WORKER] Processador ativo: limpando reservas e enviando e-mails...")
+    print("[WORKER] Processador ativo no Render: limpando reservas e enviando e-mails...")
     while True:
-        try:
-            with app.app_context():
+        with app.app_context():
+            try:
                 limpar_reservas_expiradas()
                 processar_fila_emails()
-        except Exception as e:
-            db.session.rollback()
-            print(f"[ERRO WORKER]: {str(e)}")
+            except Exception as e:
+                db.session.rollback()  # Executado dentro do contexto ativo do Flask
+                print(f"[ERRO WORKER]: {str(e)}")
+        
         time.sleep(10)
