@@ -14,12 +14,13 @@ def processar_fila_emails():
 if __name__ == '__main__':
     print("[WORKER] Processador ativo no Render: limpando reservas e enviando e-mails...")
     while True:
+        # O contexto engloba todo o ciclo, incluindo a captura e tratamento de erros
         with app.app_context():
             try:
                 limpar_reservas_expiradas()
                 processar_fila_emails()
             except Exception as e:
-                db.session.rollback()  # Executado dentro do contexto ativo do Flask
+                db.session.rollback()  # Executado DENTRO do app_context
                 print(f"[ERRO WORKER]: {str(e)}")
         
         time.sleep(10)
