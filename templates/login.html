@@ -15,7 +15,6 @@
                 <li>🎟️ <strong>Ingressos na palma da mão:</strong> Seus QR Codes salvos em um só lugar.</li>
                 <li>⚡ <strong>Acesso Rápido na Portaria:</strong> Sem filas e sem papel.</li>
                 <li>🔒 <strong>Segurança Avançada:</strong> Proteção total para o seu histórico de compras.</li>
-                <li>🎁 <strong>Benefícios Exclusivos:</strong> Acesso antecipado a lotes promocionais.</li>
             </ul>
         </div>
 
@@ -24,13 +23,14 @@
             <h3>Acesse sua Conta</h3>
             <p class="form-sub">Entre com seu e-mail e senha cadastrados.</p>
 
-            <form action="{{ url_for('login') }}" method="POST">
+            <form action="{{ url_for('login') }}" method="POST" data-recaptcha-action="login">
+                <input type="hidden" name="g-recaptcha-response">
+
                 <div class="auth-group">
                     <label for="email">E-mail</label>
                     <input type="email" id="email" name="email" class="form-control" placeholder="seu-melhor-email@exemplo.com" required>
                 </div>
 
-                <!-- Campo de Senha com Ícone de Exibir/Ocultar -->
                 <div class="auth-group">
                     <div class="auth-label-row">
                         <label for="senha">Senha:</label>
@@ -63,30 +63,20 @@
 {% endblock %}
 
 {% block extra_js %}
+    {% include 'includes/scripts/toggle_senha.html' %}
+    {% include 'includes/scripts/recaptcha.html' %}
+
 <script>
-    function togglePasswordVisibility(inputId, btn) {
-        const input = document.getElementById(inputId);
-        const slashLine = btn.querySelector('.eye-slash');
-
-        if (input.type === 'password') {
-            input.type = 'text';
-            slashLine.style.display = 'block';
-        } else {
-            input.type = 'password';
-            slashLine.style.display = 'none';
-        }
-    }
-
     function redirecionarEsqueciSenha(event) {
         event.preventDefault();
         const emailInput = document.getElementById('email');
-        const emailVal = emailInput ? encodeURIComponent(emailInput.value.trim()) : '';
+        const emailVal = emailInput ? emailInput.value.trim() : '';
         
         if (emailVal) {
-            window.location.href = "{{ url_for('esqueci_senha') }}?email=" + emailVal;
-        } else {
-            window.location.href = "{{ url_for('esqueci_senha') }}";
+            // Guarda temporariamente no armazenamento da sessão em vez de passar pela URL
+            sessionStorage.setItem('remembered_email', emailVal);
         }
+        window.location.href = "{{ url_for('esqueci_senha') }}";
     }
 </script>
 {% endblock %}
