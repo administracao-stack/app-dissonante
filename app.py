@@ -21,12 +21,34 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, not_
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from flask_migrate import Migrate
 
 load_dotenv()
 
 app = Flask(__name__)
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# --------------------------------------------------------------------------
+# Configuração do Rate Limiter
+# --------------------------------------------------------------------------
+redis_url = os.environ.get('REDIS_URL', 'memory://')
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri=redis_url,
+    storage_options={
+        "socket_connect_timeout": 5,
+        "socket_timeout": 5
+    },
+    swallow_errors=True  # Evita erro 500 caso o Redis fique indisponível
+)
 
 # --------------------------------------------------------------------------
 # Constantes Globais
@@ -324,6 +346,36 @@ def inicializar_banco():
     except Exception as e:
         db.session.rollback()
         print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar dados padrão: {str(e)}")
+
+class NotificacaoUsuario(db.Model):
+    __tablename__ = 'notificacoes_usuario'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    mensagem = db.Column(db.Text, nullable=False)
+    categoria = db.Column(db.String(20), default='info')  # success, danger, warning, info
+    lida = db.Column(db.Boolean, default=False)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
+# ==========================================================================
+# HOOKS E MIDDLEWARES DA APLICAÇÃO
+# ==========================================================================
+
+@app.before_request
+def carregar_notificacoes_worker():
+    if 'usuario_id' in session:
+        # Busca orientações pendentes enviadas pelo Worker
+        notificacoes = NotificacaoUsuario.query.filter_by(
+            usuario_id=session['usuario_id'],
+            lida=False
+        ).all()
+        
+        for notif in notificacoes:
+            # Alimenta o sistema de Flash nativo do Flask
+            flash(notif.mensagem, notif.categoria)
+            notif.lida = True
+            
+        if notificacoes:
+            db.session.commit()
 
 # --------------------------------------------------------------------------
 # Funções Auxiliares e Segurança
@@ -635,6 +687,7 @@ def contato():
     return render_template('contato.html')
 
 @app.route('/cadastro', methods=['GET', 'POST'])
+@limiter.limit("10 per hour")
 def cadastro():
     if request.method == 'POST':
         if not validar_recaptcha(request.form.get('g-recaptcha-response'), action_esperada='cadastro'):
@@ -693,6 +746,7 @@ def validar_email(token):
     return render_template('email_confirmado.html', sucesso=True, mensagem="E-mail verificado com sucesso!", usuario=usuario)
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute; 20 per hour")
 def login():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
@@ -725,6 +779,7 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/esqueci-senha', methods=['GET', 'POST'])
+@limiter.limit("5 per hour")
 def esqueci_senha():
     if request.method == 'POST':
         if not validar_recaptcha(request.form.get('g-recaptcha-response'), action_esperada='esqueci_senha'):
@@ -1098,6 +1153,7 @@ def favoritar():
 # ==========================================================================
 
 @app.route('/checkout', methods=['GET', 'POST'])
+@limiter.limit("15 per minute")
 @cliente_required
 def checkout():
     usuario_atual = Usuario.query.get(session['usuario_id'])
