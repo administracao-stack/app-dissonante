@@ -103,13 +103,12 @@
         const mpPublicKey = "{{ mp_public_key }}";
         if (!mpPublicKey) {
             console.warn('A chave MP_PUBLIC_KEY não está configurada no ambiente.');
-            return;
         }
 
-        const mp = new MercadoPago(mpPublicKey, { locale: 'pt-BR' });
-
         const cardNumberInput = document.getElementById('cardNumber');
-        if (cardNumberInput) {
+        if (cardNumberInput && mpPublicKey) {
+            const mp = new MercadoPago(mpPublicKey, { locale: 'pt-BR' });
+
             cardNumberInput.addEventListener('input', async function () {
                 const bin = this.value.replace(/\D/g, '').substring(0, 6);
                 
@@ -133,20 +132,32 @@
             });
         }
 
+        // Intercepta a tokenização ANTES do reCAPTCHA e delega a submissão final ao reCAPTCHA
         form.addEventListener('submit', async function (e) {
             const metodoInput = document.querySelector('input[name="metodo_pagamento"]:checked');
             const metodo = metodoInput ? metodoInput.value : 'pix';
 
-            if (metodo === 'pix') {
+            // Se for Pix ou se o cartão já foi tokenizado, deixa o reCAPTCHA processar o envio
+            if (metodo === 'pix' || form.dataset.cardTokenized === 'true') {
                 return;
             }
 
+            // Impede o envio até que o cartão seja tokenizado
             e.preventDefault();
+            e.stopImmediatePropagation();
 
             const btnSubmit = document.getElementById('btn-submit-checkout');
-            if (btnSubmit) btnSubmit.disabled = true;
+            if (btnSubmit) {
+                btnSubmit.disabled = true;
+                btnSubmit.innerText = 'Processando cartão...';
+            }
 
             try {
+                if (!mpPublicKey) {
+                    throw new Error('Configuração de pagamento indisponível.');
+                }
+
+                const mp = new MercadoPago(mpPublicKey, { locale: 'pt-BR' });
                 const rawExpiration = document.getElementById('cardExpiration').value.trim();
                 const expirationParts = rawExpiration.split('/');
 
@@ -185,7 +196,12 @@
                     }
                 }
 
-                form.submit();
+                // Marca como tokenizado e dispara novo evento 'submit' que cairá no reCAPTCHA
+                form.dataset.cardTokenized = 'true';
+                if (btnSubmit) btnSubmit.disabled = false;
+                
+                // Dispara o submit manipulado pelo JS para engrenar no recaptcha.html
+                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 
             } catch (error) {
                 console.error('Erro na tokenização do cartão:', error);
@@ -198,7 +214,10 @@
                 }
 
                 alert(`Atenção: ${mensagemErro}`);
-                if (btnSubmit) btnSubmit.disabled = false;
+                if (btnSubmit) {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerText = 'Finalizar Pagamento';
+                }
             }
         });
     });
