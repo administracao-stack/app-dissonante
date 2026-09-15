@@ -11,7 +11,6 @@
             <a href="{{ url_for('perfil') }}" class="btn-back">← Voltar ao Perfil</a>
         </div>
 
-        <!-- Mensagens Flash -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
@@ -22,8 +21,9 @@
             {% endif %}
         {% endwith %}
 
-        <!-- Formulário de Edição -->
-        <form action="{{ url_for('configuracoes') }}" method="POST" class="settings-form">
+        <!-- Formulário 1: Edição de Dados Pessoais -->
+        <form action="{{ url_for('configuracoes') }}" method="POST" class="settings-form" data-recaptcha-action="editar_dados_pessoais">
+            <input type="hidden" name="g-recaptcha-response">
             <h3>Editar Dados Pessoais</h3>
 
             <div class="auth-group">
@@ -54,26 +54,55 @@
 
         <hr class="settings-divider">
 
-        <!-- Seção de Segurança / Alteração de Senha Direta -->
+        <!-- Formulário 2: Redefinição de Senha -->
         <div class="security-zone">
             <h3>Redefinição de Senha</h3>
             <p>Altere sua senha de acesso confirmando sua senha atual abaixo.</p>
             
-            <form action="{{ url_for('alterar_senha_configuracoes') }}" method="POST" class="settings-form">
+            <form action="{{ url_for('alterar_senha_configuracoes') }}" method="POST" class="settings-form" data-recaptcha-action="alterar_senha">
+                <input type="hidden" name="g-recaptcha-response">
+                
                 <div class="auth-group">
                     <label for="senha_atual">Senha Atual</label>
-                    <input type="password" id="senha_atual" name="senha_atual" required placeholder="Digite sua senha atual">
+                    <div class="password-input-wrapper">
+                        <input type="password" id="senha_atual" name="senha_atual" required placeholder="Digite sua senha atual">
+                        <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('senha_atual', this)" aria-label="Alternar visibilidade da senha">
+                            <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                                <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="auth-row">
                     <div class="auth-group">
                         <label for="nova_senha">Nova Senha</label>
-                        <input type="password" id="nova_senha" name="nova_senha" minlength="6" required placeholder="Mínimo 6 caracteres">
+                        <div class="password-input-wrapper">
+                            <input type="password" id="nova_senha" name="nova_senha" minlength="6" required placeholder="Mínimo 6 caracteres">
+                            <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('nova_senha', this)" aria-label="Alternar visibilidade da senha">
+                                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="auth-group">
                         <label for="confirmar_senha">Confirmar Nova Senha</label>
-                        <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" required placeholder="Repita a nova senha">
+                        <div class="password-input-wrapper">
+                            <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" required placeholder="Repita a nova senha">
+                            <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('confirmar_senha', this)" aria-label="Alternar visibilidade da senha">
+                                <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                                    <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -91,16 +120,27 @@
     </div>
 </main>
 
-<!-- Modal de Confirmação de Exclusão -->
+<!-- Modal de Exclusão -->
 <div id="delete-modal" class="modal-backdrop is-hidden" onclick="closeModalOnBackdrop(event)">
     <div class="modal-content">
         <h3>Tem certeza absoluta?</h3>
         <p>Você está prestes a excluir sua conta permanentemente. Insira sua senha para confirmar.</p>
         
-        <form action="{{ url_for('deletar_conta') }}" method="POST">
+        <form action="{{ url_for('deletar_conta') }}" method="POST" data-recaptcha-action="deletar_conta">
+            <input type="hidden" name="g-recaptcha-response">
+            
             <div class="auth-group">
                 <label for="confirm_senha">Sua Senha</label>
-                <input type="password" id="confirm_senha" name="confirm_senha" required placeholder="Digite sua senha">
+                <div class="password-input-wrapper">
+                    <input type="password" id="confirm_senha" name="confirm_senha" required placeholder="Digite sua senha">
+                    <button type="button" class="btn-toggle-password" onclick="togglePasswordVisibility('confirm_senha', this)" aria-label="Alternar visibilidade da senha">
+                        <svg class="icon-eye" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path class="eye-open" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle class="eye-open" cx="12" cy="12" r="3"></circle>
+                            <line class="eye-slash" x1="1" y1="1" x2="23" y2="23" style="display:none;"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="modal-actions">
@@ -157,4 +197,7 @@
         });
     }
 </script>
+
+{% include 'includes/scripts/toggle_senha.html' %}
+{% include 'includes/scripts/recaptcha.html' %}
 {% endblock %}
