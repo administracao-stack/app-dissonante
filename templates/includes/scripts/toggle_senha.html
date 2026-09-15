@@ -1,0 +1,23 @@
+<script>
+    function togglePasswordVisibility(inputId, btn) {
+        if (!btn) return;
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        const slashLine = btn.querySelector('.eye-slash');
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (slashLine) {
+                slashLine.style.display = 'inline';
+            }
+            btn.setAttribute('aria-label', 'Ocultar senha');
+        } else {
+            input.type = 'password';
+            if (slashLine) {
+                slashLine.style.display = 'none';
+            }
+            btn.setAttribute('aria-label', 'Exibir senha');
+        }
+    }
+</script>
