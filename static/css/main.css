@@ -19,3 +19,6 @@
 /* 3. Eventos, Checkout & Institucional */
 @import url('./components/_events_checkout.css');
 @import url('./components/_institutional.css');
+
+/* 4. Serviços */
+@import url('./components/_servicos.css');
