@@ -1,22 +1,21 @@
 <script>
     function copiarPix() {
         const inputPix = document.getElementById("pix-copia-cola");
+        const btnCopiar = document.getElementById("btn-copiar");
         if (!inputPix) return;
         
         inputPix.select();
         inputPix.setSelectionRange(0, 99999);
 
-        const btnCopiar = document.getElementById("btn-copiar");
-
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(inputPix.value).then(() => {
                 exibirFeedbackCopiado(btnCopiar);
             }).catch(() => {
-                document.execCommand('copy');
+                try { document.execCommand('copy'); } catch(e){}
                 exibirFeedbackCopiado(btnCopiar);
             });
         } else {
-            document.execCommand('copy');
+            try { document.execCommand('copy'); } catch(e){}
             exibirFeedbackCopiado(btnCopiar);
         }
     }
