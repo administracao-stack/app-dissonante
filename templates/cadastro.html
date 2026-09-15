@@ -2,13 +2,6 @@
 
 {% block title %}Criar Conta | Dissonante Experiências{% endblock %}
 
-{% block extra_head %}
-    <!-- Script da API do Google reCAPTCHA v3 exclusivo para a tela de cadastro -->
-    {% if recaptcha_site_key %}
-    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
-    {% endif %}
-{% endblock %}
-
 {% block content %}
 <main class="auth-wrapper">
     <div class="auth-container">
@@ -97,20 +90,14 @@
 {% endblock %}
 
 {% block extra_js %}
+
+    {# 1. Utilitário genérico para alternar a senha #}
+    {% include 'includes/scripts/toggle_senha.html' %}
+
+    {# 2. Script do reCAPTCHA v3 #}
+    {% include 'includes/scripts/recaptcha.html' %}
+
 <script>
-    function togglePasswordVisibility(inputId, btn) {
-        const input = document.getElementById(inputId);
-        const slashLine = btn.querySelector('.eye-slash');
-
-        if (input.type === 'password') {
-            input.type = 'text';
-            slashLine.style.display = 'block';
-        } else {
-            input.type = 'password';
-            slashLine.style.display = 'none';
-        }
-    }
-
     document.getElementById('form-cadastro').addEventListener('submit', function(e) {
         const siteKey = "{{ recaptcha_site_key }}";
         const form = this;
