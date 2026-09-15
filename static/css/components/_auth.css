@@ -569,6 +569,11 @@
 
 /* Tablet & Mobile Geral (Até 768px) */
 @media (max-width: 768px) {
+    .auth-wrapper {
+        padding: 30px 16px;
+        min-height: auto;
+    }
+
     .auth-container {
         grid-template-columns: 1fr;
     }
@@ -586,6 +591,11 @@
     .auth-row {
         grid-template-columns: 1fr;
         gap: 0;
+    }
+
+    .container-auth {
+        margin: 30px auto;
+        padding: 0 16px;
     }
 
     .profile-container, .settings-container {
@@ -618,16 +628,25 @@
         width: 100%;
         text-align: center;
     }
+
+    .email-confirm-container {
+        padding: 40px 16px;
+    }
 }
 
 /* Smartphones Pequenos (Até 480px) */
 @media (max-width: 480px) {
     .auth-card, .email-confirm-card {
-        padding: 24px;
+        padding: 20px 16px;
+    }
+
+    .profile-info-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
     }
 
     .modal-content {
-        padding: 20px;
+        padding: 20px 16px;
         width: 95%;
     }
 
