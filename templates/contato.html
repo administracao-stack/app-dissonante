@@ -2,12 +2,6 @@
 
 {% block title %}Contato | Dissonante Experiências{% endblock %}
 
-{% block extra_head %}
-    {% if recaptcha_site_key %}
-    <script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
-    {% endif %}
-{% endblock %}
-
 {% block content %}
 <!-- Banner Hero Contato -->
 <section class="hero-contato">
@@ -26,18 +20,7 @@
             <div class="card-contato">
                 <h2 class="card-contato-titulo">Envie uma Mensagem</h2>
 
-                <!-- Exibição de Mensagens Flash do Backend -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
-                                {{ message }}
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-
-                <form id="form-contato" method="POST" action="{{ url_for('contato') }}">
+                <form id="form-contato" method="POST" action="{{ url_for('contato') }}" data-recaptcha-action="contato">
                     <!-- Campo Oculto para o Token do reCAPTCHA -->
                     <input type="hidden" id="g-recaptcha-response" name="g-recaptcha-response">
 
@@ -97,34 +80,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const formContato = document.getElementById('form-contato');
-        if (formContato) {
-            formContato.addEventListener('submit', function(e) {
-                const siteKey = "{{ recaptcha_site_key }}";
-                
-                if (siteKey && typeof grecaptcha !== 'undefined') {
-                    e.preventDefault();
-
-                    const btnSubmit = document.getElementById('btn-submit');
-                    if (btnSubmit) {
-                        btnSubmit.disabled = true;
-                        btnSubmit.innerText = 'Enviando...';
-                    }
-                    
-                    grecaptcha.ready(function() {
-                        grecaptcha.execute(siteKey, {action: 'contato'}).then(function(token) {
-                            document.getElementById('g-recaptcha-response').value = token;
-                            formContato.submit();
-                        }).catch(function(error) {
-                            console.error('Erro reCAPTCHA:', error);
-                            formContato.submit();
-                        });
-                    });
-                }
-            });
-        }
-    });
-</script>
+{% include 'includes/scripts/recaptcha.html' %}
 {% endblock %}
