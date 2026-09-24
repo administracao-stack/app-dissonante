@@ -17,7 +17,7 @@ from datetime import datetime, timezone, timedelta
 from functools import wraps
 from dotenv import load_dotenv
 import mercadopago
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_from_directory
+from flask import Flask, render_template, current_app, request, redirect, url_for, session, flash, jsonify, send_from_directory, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, not_
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -47,7 +47,7 @@ limiter = Limiter(
         "socket_connect_timeout": 5,
         "socket_timeout": 5
     },
-    swallow_errors=True  # Evita erro 500 caso o Redis fique indisponível
+    swallow_errors=True
 )
 
 # --------------------------------------------------------------------------
@@ -63,6 +63,18 @@ def agora_brasilia():
 
 def vendas_encerradas():
     return agora_brasilia() >= DATA_LIMITE_VENDAS
+
+def validar_cpf_matematico(cpf_str):
+    cpf = re.sub(r'\D', '', str(cpf_str or ''))
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+    
+    for i in range(9, 11):
+        soma = sum(int(cpf[num]) * ((i + 1) - num) for num in range(0, i))
+        digito = (soma * 10 % 11) % 10
+        if int(cpf[i]) != digito:
+            return False
+    return True
 
 # --------------------------------------------------------------------------
 # Configurações do App e Banco de Dados
@@ -290,8 +302,19 @@ class FilaEmail(db.Model):
     corpo = db.Column(db.Text, nullable=False)
     reply_to = db.Column(db.String(120), nullable=True)
 
+class NotificacaoUsuario(db.Model):
+    __tablename__ = 'notificacoes_usuario'
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    mensagem = db.Column(db.Text, nullable=False)
+    categoria = db.Column(db.String(20), default='info')
+    lida = db.Column(db.Boolean, default=False)
+    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+
 def inicializar_banco():
     try:
+        db.create_all()
+
         email_admin = "administracao@dissonanteexperiencias.com"
         admin_user = Usuario.query.filter_by(email=email_admin).first()
 
@@ -308,53 +331,44 @@ def inicializar_banco():
             )
             db.session.add(admin_user)
 
-        evento_db = Evento.query.filter_by(slug='marevibes-halloween-2026').first()
-        if not evento_db:
-            evento_db = Evento(
-                slug='marevibes-halloween-2026',
-                titulo='MaréVibes Halloween 2026',
-                data_hora=datetime(2026, 10, 31, 20, 0, 0),
-                local='Rua Fagundes Varela, 690, Itaperi - Fortaleza/CE'
-            )
-            db.session.add(evento_db)
-            db.session.flush()
+        caminho_json = os.path.join(app.root_path, 'config', 'eventos_padrao.json')
+        if not os.path.exists(caminho_json):
+            app.logger.warning(f"[BANCO DE DADOS]: Ficheiro {caminho_json} não encontrado.")
+            db.session.commit()
+            return
 
-        lotes_config = [
-            {"nome": "teste", "preco": Decimal('1.00'), "quantidade_total": 10, "ativo": True},
-            {"nome": "Lote Promocional", "preco": Decimal('162.00'), "quantidade_total": 10, "ativo": True},
-            {"nome": "1º Lote - Meia", "preco": Decimal('178.20'), "quantidade_total": 16, "ativo": True},
-            {"nome": "1º Lote - Inteira", "preco": Decimal('194.40'), "quantidade_total": 24, "ativo": True},
-            {"nome": "2º Lote - Meia", "preco": Decimal('194.40'), "quantidade_total": 16, "ativo": False},
-            {"nome": "2º Lote - Inteira", "preco": Decimal('226.80'), "quantidade_total": 24, "ativo": False},
-            {"nome": "Cortesia", "preco": Decimal('0.00'), "quantidade_total": 10, "ativo": False},
-        ]
+        with open(caminho_json, 'r', encoding='utf-8') as f:
+            eventos_config = json.load(f)
 
-        for cfg in lotes_config:
-            lote_db = Lote.query.filter_by(evento_id=evento_db.id, nome=cfg["nome"]).first()
-            if not lote_db:
-                lote_db = Lote(
-                    evento_id=evento_db.id,
-                    nome=cfg["nome"],
-                    preco=cfg["preco"],
-                    quantidade_total=cfg["quantidade_total"],
-                    ativo=cfg["ativo"]
+        for evt_data in eventos_config:
+            evento_db = Evento.query.filter_by(slug=evt_data['slug']).first()
+            if not evento_db:
+                evento_db = Evento(
+                    slug=evt_data['slug'],
+                    titulo=evt_data['titulo'],
+                    data_hora=datetime.fromisoformat(evt_data['data_hora']),
+                    local=evt_data['local']
                 )
-                db.session.add(lote_db)
+                db.session.add(evento_db)
+                db.session.flush()
+
+            for cfg in evt_data['lotes']:
+                lote_db = Lote.query.filter_by(evento_id=evento_db.id, nome=cfg["nome"]).first()
+                if not lote_db:
+                    lote_db = Lote(
+                        evento_id=evento_db.id,
+                        nome=cfg["nome"],
+                        preco=Decimal(str(cfg["preco"])),
+                        quantidade_total=cfg["quantidade_total"],
+                        ativo=cfg["ativo"]
+                    )
+                    db.session.add(lote_db)
 
         db.session.commit()
 
     except Exception as e:
         db.session.rollback()
-        print(f"[ERRO BANCO DE DADOS]: Falha ao inicializar dados padrão: {str(e)}")
-
-class NotificacaoUsuario(db.Model):
-    __tablename__ = 'notificacoes_usuario'
-    id = db.Column(db.Integer, primary_key=True)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    mensagem = db.Column(db.Text, nullable=False)
-    categoria = db.Column(db.String(20), default='info')  # success, danger, warning, info
-    lida = db.Column(db.Boolean, default=False)
-    data_criacao = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+        app.logger.error(f"[ERRO BANCO DE DADOS]: Falha ao inicializar dados padrão: {str(e)}")
 
 # ==========================================================================
 # HOOKS E MIDDLEWARES DA APLICAÇÃO
@@ -363,14 +377,12 @@ class NotificacaoUsuario(db.Model):
 @app.before_request
 def carregar_notificacoes_worker():
     if 'usuario_id' in session:
-        # Busca orientações pendentes enviadas pelo Worker
         notificacoes = NotificacaoUsuario.query.filter_by(
             usuario_id=session['usuario_id'],
             lida=False
         ).all()
         
         for notif in notificacoes:
-            # Alimenta o sistema de Flash nativo do Flask
             flash(notif.mensagem, notif.categoria)
             notif.lida = True
             
@@ -399,7 +411,7 @@ def validar_recaptcha(token, action_esperada=None):
                 return False
             return res_data.get('success', False) and res_data.get('score', 0.0) >= 0.5
     except Exception as e:
-        print(f"[ERRO RECAPTCHA]: {str(e)}")
+        app.logger.error(f"[ERRO RECAPTCHA]: {str(e)}")
         return False
 
 def cliente_required(f):
@@ -471,7 +483,7 @@ def enviar_email_direto(destinatario, assunto, corpo_texto, reply_to=None):
         server.quit()
         return True
     except Exception as e:
-        print(f"[ERRO DE ENVIO DE E-MAIL]: {str(e)}")
+        app.logger.error(f"[ERRO DE ENVIO DE E-MAIL]: {str(e)}")
         return False
 
 def enfileirar_email(destinatario, assunto, corpo, reply_to=None):
@@ -501,7 +513,6 @@ def gerar_codigo_ingresso():
             return codigo
 
 def gerar_ingressos_para_pedido(pedido_id, payment_id):
-    # Proteção contra race condition com bloqueio de linha
     pedido = db.session.query(Pedido).filter_by(id=pedido_id).with_for_update().first()
     if not pedido or Ingresso.query.filter_by(pedido_id=pedido.id).count() > 0:
         return False
@@ -602,35 +613,43 @@ def style_fallback():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    json_path = os.path.join(current_app.root_path, 'config', 'eventos_padrao.json')
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            eventos = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        eventos = []
+
+    return render_template('index.html', eventos=eventos)
 
 @app.route('/servicos')
 def servicos():
     return render_template('servicos.html')
 
-@app.route('/evento/marevibes-halloween')
-def evento_marevibes():
+@app.route('/evento/<slug>')
+def detalhe_evento(slug):
     session_id = session.get('session_token')
-    lotes = Lote.query.filter(not_(Lote.nome.ilike('%Cortesia%'))).order_by(Lote.id.asc()).all()
-    lote_ativo = Lote.query.filter_by(ativo=True).first()
-
-    mapa_chaves = {
-        'teste': 'teste',
-        'promocional': 'promo',
-        '1º lote - meia': 'lote1_meia',
-        '1º lote - inteira': 'lote1_inteira',
-        '2º lote - meia': 'lote2_meia',
-        '2º lote - inteira': 'lote2_inteira'
-    }
+    evento_db = Evento.query.filter_by(slug=slug, ativo=True).first_or_404()
+    
+    lotes_db = Lote.query.filter_by(evento_id=evento_db.id)\
+                         .filter(not_(Lote.nome.ilike('%Cortesia%')))\
+                         .order_by(Lote.id.asc()).all()
 
     estoques = {}
-    for lote in lotes:
-        for termo, chave in mapa_chaves.items():
-            if termo in lote.nome.lower():
-                disponivel = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
-                estoques[chave] = min(5, disponivel) if lote.ativo else 0
+    precos = {}
 
-    return render_template('eventos/marevibes_halloween.html', lote=lote_ativo, lotes=lotes, estoques=estoques)
+    for lote in lotes_db:
+        disponivel = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
+        estoques[str(lote.id)] = min(LIMITE_MAXIMO_LOTE, disponivel) if lote.ativo else 0
+        precos[str(lote.id)] = float(lote.preco)
+
+    return render_template(
+        'eventos/modelo_evento_1.html', 
+        evento=evento_db, 
+        lotes=lotes_db, 
+        estoques=estoques, 
+        precos=precos
+    )
 
 @app.route('/termos-de-uso')
 def termos_de_uso():
@@ -655,15 +674,6 @@ def meia_entrada():
 @app.route('/faq')
 def faq():
     return render_template('faq.html')
-
-@app.route('/forcar-ativacao/<email>')
-def forcar_ativacao(email):
-    usuario = Usuario.query.filter_by(email=email.strip().lower()).first()
-    if usuario:
-        usuario.email_verificado = True
-        db.session.commit()
-        return f"Sucesso! A conta {email} foi ativada manualmente."
-    return "Usuário não encontrado.", 404
 
 @app.route('/contato', methods=['GET', 'POST'])
 def contato():
@@ -705,6 +715,10 @@ def cadastro():
                 flash('Preencha todos os campos obrigatórios.', 'warning')
                 return redirect(url_for('cadastro'))
 
+            if not validar_cpf_matematico(cpf):
+                flash('CPF inválido. Verifique os dígitos informados.', 'danger')
+                return redirect(url_for('cadastro'))
+
             if Usuario.query.filter_by(email=email).first():
                 flash('Este e-mail já possui cadastro.', 'info')
                 return redirect(url_for('login'))
@@ -726,8 +740,9 @@ def cadastro():
             flash('Cadastro realizado! Verifique seu e-mail.', 'success')
             return redirect(url_for('login'))
 
-        except Exception:
+        except Exception as e:
             db.session.rollback()
+            app.logger.error(f"[ERRO CADASTRO]: {str(e)}")
             flash('Erro ao realizar o cadastro.', 'danger')
 
     return render_template('cadastro.html')
@@ -825,6 +840,9 @@ def redefinir_senha(token):
 
 @app.route('/carrinho')
 def ver_carrinho():
+    if 'session_token' not in session:
+        session['session_token'] = ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+
     session_id = session.get('session_token')
     carrinho_dict = session.get('carrinho', {})
     tempo_restante_segundos = 0
@@ -878,84 +896,95 @@ def adicionar_carrinho_multiplo():
     
     if vendas_encerradas():
         flash('As vendas para este evento já foram encerradas.', 'danger')
-        return redirect(url_for('evento_marevibes'))
+        return redirect(url_for('index'))
 
+    referrer_url = request.referrer or url_for('index')
+    evento_slug = request.form.get('evento_slug')
+
+    if not evento_slug:
+        flash('Evento inválido.', 'danger')
+        return redirect(referrer_url)
+
+    evento = Evento.query.filter_by(slug=evento_slug, ativo=True).first_or_404()
     session_id = session['session_token']
     carrinho = session.get('carrinho', {})
-    lotes_db = Lote.query.all()
-
-    quantidades = [
-        ('teste', converter_int_seguro(request.form.get('qty_teste'))),
-        ('promocional', converter_int_seguro(request.form.get('qty_promo'))),
-        ('1º lote - meia', converter_int_seguro(request.form.get('qty_lote1_meia'))),
-        ('1º lote - inteira', converter_int_seguro(request.form.get('qty_lote1_inteira'))),
-        ('2º lote - meia', converter_int_seguro(request.form.get('qty_lote2_meia'))),
-        ('2º lote - inteira', converter_int_seguro(request.form.get('qty_lote2_inteira')))
-    ]
 
     try:
         itens_adicionados = 0
         agora = datetime.now(timezone.utc).replace(tzinfo=None)
         expiracao = agora + timedelta(minutes=MINUTOS_RESERVA)
 
-        for termo, qtd in quantidades:
-            if qtd > 0:
-                lote_map = next((l for l in lotes_db if termo in l.nome.lower()), None)
-                if not lote_map or not lote_map.ativo:
-                    continue
+        for key, value in request.form.items():
+            if key.startswith('qty_lote_'):
+                index = key.replace('qty_lote_', '')
+                qtd = converter_int_seguro(value)
 
-                lote = db.session.query(Lote).filter_by(id=lote_map.id).with_for_update().first()
-                disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
-                str_lote_id = str(lote.id)
+                if qtd > 0:
+                    lotes_evento = Lote.query.filter_by(evento_id=evento.id)\
+                                             .filter(not_(Lote.nome.ilike('%Cortesia%')))\
+                                             .order_by(Lote.id.asc()).all()
+                    
+                    idx = int(index)
+                    if idx >= len(lotes_evento):
+                        continue
+                        
+                    lote_map = lotes_evento[idx]
+                    if not lote_map or not lote_map.ativo:
+                        continue
 
-                qtd_no_carrinho = carrinho.get(str_lote_id, {}).get('quantidade', 0)
-                nova_qtd_total = qtd_no_carrinho + qtd
+                    lote = db.session.query(Lote).filter_by(id=lote_map.id).with_for_update().first()
+                    disponiveis = obter_estoque_disponivel(lote.id, session_id_atual=session_id)
+                    str_lote_id = str(lote.id)
 
-                if qtd > disponiveis:
-                    db.session.rollback()
-                    flash(f'Restam apenas {disponiveis} ingressos disponíveis no lote {lote.nome}.', 'danger')
-                    return redirect(url_for('evento_marevibes'))
+                    qtd_no_carrinho = carrinho.get(str_lote_id, {}).get('quantidade', 0)
+                    nova_qtd_total = qtd_no_carrinho + qtd
 
-                if nova_qtd_total > LIMITE_MAXIMO_LOTE:
-                    db.session.rollback()
-                    flash(f'Você só pode ter no máximo {LIMITE_MAXIMO_LOTE} ingressos do lote {lote.nome}.', 'warning')
-                    return redirect(url_for('evento_marevibes'))
+                    if qtd > disponiveis:
+                        db.session.rollback()
+                        flash(f'Restam apenas {disponiveis} ingressos no lote {lote.nome}.', 'danger')
+                        return redirect(referrer_url)
 
-                reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()
-                if reserva:
-                    reserva.quantidade = nova_qtd_total
-                    reserva.data_expiracao = expiracao
-                else:
-                    db.session.add(ReservaCarrinho(
-                        session_id=session_id, 
-                        lote_id=lote.id, 
-                        quantidade=nova_qtd_total, 
-                        data_expiracao=expiracao
-                    ))
+                    if nova_qtd_total > LIMITE_MAXIMO_LOTE:
+                        db.session.rollback()
+                        flash(f'O limite máximo é de {LIMITE_MAXIMO_LOTE} ingressos por lote.', 'warning')
+                        return redirect(referrer_url)
 
-                carrinho[str_lote_id] = {
-                    'lote_id': lote.id,
-                    'evento_nome': lote.evento.titulo if getattr(lote, 'evento', None) else "Evento",
-                    'lote_nome': lote.nome,
-                    'preco': float(lote.preco),
-                    'quantidade': nova_qtd_total
-                }
-                itens_adicionados += 1
+                    reserva = ReservaCarrinho.query.filter_by(session_id=session_id, lote_id=lote.id).first()
+                    if reserva:
+                        reserva.quantidade = nova_qtd_total
+                        reserva.data_expiracao = expiracao
+                    else:
+                        db.session.add(ReservaCarrinho(
+                            session_id=session_id, 
+                            lote_id=lote.id, 
+                            quantidade=nova_qtd_total, 
+                            data_expiracao=expiracao
+                        ))
+
+                    carrinho[str_lote_id] = {
+                        'lote_id': lote.id,
+                        'evento_nome': evento.titulo,
+                        'lote_nome': lote.nome,
+                        'preco': float(lote.preco),
+                        'quantidade': nova_qtd_total
+                    }
+                    itens_adicionados += 1
 
         if itens_adicionados == 0:
             db.session.rollback()
-            flash('Selecione ao menos um lote válido.', 'warning')
-            return redirect(url_for('evento_marevibes'))
+            flash('Selecione ao menos um ingresso válido.', 'warning')
+            return redirect(referrer_url)
 
         db.session.commit()
         session['carrinho'] = carrinho
         session.modified = True
-        flash('Ingressos adicionados ao carrinho.', 'success')
+        flash('Ingressos adicionados ao carrinho com sucesso!', 'success')
 
     except Exception as e:
         db.session.rollback()
-        print(f"[ERRO ADICIONAR CARRINHO]: {str(e)}")
-        flash('Erro ao reservar os ingressos.', 'danger')
+        app.logger.error(f"[ERRO ADICIONAR CARRINHO]: {str(e)}")
+        flash('Erro ao reservar ingressos.', 'danger')
+        return redirect(referrer_url)
 
     return redirect(url_for('ver_carrinho'))
 
@@ -1001,24 +1030,7 @@ def webhook_mercadopago():
         return jsonify({"status": "ignored"}), 200
 
     try:
-        if topic in ["payment", "payment.created", "payment.updated"] and sdk:
-            payment_info = sdk.payment().get(resource_id)
-            if payment_info.get("status") == 200:
-                p_data = payment_info["response"]
-                p_status = p_data.get("status")
-                ext_ref = p_data.get("external_reference", "")
-
-                if ext_ref.startswith("PEDIDO_"):
-                    pedido_id = int(ext_ref.split("_")[1])
-
-                    if p_status in ["approved", "accredited"]:
-                        gerar_ingressos_para_pedido(pedido_id, resource_id)
-                    elif p_status in ["cancelled", "refunded", "rejected"]:
-                        Ingresso.query.filter_by(pedido_id=pedido_id).delete()
-                        Pedido.query.filter_by(id=pedido_id).update({'status': p_status})
-                        db.session.commit()
-
-        elif topic in ["order", "merchant_order"] and orders_api:
+        if topic in ["order", "merchant_order"] and orders_api:
             order_info, status_code = orders_api.get_order(resource_id)
             if status_code == 200:
                 order_status = order_info.get("status")
@@ -1036,7 +1048,7 @@ def webhook_mercadopago():
 
     except Exception as e:
         db.session.rollback()
-        print(f"[ERRO WEBHOOK MP]: {str(e)}")
+        app.logger.error(f"[ERRO WEBHOOK MP]: {str(e)}")
 
     return jsonify({"status": "ok"}), 200
 
@@ -1064,8 +1076,14 @@ def perfil():
 def editar_perfil():
     usuario = Usuario.query.get(session['usuario_id'])
     if request.method == 'POST':
+        cpf_limpo = re.sub(r'\D', '', request.form.get('cpf', ''))
+        
+        if cpf_limpo and not validar_cpf_matematico(cpf_limpo):
+            flash('CPF inválido. Verifique os números informados.', 'danger')
+            return redirect(url_for('editar_perfil'))
+
         usuario.nome = request.form.get('nome', '').strip()
-        usuario.cpf = re.sub(r'\D', '', request.form.get('cpf', ''))
+        usuario.cpf = cpf_limpo
         usuario.telefone = re.sub(r'\D', '', request.form.get('telefone', ''))
         db.session.commit()
         session['usuario_nome'] = usuario.nome
@@ -1161,7 +1179,7 @@ def checkout():
 
     if not carrinho or vendas_encerradas():
         flash('Sessão expirada ou vendas encerradas.', 'warning')
-        return redirect(url_for('evento_marevibes'))
+        return redirect(url_for('index'))
 
     ordem_compra = []
     total_pedido = Decimal('0.00')
@@ -1194,7 +1212,6 @@ def checkout():
         valor_final_dec = calc_taxa['valor_final']
         valor_final_str = f"{float(valor_final_dec):.2f}"
 
-        # 1. Montagem da lista de itens desmembrando ingresso e taxas (Valores como STRING)
         items_payments_payload = []
         for item in ordem_compra:
             items_payments_payload.append({
@@ -1210,7 +1227,6 @@ def checkout():
                 "unit_price": f"{float(calc_taxa['taxa']):.2f}"
             })
 
-        # 2. Criação do Pedido no Banco Local
         novo_pedido = None
         try:
             novo_pedido = Pedido(
@@ -1233,7 +1249,7 @@ def checkout():
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"[ERRO CRIACAO PEDIDO]: {str(e)}")
+            app.logger.error(f"[ERRO CRIACAO PEDIDO]: {str(e)}")
             flash('Erro ao gerar o pedido. Tente novamente.', 'danger')
             return redirect(url_for('checkout'))
 
@@ -1243,7 +1259,6 @@ def checkout():
             last_name = partes_nome[1] if len(partes_nome) > 1 and partes_nome[1] else "MaréVibes"
             cpf_limpo = re.sub(r'\D', '', usuario_atual.cpf) if usuario_atual.cpf else ""
 
-            # 3. Construção do Payment Method
             if metodo == 'pix':
                 payment_method_object = {
                     "id": "pix",
@@ -1266,7 +1281,6 @@ def checkout():
                     "installments": installments
                 }
 
-            # 4. Payload com modelo AUTOMATIC (One-Shot) - Valores monetários em STRING
             order_payload = {
                 "type": "online",
                 "processing_mode": "automatic",
@@ -1292,11 +1306,10 @@ def checkout():
                 }
             }
 
-            # Executa a requisição única de criação e processamento
             res_order, status_order = orders_api.create_order(order_payload)
 
             if status_order not in [200, 201]:
-                print(f"[ERRO ORDERS API AUTOMATIC]: Code {status_order} - {res_order}")
+                app.logger.error(f"[ERRO ORDERS API AUTOMATIC]: Code {status_order} - {res_order}")
                 novo_pedido.status = 'failed'
                 db.session.commit()
                 flash('Não foi possível processar a ordem de pagamento. Tente novamente.', 'danger')
@@ -1309,7 +1322,6 @@ def checkout():
             payment_status = primary_payment.get("status")
             status_detail = primary_payment.get("status_detail", "")
 
-            # 5. Tratamento para PIX
             if metodo == 'pix':
                 novo_pedido.pagamento_id = str(order_id)
                 db.session.commit()
@@ -1327,7 +1339,6 @@ def checkout():
                 session.pop('carrinho', None)
                 return redirect(url_for('pagamento'))
 
-            # 6. Tratamento para CARTÃO DE CRÉDITO
             elif metodo == 'credit_card':
                 if order_status in ["processed", "accredited"] or payment_status in ["approved", "accredited"]:
                     novo_pedido.status = "approved"
@@ -1349,7 +1360,7 @@ def checkout():
 
         except Exception as e:
             db.session.rollback()
-            print(f"[ERRO MERCADO PAGO EXCECAO]: {str(e)}")
+            app.logger.error(f"[ERRO MERCADO PAGO EXCECAO]: {str(e)}")
             if novo_pedido:
                 novo_pedido.status = 'failed'
                 db.session.commit()
@@ -1370,27 +1381,6 @@ def pagamento():
 @cliente_required
 def checar_status_pagamento(payment_id):
     try:
-        if sdk:
-            payment_info = sdk.payment().get(payment_id)
-            if payment_info.get("status") == 200:
-                res = payment_info["response"]
-                p_status = res.get("status")
-                if p_status in ['approved', 'accredited']:
-                    ext_ref = res.get("external_reference", "")
-                    if ext_ref and ext_ref.startswith("PEDIDO_"):
-                        try:
-                            pedido_id = int(ext_ref.split("_")[1])
-                            gerar_ingressos_para_pedido(pedido_id, payment_id)
-                        except (ValueError, IndexError):
-                            pass
-
-                    if 'compra_atual' in session:
-                        session['compra_atual']['status'] = 'approved'
-                        session.modified = True
-
-                    return jsonify({'status': 'approved', 'redirect_url': url_for('meus_ingressos')})
-                return jsonify({'status': p_status})
-
         if orders_api:
             res, status_code = orders_api.get_order(payment_id)
             if status_code == 200:
@@ -1416,7 +1406,7 @@ def checar_status_pagamento(payment_id):
 
                 return jsonify({'status': payment_status})
 
-        return jsonify({'status': 'error', 'message': 'Pagamento não encontrado'}), 404
+        return jsonify({'status': 'error', 'message': 'Pedido não encontrado'}), 404
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
