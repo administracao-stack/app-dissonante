@@ -1,42 +1,40 @@
 {% extends 'base.html' %}
 
-{% block title %}Dissonante Experiências | Ingressos e Festas Exclusivas{% endblock %}
+{% block title %}Início | Sua Plataforma de Ingressos{% endblock %}
 
 {% block content %}
-<section class="hero-carousel-section">
-    <div class="carousel-container">
-        
-        <!-- Card de Evento 1 -->
-        <a href="{{ url_for('evento_marevibes') }}" class="carousel-card">
-            <!-- Botão de favoritar -->
-            <button type="button" 
-                    class="btn-favorite {% if session.get('favoritos') and 'marevibes' in session.get('favoritos')|map(attribute='id')|list %}active{% endif %}" 
-                    data-evento-id="marevibes" 
-                    aria-label="Favoritar evento">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-            </button>
+<main class="events-container">
+    <section class="hero-section">
+        <h1>Próximos Eventos</h1>
+        <p>Garanta já o seu ingresso para as melhores experiências.</p>
+    </section>
 
-            <img src="{{ url_for('static', filename='marevibes-banner.jpg') }}" alt="MaréVibes Halloween 2026" class="card-img-bg">
-            <div class="card-overlay"></div>
-            
-            <div class="card-content">
-                <h2 class="card-title">MaréVibes Halloween 2026</h2>
-                <div class="card-meta">
-                    <div class="date-time">
-                    <span class="date">31 OUT 2026</span>
-                    <span class="time">• 17:00</span>
+    <!-- Grid de Cards de Eventos -->
+    <div class="events-grid">
+        {% for evento in eventos %}
+            <article class="event-card">
+                <div class="card-banner">
+                    <img src="{{ url_for('static', filename=evento.banner_img | default('img/banners/seu_evento_aqui.jpg')) }}" 
+                         alt="{{ evento.titulo }}" 
+                         loading="lazy">
+                </div>
+                <div class="card-body">
+                    <h2 class="card-title">{{ evento.titulo }}</h2>
+                    <div class="card-details">
+                        <p class="card-date">📅 {{ evento.data_hora }}</p>
+                        <p class="card-location">📍 {{ evento.local }}</p>
                     </div>
-                    <span class="location">Itaperi, Rua Fagundes Varela</span>
+                    <!-- Redireciona dinamicamente usando o slug do JSON -->
+                    <a href="{{ url_for('detalhe_evento', slug=evento.slug) }}" class="btn-primary btn-block">
+                        Ver Ingressos
+                    </a>
                 </div>
-    
-                <div class="card-action">
-                    <span class="btn-comprar-ingresso">COMPRAR INGRESSO</span>
-                </div>
+            </article>
+        {% else %}
+            <div class="no-events">
+                <p>Nenhum evento disponível no momento.</p>
             </div>
-        </a>
-
+        {% endfor %}
     </div>
-</section>
+</main>
 {% endblock %}
