@@ -1,0 +1,50 @@
+[
+  {
+    "slug": "modelo-evento-1",
+    "titulo": "Modelo de Evento 1",
+    "banner_img": "img/banners/seu_evento_aqui.jpg",
+    "data_hora": "2026-11-15T22:00:00",
+    "local": "Espaço Cultural 1 - Fortaleza/CE",
+    "lotes": [
+      {"nome": "teste", "preco": "1.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "Lote Promocional", "preco": "50.00", "quantidade_total": 10, "ativo": true},
+      {"nome": "1º Lote - Meia", "preco": "75.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "1º Lote - Inteira", "preco": "150.00", "quantidade_total": 40, "ativo": true},
+      {"nome": "2º Lote - Meia", "preco": "150.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "2º Lote - Inteira", "preco": "300.00", "quantidade_total": 40, "ativo": true},
+      {"nome": "Cortesia", "preco": "0.00", "quantidade_total": 20, "ativo": false}
+    ]
+  },
+  {
+    "slug": "modelo-evento-2",
+    "titulo": "Modelo de Evento 2",
+    "banner_img": "img/banners/seu_evento_aqui.jpg",
+    "data_hora": "2026-12-20T21:00:00",
+    "local": "Arena de Eventos 2 - Fortaleza/CE",
+    "lotes": [
+      {"nome": "teste", "preco": "1.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "Lote Promocional", "preco": "50.00", "quantidade_total": 10, "ativo": true},
+      {"nome": "1º Lote - Meia", "preco": "75.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "1º Lote - Inteira", "preco": "150.00", "quantidade_total": 40, "ativo": true},
+      {"nome": "2º Lote - Meia", "preco": "150.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "2º Lote - Inteira", "preco": "300.00", "quantidade_total": 40, "ativo": true},
+      {"nome": "Cortesia", "preco": "0.00", "quantidade_total": 20, "ativo": false}
+    ]
+  },
+  {
+    "slug": "modelo-evento-3",
+    "titulo": "Modelo de Evento 3",
+    "banner_img": "img/banners/seu_evento_aqui.jpg",
+    "data_hora": "2027-01-10T18:00:00",
+    "local": "Club Beach 3 - Fortaleza/CE",
+    "lotes": [
+      {"nome": "teste", "preco": "1.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "Lote Promocional", "preco": "50.00", "quantidade_total": 10, "ativo": true},
+      {"nome": "1º Lote - Meia", "preco": "75.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "1º Lote - Inteira", "preco": "150.00", "quantidade_total": 40, "ativo": true},
+      {"nome": "2º Lote - Meia", "preco": "150.00", "quantidade_total": 20, "ativo": true},
+      {"nome": "2º Lote - Inteira", "preco": "300.00", "quantidade_total": 40, "ativo": true},
+      {"nome": "Cortesia", "preco": "0.00", "quantidade_total": 20, "ativo": false}
+    ]
+  }
+]
