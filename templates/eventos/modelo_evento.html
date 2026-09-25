@@ -3,15 +3,17 @@
 {% block title %}{{ evento.titulo | default('Modelo de Evento') }} | Sua Plataforma de Ingressos{% endblock %}
 
 {% block content %}
-
-    <!-- Seção Principal Superior -->
+<div class="event-details-wrapper">
+    <!-- Seção Principal Hero -->
     <div class="event-hero-grid">
+        <!-- Coluna Esquerda: Imagem -->
         <div class="event-banner-container">
             <img src="{{ url_for('static', filename=evento.banner_img | default('img/banners/seu_evento_aqui.jpg')) }}" 
                  alt="{{ evento.titulo }}" 
                  class="event-banner-img">
         </div>
 
+        <!-- Coluna Direita: Informações + Seletor de Ingressos -->
         <div class="event-info-container">
             <div>
                 {% if vendas_encerradas %}
@@ -35,72 +37,68 @@
             <div class="event-perks">
                 <h3>O que está incluso na experiência:</h3>
                 <ul>
-                    <li>🎉 <span><strong>Estrutura Completa</strong> (Palco, iluminação e som de alta performance)</span></li>
-                    <li>🎧 <span><strong>Line-up / Programação Exclusiva</strong> com atrações de destaque</span></li>
-                    <li>🍹 <span><strong>Área VIP / Open Bar</strong> (Opcional, conforme categoria do ingresso)</span></li>
-                    <li>🛡️ <span><strong>Segurança e Conforto</strong> para todo o público</span></li>
-                    <li>📸 <span><strong>Espaços Instagramáveis</strong> e ativações de marcas</span></li>
+                    <li>🎉 <span><strong>Estrutura Completa</strong> (Palco, iluminação e som)</span></li>
+                    <li>🎧 <span><strong>Line-up Exclusivo</strong> com atrações de destaque</span></li>
+                    <li>🍹 <span><strong>Área VIP / Open Bar</strong> (Opcional)</span></li>
+                    <li>🛡️ <span><strong>Segurança e Conforto</strong> para o público</span></li>
                 </ul>
             </div>
-        </div>
-    </div>
 
-    <!-- Seção Inferior: Seleção Dinâmica de Lotes dos Models -->
-    <div class="tickets-selection-section">
-        <div class="tickets-card-box">
-            <h2 class="tickets-box-title">Selecione seus ingressos</h2>
+            <!-- Bloco do Seletor de Ingressos -->
+            <div class="tickets-selection-section">
+                <div class="tickets-card-box">
+                    <h2 class="tickets-box-title">Selecione seus ingressos</h2>
 
-            {% if vendas_encerradas %}
-                <div class="tickets-expired-alert">
-                    <h3>⏰ Vendas Encerradas!</h3>
-                    <p>As vendas para este evento foram encerradas.</p>
+                    {% if vendas_encerradas %}
+                        <div class="tickets-expired-alert">
+                            <h3>⏰ Vendas Encerradas!</h3>
+                            <p>As vendas para este evento foram encerradas.</p>
+                        </div>
+                    {% else %}
+                        <form action="{{ url_for('adicionar_carrinho_multiplo') }}" method="POST" id="tickets-form" data-recaptcha-action="adicionar_carrinho">
+                            <input type="hidden" name="evento_slug" value="{{ evento.slug }}">
+                            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+                            <input type="hidden" name="evento_id" value="{{ evento.slug }}">
+
+                            {% for lote in evento.lotes %}
+                                {% if lote.ativo %}
+                                <div class="ticket-type-row">
+                                    <div class="ticket-type-info">
+                                        <strong class="ticket-name">{{ lote.nome }}</strong>
+                                        <span class="ticket-price-tax">
+                                            R$ {{ "%.2f"|format(lote.preco|float) }} <small>no Pix</small>
+                                        </span>
+                                    </div>
+                                    <div class="ticket-counter">
+                                        <button type="button" class="btn-qty" onclick="updateQty('{{ loop.index0 }}', -1)">-</button>
+                                        <span id="qty-{{ loop.index0 }}" class="qty-number">0</span>
+                                        <input type="hidden" name="qty_lote_{{ loop.index0 }}" id="input-{{ loop.index0 }}" value="0">
+                                        <button type="button" class="btn-qty" onclick="updateQty('{{ loop.index0 }}', 1)">+</button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <div class="tickets-footer">
+                                <div class="tickets-total">
+                                    <span class="tickets-total-label">Total Estimado:</span>
+                                    <strong id="display-total-pix" class="total-pix-display">
+                                        R$ 0,00 <span class="pix-badge-text">no Pix</span>
+                                    </strong>
+                                    <div class="total-card-display">
+                                        <div id="display-total-card1x">Cartão à vista: (R$ 0,00)</div>
+                                        <div id="display-total-card2x">Cartão 2x: (R$ 0,00 ou 2x de R$ 0,00)</div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" id="btn-add-cart" class="btn-primary btn-block" disabled>
+                                    🛒 Adicionar ao Carrinho
+                                </button>
+                            </div>
+                        </form>
+                    {% endif %}
                 </div>
-            {% else %}
-                <form action="{{ url_for('adicionar_carrinho_multiplo') }}" method="POST" id="tickets-form" data-recaptcha-action="adicionar_carrinho">
-                    <input type="hidden" name="evento_slug" value="{{ evento.slug }}">
-                    <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
-                    <input type="hidden" name="evento_id" value="{{ evento.slug }}">
-
-                    <!-- Loop Dinâmico baseado nos modelos do JSON -->
-                    {% for lote in evento.lotes %}
-                        {% if lote.ativo %}
-                        <div class="ticket-type-row">
-                            <div class="ticket-type-info">
-                                <strong class="ticket-name">{{ lote.nome }}</strong>
-                                <span class="ticket-price-tax">
-                                    <strong>R$ {{ "%.2f"|format(lote.preco|float) }} no Pix</strong>
-                                </span>
-                            </div>
-                            <div class="ticket-counter">
-                                <button type="button" class="btn-qty" onclick="updateQty('{{ loop.index0 }}', -1)">-</button>
-                                <span id="qty-{{ loop.index0 }}" class="qty-number">0</span>
-                                <input type="hidden" name="qty_lote_{{ loop.index0 }}" id="input-{{ loop.index0 }}" value="0">
-                                <button type="button" class="btn-qty" onclick="updateQty('{{ loop.index0 }}', 1)">+</button>
-                            </div>
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-
-                    <!-- Total e Botão de Ação -->
-                    <div class="tickets-footer">
-                        <div class="tickets-total">
-                            <span class="tickets-total-label">Total Estimado</span>
-                            <strong id="display-total-pix" class="total-pix-display">
-                                R$ 0,00 <span class="pix-badge-text">no Pix</span>
-                            </strong>
-                            <div class="total-card-display">
-                                <div id="display-total-card1x">Cartão à vista: (R$ 0,00)</div>
-                                <div id="display-total-card2x">Cartão 2x: (R$ 0,00 ou 2x de R$ 0,00)</div>
-                            </div>
-                        </div>
-
-                        <button type="submit" id="btn-add-cart" class="btn-primary btn-block" disabled>
-                            🛒 Simular Compras / Adicionar ao Carrinho
-                        </button>
-                    </div>
-
-                </form>
-            {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -108,12 +106,8 @@
 
 {% block extra_js %}
     {% include 'includes/scripts/recaptcha.html' %}
-    
     {% if not vendas_encerradas %}
-    <!-- 1. Carrega o script estático do simulador de preços -->
-    <script src="{{ url_for('static', filename='js/simulador_precos.js') }}"></script>
-
-    <!-- 2. Inicializa o simulador passando o mapa de dados dinâmicos do evento -->
+    {% include 'includes/scripts/simulador_precos.html' %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             initSimulador({
