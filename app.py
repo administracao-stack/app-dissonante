@@ -644,7 +644,7 @@ def detalhe_evento(slug):
         precos[str(lote.id)] = float(lote.preco)
 
     return render_template(
-        'eventos/modelo_evento_1.html', 
+        'eventos/modelo_evento.html', 
         evento=evento_db, 
         lotes=lotes_db, 
         estoques=estoques, 
