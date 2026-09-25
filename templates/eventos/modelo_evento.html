@@ -60,30 +60,79 @@
                             <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
                             <input type="hidden" name="evento_id" value="{{ evento.slug }}">
 
-                            {% for lote in evento.lotes %}
-                                {% if lote.ativo %}
-                                <div class="ticket-type-row">
-                                    <div class="ticket-type-info">
-                                        <strong class="ticket-name">{{ lote.nome }}</strong>
-                                        <span class="ticket-price-tax">
-                                            R$ {{ "%.2f"|format(lote.preco|float) }} <small>no Pix</small>
-                                        </span>
-                                    </div>
-                                    <div class="ticket-counter">
-                                        <button type="button" class="btn-qty" onclick="updateQty('{{ loop.index0 }}', -1)">-</button>
-                                        <span id="qty-{{ loop.index0 }}" class="qty-number">0</span>
-                                        <input type="hidden" name="qty_lote_{{ loop.index0 }}" id="input-{{ loop.index0 }}" value="0">
-                                        <button type="button" class="btn-qty" onclick="updateQty('{{ loop.index0 }}', 1)">+</button>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
+                            <!-- Estrutura com Agrupamento Expansível -->
+                            <div class="tickets-list">
+                                {% set lotes_agrupados = {} %}
+                                
+                                {# Identifica e agrupa lotes por categoria (ex: 1º Lote, 2º Lote) #}
+                                {% for lote in evento.lotes %}
+                                    {% if lote.ativo %}
+                                        {% set nome_partes = lote.nome.split(' - ') %}
+                                        {% if nome_partes|length > 1 %}
+                                            {% set grupo = nome_partes[0] %}
+                                        {% else %}
+                                            {% set grupo = 'Avulso' %}
+                                        {% endif %}
+                                        
+                                        {% if grupo not in lotes_agrupados %}
+                                            {% set _ = lotes_agrupados.update({grupo: []}) %}
+                                        {% endif %}
+                                        {% set _ = lotes_agrupados[grupo].append({'lote': lote, 'index': loop.index0, 'subnome': nome_partes[1] if nome_partes|length > 1 else lote.nome}) %}
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% for grupo, itens in lotes_agrupados.items() %}
+                                    {% if grupo == 'Avulso' %}
+                                        {% for item in itens %}
+                                        <div class="ticket-type-row">
+                                            <div class="ticket-type-info">
+                                                <strong class="ticket-name">{{ item.lote.nome }}</strong>
+                                                <span class="ticket-price-tax">
+                                                    R$ {{ "%.2f"|format(item.lote.preco|float) }}
+                                                </span>
+                                            </div>
+                                            <div class="ticket-counter">
+                                                <button type="button" class="btn-qty" onclick="updateQty('{{ item.index }}', -1)">-</button>
+                                                <span id="qty-{{ item.index }}" class="qty-number">0</span>
+                                                <input type="hidden" name="qty_lote_{{ item.index }}" id="input-{{ item.index }}" value="0">
+                                                <button type="button" class="btn-qty" onclick="updateQty('{{ item.index }}', 1)">+</button>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <details class="ticket-group-accordion" open>
+                                            <summary class="ticket-group-header">
+                                                <span>{{ grupo }}</span>
+                                                <i class="chevron-icon"></i>
+                                            </summary>
+                                            <div class="ticket-group-content">
+                                                {% for item in itens %}
+                                                <div class="ticket-type-row">
+                                                    <div class="ticket-type-info">
+                                                        <strong class="ticket-name">{{ item.subnome }}</strong>
+                                                        <span class="ticket-price-tax">
+                                                            R$ {{ "%.2f"|format(item.lote.preco|float) }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="ticket-counter">
+                                                        <button type="button" class="btn-qty" onclick="updateQty('{{ item.index }}', -1)">-</button>
+                                                        <span id="qty-{{ item.index }}" class="qty-number">0</span>
+                                                        <input type="hidden" name="qty_lote_{{ item.index }}" id="input-{{ item.index }}" value="0">
+                                                        <button type="button" class="btn-qty" onclick="updateQty('{{ item.index }}', 1)">+</button>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </details>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
 
                             <div class="tickets-footer">
                                 <div class="tickets-total">
                                     <span class="tickets-total-label">Total Estimado:</span>
                                     <strong id="display-total-pix" class="total-pix-display">
-                                        R$ 0,00 <span class="pix-badge-text">no Pix</span>
+                                        R$ 0,00
                                     </strong>
                                     <div class="total-card-display">
                                         <div id="display-total-card1x">Cartão à vista: (R$ 0,00)</div>
