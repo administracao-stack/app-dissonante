@@ -1,0 +1,282 @@
+/* ==========================================================================
+   COMPONENTE: VITRINE DE EVENTOS & DETALHES DO EVENTO
+   Arquivos gerenciados: index.html e modelo_evento.html
+   ========================================================================== */
+
+:root {
+  --event-card-bg: #1e1e24;
+  --event-card-border: rgba(255, 255, 255, 0.08);
+  --event-card-hover-border: rgba(255, 255, 255, 0.25);
+  --badge-open-bg: rgba(46, 204, 113, 0.15);
+  --badge-open-color: #2ecc71;
+  --badge-closed-bg: rgba(231, 76, 60, 0.15);
+  --badge-closed-color: #e74c3c;
+}
+
+/* --------------------------------------------------------------------------
+   1. GRID E CARDS DE EVENTOS (index.html)
+   -------------------------------------------------------------------------- */
+.events-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.hero-section {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.hero-section h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.hero-section p {
+  color: var(--text-muted, #a0a0a0);
+  font-size: 1.1rem;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.event-card {
+  background: var(--event-card-bg);
+  border: 1px solid var(--event-card-border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--event-card-hover-border);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.card-banner {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background-color: #121214;
+}
+
+.card-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.event-card:hover .card-banner img {
+  transform: scale(1.03);
+}
+
+.card-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.card-details {
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #c0c0c0);
+}
+
+.card-details p {
+  margin: 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.no-events {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 1rem;
+  color: var(--text-muted, #808080);
+}
+
+/* --------------------------------------------------------------------------
+   2. DETALHE DO EVENTO & HERO (modelo_evento.html)
+   -------------------------------------------------------------------------- */
+.event-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto 3rem auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 992px) {
+  .event-hero-grid {
+    grid-template-columns: 450px 1fr;
+  }
+}
+
+.event-banner-container {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--event-card-border);
+}
+
+.event-banner-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.event-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.badge-open {
+  background: var(--badge-open-bg);
+  color: var(--badge-open-color);
+}
+
+.badge-closed {
+  background: var(--badge-closed-bg);
+  color: var(--badge-closed-color);
+}
+
+.about-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.event-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #d0d0d0);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.about-text-highlight {
+  line-height: 1.6;
+  color: var(--text-muted, #b0b0b0);
+}
+
+.event-perks h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.event-perks ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.event-perks li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary, #cccccc);
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   Bloco Unificado de Responsividade (Vitrine e Detalhes do Evento)
+   ========================================================================== */
+
+/* Tablet & Mobile Geral (Até 768px) */
+@media (max-width: 768px) {
+    .events-container {
+        padding: 1.5rem 1rem;
+    }
+
+    .hero-section {
+        margin-bottom: 2rem;
+    }
+
+    .hero-section h1 {
+        font-size: 1.8rem;
+    }
+
+    .hero-section p {
+        font-size: 0.95rem;
+    }
+
+    .events-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .about-title {
+        font-size: 1.75rem;
+    }
+
+    .event-hero-grid {
+        margin-bottom: 2rem;
+    }
+}
+
+/* Smartphones Intermediários (Até 576px) */
+@media (max-width: 576px) {
+    .events-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    .event-details {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+}
+
+/* Smartphones Pequenos (Até 480px) */
+@media (max-width: 480px) {
+    .hero-section h1 {
+        font-size: 1.5rem;
+    }
+
+    .about-title {
+        font-size: 1.4rem;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+    }
+}
