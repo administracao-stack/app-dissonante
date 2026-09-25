@@ -107,7 +107,7 @@
 {% block extra_js %}
     {% include 'includes/scripts/recaptcha.html' %}
     {% if not vendas_encerradas %}
-    {% include 'includes/scripts/simulador_precos.html' %}
+    {% include 'includes/scripts/simulador_precos.js' %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             initSimulador({
