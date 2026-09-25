@@ -5,6 +5,7 @@
     let prices = {};
     let stockLimits = {};
     let quantities = {};
+    let fatorPix = 1.0;
     let fator1x = 1.0;
     let fator2x = 1.0;
 
@@ -13,16 +14,18 @@
     }
 
     function calculateTotal() {
-        let totalPix = 0;
+        let subtotalBase = 0;
         for (const key in quantities) {
-            totalPix += quantities[key] * (prices[key] || 0);
+            subtotalBase += quantities[key] * (prices[key] || 0);
         }
 
         const btnAddCart = document.getElementById('btn-add-cart');
 
-        if (totalPix > 0) {
-            const totalCard1x = totalPix * fator1x;
-            const totalCard2x = totalPix * fator2x;
+        if (subtotalBase > 0) {
+            // Aplica o fator de taxa do Pix sobre o valor base repassado
+            const totalPix = subtotalBase * fatorPix;
+            const totalCard1x = subtotalBase * fator1x;
+            const totalCard2x = subtotalBase * fator2x;
             const parcela2x = totalCard2x / 2;
 
             const elPix = document.getElementById('display-total-pix');
@@ -77,6 +80,7 @@
     global.initSimulador = function (config) {
         prices = config.prices || {};
         stockLimits = config.stockLimits || {};
+        fatorPix = config.fatorPix || 1.0;
         fator1x = config.fator1x || 1.0;
         fator2x = config.fator2x || 1.0;
 
