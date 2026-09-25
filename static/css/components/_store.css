@@ -1,184 +1,11 @@
 /* ==========================================================================
-   Carrossel & Seção de Destaques (Home e Loja)
+   COMPONENTE: LOJA DO USUÁRIO (FAVORITOS & MEUS INGRESSOS)
+   Arquivos gerenciados: favoritos.html e meus_ingressos.html
    ========================================================================== */
 
-.hero-carousel-section {
-    position: relative;
-    padding: 32px 0;
-    overflow: hidden;
-}
-
-.carousel-container {
-    display: flex;
-    gap: 24px;
-    overflow-x: auto;
-    scroll-behavior: smooth;
-    padding-bottom: 16px;
-    scrollbar-width: none; /* Firefox */
-}
-
-.carousel-container::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-}
-
-/* Card Principal da Home */
-.carousel-card {
-    position: relative;
-    flex: 0 0 300px;
-    min-height: 420px;
-    background-color: var(--bg-card, #111827);
-    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.1));
-    border-radius: 16px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    overflow: hidden;
-    text-decoration: none;
-    transition: transform var(--transition-fast, 0.2s ease), border-color var(--transition-fast, 0.2s ease);
-}
-
-.carousel-card:hover {
-    border-color: var(--gold, #d4af37);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5);
-}
-
-/* Imagem de Fundo do Card */
-.card-img-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 0;
-    transition: transform 0.3s ease;
-}
-
-.carousel-card:hover .card-img-bg {
-    transform: scale(1.05);
-}
-
-/* Degradê Escuro sobre a Imagem */
-.card-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.85) 75%, rgba(0, 0, 0, 0.95) 100%);
-    z-index: 1;
-}
-
-/* Conteúdo sobre a Imagem */
-.card-content {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.card-title {
-    font-size: 1.25rem;
-    color: var(--text-light, #ffffff);
-    font-weight: 700;
-    margin: 0;
-    line-height: 1.3;
-}
-
-.card-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 0.85rem;
-    color: var(--text-muted, #a1a1aa);
-}
-
-.card-meta .date-time {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.card-meta .date {
-    color: var(--gold, #d4af37);
-    font-weight: 600;
-}
-
-.card-meta .time {
-    color: var(--gold, #d4af37);
-    font-weight: 500;
-    opacity: 0.9;
-}
-
-/* Ação / Botão do Card */
-.card-action {
-    margin-top: 8px;
-}
-
-.btn-comprar-ingresso {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: #ffffff;
-    font-size: 0.875rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
-    transition: filter 0.2s ease, transform 0.2s ease;
-}
-
-.carousel-card:hover .btn-comprar-ingresso {
-    filter: brightness(1.15);
-    transform: translateY(-1px);
-}
-
-/* Botão Favoritar */
-.btn-favorite {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--border-dark, rgba(255, 255, 255, 0.2));
-    color: var(--text-muted, #ffffff);
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    transition: var(--transition-fast, 0.2s ease);
-    z-index: 3;
-}
-
-.btn-favorite:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
-    color: #ef4444;
-    transform: scale(1.1);
-}
-
-.btn-favorite.active {
-    background: #ef4444;
-    border-color: #ef4444;
-    color: #ffffff;
-}
-
-.btn-favorite svg {
-    width: 20px;
-    height: 20px;
-}
-
-/* ==========================================================================
-   Página de Favoritos (Grid Ampliado e Moderno)
-   ========================================================================== */
-
+/* --------------------------------------------------------------------------
+   1. PÁGINA DE FAVORITOS (favoritos.html)
+   -------------------------------------------------------------------------- */
 .favorites-page-container {
     max-width: 1200px;
     margin: 40px auto;
@@ -204,14 +31,13 @@
     color: var(--text-muted, #a1a1aa);
 }
 
-/* Grid de Cards dos Favoritos */
+/* Grid e Cards de Favoritos */
 .tickets-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
 }
 
-/* Card Individual da Página de Favoritos */
 .ticket-card {
     position: relative;
     background-color: var(--bg-card, #111827);
@@ -222,7 +48,7 @@
     flex-direction: column;
     justify-content: space-between;
     min-height: 200px;
-    transition: transform var(--transition-fast, 0.2s ease), border-color var(--transition-fast, 0.2s ease);
+    transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 .ticket-card:hover {
@@ -244,7 +70,7 @@
     font-weight: 600;
 }
 
-/* Estilos de Ícones SVG */
+/* Ícones e Ações dos Favoritos */
 .icon-heart {
     width: 20px;
     height: 20px;
@@ -261,7 +87,6 @@
     stroke-width: 2;
 }
 
-/* Botão de Ação do Card de Favoritos */
 .btn-ticket {
     display: inline-flex;
     align-items: center;
@@ -284,10 +109,228 @@
     max-width: 200px;
 }
 
-/* Estado Vazio */
-.empty-state-wrapper {
+/* --------------------------------------------------------------------------
+   2. PÁGINA MEUS INGRESSOS & POPUP DE QR CODE (meus_ingressos.html)
+   -------------------------------------------------------------------------- */
+.ingressos-main {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 24px;
+    min-height: 60vh;
+}
+
+.panel-header {
+    margin-bottom: 32px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 16px;
+}
+
+.panel-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-light, #ffffff);
+    margin-bottom: 8px;
+}
+
+.panel-subtitle {
+    font-size: 1rem;
+    color: var(--text-muted, #a1a1aa);
+}
+
+/* Grid e Card de Ingressos */
+.grid-ingressos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+}
+
+.card-ingresso {
+    background-color: var(--bg-card, #111827);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.card-ingresso:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ingresso-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.evento-titulo {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.status-tag {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 50px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-valido {
+    background-color: rgba(46, 204, 113, 0.15);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.status-utilizado {
+    background-color: rgba(149, 165, 166, 0.15);
+    color: #95a5a6;
+    border: 1px solid rgba(149, 165, 166, 0.3);
+}
+
+.ingresso-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.user-info.titular {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.user-info.ticket-sector {
+    font-size: 0.9rem;
+    color: var(--gold, #d4af37);
+}
+
+.btn-open-qr {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-open-qr:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.codigo-texto {
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--text-muted, #a1a1aa);
     text-align: center;
-    padding: 80px 20px;
+    margin-top: 6px;
+}
+
+/* Modal do QR Code */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    z-index: 9999;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-card {
+    position: relative;
+    background: #18181b;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 32px 24px;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+}
+
+.btn-close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.modal-subtitle {
+    font-size: 0.9rem;
+    color: #a1a1aa;
+    margin-bottom: 20px;
+}
+
+.modal-qr-container {
+    background: #ffffff;
+    padding: 16px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 16px;
+}
+
+.modal-qr-img {
+    width: 200px;
+    height: 200px;
+    display: block;
+}
+
+.modal-code {
+    font-family: monospace;
+    font-size: 1rem;
+    color: #ffffff;
+    margin-bottom: 12px;
+}
+
+.modal-instruction {
+    font-size: 0.8rem;
+    color: #a1a1aa;
+    margin-top: 16px;
+}
+
+/* ==========================================================================
+   3. ESTADO VAZIO COMPARTILHADO & BLOCO UNIFICADO DE RESPONSIVIDADE
+   ========================================================================== */
+.empty-state-wrapper,
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -304,33 +347,47 @@
     opacity: 0.5;
 }
 
-.empty-state {
-    font-size: 1.1rem;
+.empty-state-title {
+    font-size: 1.5rem;
+    color: #ffffff;
+}
+
+.empty-state-text {
+    font-size: 1rem;
     color: var(--text-muted, #a1a1aa);
 }
 
-/* ==========================================================================
-   Bloco Unificado de Responsividade (Loja e Favoritos)
-   ========================================================================== */
+/* Tablet & Mobile Geral (Até 768px) */
+@media (max-width: 768px) {
+    .favorites-page-container,
+    .ingressos-main {
+        margin: 30px auto;
+        padding: 0 20px;
+    }
 
+    .favorites-header .page-title,
+    .panel-title {
+        font-size: 1.75rem;
+    }
+
+    .grid-ingressos,
+    .tickets-grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+}
+
+/* Smartphones Intermediários (Até 576px) */
 @media (max-width: 576px) {
-    .hero-carousel-section,
     .favorites-page-container,
     .ingressos-main {
         padding: 0 16px;
         margin: 20px auto;
     }
 
-    .carousel-card {
-        flex: 0 0 82vw;
-        min-height: 360px;
-        padding: 16px;
-    }
-
-    .card-title,
-    .panel-title,
-    .favorites-header .page-title {
-        font-size: 1.35rem;
+    .favorites-header .page-title,
+    .panel-title {
+        font-size: 1.5rem;
     }
 
     .grid-ingressos,
@@ -342,5 +399,27 @@
     .card-ingresso,
     .ticket-card {
         padding: 18px;
+    }
+
+    .btn-ticket {
+        min-height: 48px;
+    }
+}
+
+/* Smartphones Pequenos (Até 480px) */
+@media (max-width: 480px) {
+    .modal-card {
+        padding: 24px 16px;
+        width: 95%;
+    }
+
+    .modal-qr-img {
+        width: 160px;
+        height: 160px;
+    }
+
+    .favorites-header .page-title,
+    .panel-title {
+        font-size: 1.35rem;
     }
 }
