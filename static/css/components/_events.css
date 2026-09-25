@@ -125,6 +125,11 @@
 /* --------------------------------------------------------------------------
    2. DETALHE DO EVENTO & HERO (modelo_evento.html)
    -------------------------------------------------------------------------- */
+.event-details-wrapper {
+  width: 100%;
+  padding: 2rem 0;
+}
+
 .event-hero-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -132,12 +137,6 @@
   max-width: 1200px;
   margin: 0 auto 3rem auto;
   padding: 0 1rem;
-}
-
-@media (min-width: 992px) {
-  .event-hero-grid {
-    grid-template-columns: 450px 1fr;
-  }
 }
 
 .event-banner-container {
@@ -245,12 +244,69 @@
   color: #ffffff;
 }
 
+.tickets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Accordion de Grupos de Ingressos */
+.ticket-group-accordion {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.ticket-group-header {
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.04);
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.ticket-group-header::-webkit-details-marker {
+  display: none;
+}
+
+.ticket-group-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ticket-group-header .chevron-icon::after {
+  content: '▼';
+  font-size: 0.75rem;
+  color: #808080;
+  transition: transform 0.2s ease;
+}
+
+.ticket-group-accordion[open] .chevron-icon::after {
+  transform: rotate(180deg);
+}
+
+.ticket-group-content {
+  padding: 0.5rem 1rem 0.75rem 1rem;
+}
+
 .ticket-type-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ticket-group-content .ticket-type-row:last-child {
+  border-bottom: none;
 }
 
 .ticket-type-info {
@@ -313,59 +369,66 @@
 }
 
 /* ==========================================================================
-   Bloco Unificado de Responsividade (Vitrine e Detalhes do Evento)
+   Bloco Unificado de Responsividade (Media Queries)
    ========================================================================== */
+
+/* Desktops e Telas Grandes (a partir de 992px) */
+@media (min-width: 992px) {
+  .event-hero-grid {
+    grid-template-columns: 450px 1fr;
+  }
+}
 
 /* Tablet & Mobile Geral (Até 768px) */
 @media (max-width: 768px) {
-    .events-container {
-        padding: 1.5rem 1rem;
-    }
+  .events-container {
+    padding: 1.5rem 1rem;
+  }
 
-    .hero-section {
-        margin-bottom: 2rem;
-    }
+  .hero-section {
+    margin-bottom: 2rem;
+  }
 
-    .hero-section h1 {
-        font-size: 1.8rem;
-    }
+  .hero-section h1 {
+    font-size: 1.8rem;
+  }
 
-    .hero-section p {
-        font-size: 0.95rem;
-    }
+  .hero-section p {
+    font-size: 0.95rem;
+  }
 
-    .about-title {
-        font-size: 1.75rem;
-    }
+  .about-title {
+    font-size: 1.75rem;
+  }
 
-    .event-hero-grid {
-        margin-bottom: 2rem;
-    }
+  .event-hero-grid {
+    margin-bottom: 2rem;
+  }
 }
 
 /* Smartphones Intermediários (Até 576px) */
 @media (max-width: 576px) {
-    .card-body {
-        padding: 1.25rem;
-    }
+  .card-body {
+    padding: 1.25rem;
+  }
 
-    .event-details {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
+  .event-details {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
 }
 
 /* Smartphones Pequenos (Até 480px) */
 @media (max-width: 480px) {
-    .hero-section h1 {
-        font-size: 1.5rem;
-    }
+  .hero-section h1 {
+    font-size: 1.5rem;
+  }
 
-    .about-title {
-        font-size: 1.4rem;
-    }
+  .about-title {
+    font-size: 1.4rem;
+  }
 
-    .badge {
-        font-size: 0.75rem;
-    }
+  .badge {
+    font-size: 0.75rem;
+  }
 }
